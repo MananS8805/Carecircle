@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-drafted Hindi. Needs review by a native speaker before release (see CLAUDE.md). -->
+<resources>
+    <string name="app_name">CareCircle</string>
+
+    <string name="tab_today">आज</string>
+    <string name="tab_medicines">दवाइयाँ</string>
+    <string name="tab_settings">सेटिंग्स</string>
+
+    <string name="action_taken">ले ली</string>
+    <string name="action_snooze">10 मिनट बाद याद दिलाएँ</string>
+    <string name="action_save">सहेजें</string>
+    <string name="action_edit">बदलें</string>
+    <string name="action_back">वापस</string>
+    <string name="action_retry">फिर कोशिश करें</string>
+    <string name="action_remove">दवा हटाएँ</string>
+    <string name="action_add_pills">+30 गोलियाँ</string>
+    <string name="action_reorder">दोबारा मँगवाएँ</string>
+    <string name="alert_caregiver">देखभालकर्ता को WhatsApp पर बताएँ</string>
+    <string name="family_member_fallback">आपके परिवार के सदस्य</string>
+    <string name="cd_doctor_pdf">डॉक्टर के लिए PDF</string>
+
+    <string name="disclaimer_medical">केवल जानकारी के लिए, चिकित्सा सलाह नहीं।</string>
+
+    <string name="greeting_anon">नमस्ते!</string>
+    <string name="greeting_name">नमस्ते, %1$s!</string>
+    <string name="today_headline">आइए आज की दवाइयों का ध्यान रखें</string>
+    <string name="today_doses">आज की खुराकें</string>
+    <string name="today_empty">कोई दवा तय नहीं है। दवाइयाँ टैब में जोड़ें।</string>
+    <string name="status_taken">ले ली</string>
+    <string name="status_missed">छूट गई</string>
+    <string name="status_due">अभी लेनी है</string>
+    <string name="status_upcoming">आने वाली</string>
+    <plurals name="pills_count">
+        <item quantity="one">%d गोली</item>
+        <item quantity="other">%d गोलियाँ</item>
+    </plurals>
+
+    <string name="hero_taken_today">आज ली गईं</string>
+    <string name="hero_doses_scheduled">कुल %1$d खुराकों में से</string>
+    <string name="hero_next_dose">अगली खुराक</string>
+    <string name="hero_empty_pill">आपका शरीर नक्शा</string>
+    <string name="hero_empty_hint">दवा जोड़ें, जिस अंग का इलाज है वह यहाँ दिखेगा।</string>
+    <string name="hero_organ_desc">%1$s, इंटरैक्टिव अंग का चित्र</string>
+    <string name="hero_acts_on">%1$s - आपके %2$s पर असर</string>
+    <string name="hero_tap_hint_one">दवाइयाँ देखने के लिए अंग पर टैप करें</string>
+    <string name="hero_tap_hint_many">दवाइयाँ देखने के लिए अंग पर टैप करें, और देखने के लिए स्वाइप करें</string>
+    <string name="organ_heart">हृदय</string>
+    <string name="organ_pancreas">अग्न्याशय</string>
+    <string name="organ_lungs">फेफड़े</string>
+    <string name="organ_kidney">गुर्दा</string>
+    <string name="organ_brain">मस्तिष्क</string>
+    <string name="organ_thyroid">थायरॉइड</string>
+    <string name="organ_joint">जोड़</string>
+    <string name="organ_body">पूरा शरीर</string>
+
+    <string name="cond_diabetes">मधुमेह</string>
+    <string name="cond_blood_pressure">रक्तचाप</string>
+    <string name="cond_cholesterol">कोलेस्ट्रॉल</string>
+    <string name="cond_thyroid">थायरॉइड</string>
+    <string name="cond_heart">हृदय</string>
+    <string name="cond_asthma">दमा</string>
+    <string name="cond_arthritis">गठिया</string>
+    <string name="cond_kidney">गुर्दा</string>
+    <string name="cond_brain">मस्तिष्क और नसें</string>
+    <string name="cond_infection">संक्रमण</string>
+    <string name="cond_pain">दर्द</string>
+    <string name="cond_other">अन्य</string>
+
+    <string name="banner_title">याद दिलाने में देरी हो सकती है या वह छूट सकती है</string>
+    <string name="banner_notifications">CareCircle के लिए नोटिफिकेशन बंद हैं।</string>
+    <string name="banner_exact">सटीक अलार्म की अनुमति नहीं है, इसलिए खुराक में कुछ मिनट की देरी हो सकती है।</string>
+    <string name="banner_fix">ठीक करें</string>
+    <string name="onb_title">आइए पक्का करें कि याद दिलाना आप तक पहुँचे</string>
+    <string name="onb_intro">दवा के ऐप में याद दिलाना न आना सबसे बड़ी कमी है। तीन छोटी सेटिंग्स मदद करती हैं।</string>
+    <string name="onb_notif_title">नोटिफिकेशन</string>
+    <string name="onb_notif_why">ताकि खुराक की याद \"ले ली\" और \"बाद में\" बटन के साथ दिखे।</string>
+    <string name="onb_exact_title">सटीक अलार्म</string>
+    <string name="onb_exact_why">ताकि फ़ोन खाली होने पर भी याद ठीक समय पर आए।</string>
+    <string name="onb_battery_title">बैटरी ऑप्टिमाइज़ेशन</string>
+    <string name="onb_battery_why">CareCircle के लिए \"ऑप्टिमाइज़ न करें\" चुनें ताकि फ़ोन याद दिलाने में देरी न करे।</string>
+    <string name="onb_allow">अनुमति दें</string>
+    <string name="onb_open_settings">सेटिंग्स खोलें</string>
+    <string name="onb_done">हो गया</string>
+
+    <string name="channel_doses">खुराक की याद</string>
+    <string name="channel_alerts">छूटी खुराक और दोबारा मँगवाने की सूचनाएँ</string>
+    <string name="notif_time_for">%1$s लेने का समय</string>
+    <string name="notif_dose_text">%1$s - लेने के बाद \"ले ली\" दबाएँ</string>
+    <string name="notif_dose_fallback">आपकी खुराक</string>
+    <string name="notif_missed_title">छूटी: %1$s (%2$s)</string>
+    <string name="notif_missed_text">देखभालकर्ता को WhatsApp पर बताने के लिए टैप करें।</string>
+    <string name="notif_reorder_title">%1$s: %2$d दिन बाकी</string>
+    <string name="notif_reorder_text">दवा दोबारा मँगवाने के लिए केमिस्ट को संदेश भेजने हेतु टैप करें।</string>
+
+    <string name="meds_add">दवा जोड़ें</string>
+    <string name="meds_empty">अभी कोई दवा नहीं। याद दिलाना शुरू करने के लिए पहली दवा जोड़ें।</string>
+    <plurals name="pills_left">
+        <item quantity="one">%1$d गोली बची (लगभग %2$d दिन)</item>
+        <item quantity="other">%1$d गोलियाँ बची (लगभग %2$d दिन)</item>
+    </plurals>
+
+    <string name="edit_add_title">दवा जोड़ें</string>
+    <string name="edit_edit_title">दवा बदलें</string>
+    <string name="field_name">दवा का नाम</string>
+    <string name="field_dose">खुराक (जैसे 500 mg)</string>
+    <string name="field_pills">स्टॉक में गोलियाँ</string>
+    <string name="field_per_dose">प्रति खुराक गोलियाँ</string>
+    <string name="field_salt">जेनेरिक नाम / सॉल्ट</string>
+    <string name="scan_strip">दवा की पट्टी स्कैन करें</string>
+    <string name="scan_read">पढ़ा: %1$s - कृपया जाँच लें।</string>
+
+    <string name="info_title">इस दवा के बारे में</string>
+    <string name="info_need_name">आधिकारिक दवा जानकारी देखने के लिए जेनेरिक नाम जोड़ें (या पट्टी स्कैन करें)।</string>
+    <string name="info_edit_name">नाम बदलें</string>
+    <string name="info_loading">आधिकारिक जानकारी खोजी जा रही है...</string>
+    <string name="info_offline">ऑफ़लाइन - सहेजी हुई जानकारी दिखाई जा रही है।</string>
+    <string name="info_partial">इनके लिए आधिकारिक जानकारी नहीं मिली: %1$s</string>
+    <string name="info_not_found">%1$s के लिए आधिकारिक जानकारी नहीं मिली। जेनेरिक नाम की वर्तनी जाँचें।</string>
+    <string name="info_rate_limited">बहुत अधिक अनुरोध, एक मिनट बाद फिर कोशिश करें।</string>
+    <string name="info_error">जानकारी लोड नहीं हो सकी और कुछ सहेजा हुआ नहीं है। इंटरनेट जाँचें।</string>
+    <string name="info_why">आप इसे क्यों लेते हैं</string>
+    <string name="info_how">कैसे और कब लें</string>
+    <string name="info_side_effects">आम दुष्प्रभाव</string>
+    <string name="info_call_doctor">डॉक्टर को तब बुलाएँ जब</string>
+    <string name="info_interactions">मुख्य पारस्परिक प्रभाव</string>
+    <string name="info_sources">स्रोत</string>
+
+    <string name="settings_people">लोग</string>
+    <string name="field_caregiver">देखभालकर्ता का WhatsApp नंबर</string>
+    <string name="field_pharmacy">केमिस्ट का WhatsApp नंबर</string>
+    <string name="settings_reminders">याद दिलाना</string>
+    <string name="settings_review_setup">याद दिलाने की सेटिंग देखें</string>
+    <string name="settings_version">संस्करण %1$s</string>
+    <string name="settings_privacy">आपका डेटा इसी फ़ोन में रहता है। सार्वजनिक दवा जानकारी लाने के लिए केवल दवा का जेनेरिक नाम CareCircle सर्वर को भेजा जाता है।</string>
+
+    <string name="action_ok">ठीक है</string>
+    <string name="action_cancel">रद्द करें</string>
+    <string name="action_continue">आगे बढ़ें</string>
+    <string name="field_times_title">आप इसे कब लेते हैं?</string>
+    <string name="times_add">समय जोड़ें</string>
+    <string name="times_need_one">कम से कम एक समय जोड़ें।</string>
+    <string name="cd_remove_time">%1$s हटाएँ</string>
+    <string name="field_how_to_take">कैसे लें</string>
+    <string name="food_none">कोई पसंद नहीं</string>
+    <string name="food_before">खाने से पहले</string>
+    <string name="food_with">खाने के साथ</string>
+    <string name="food_after">खाने के बाद</string>
+    <string name="food_empty">खाली पेट</string>
+    <string name="food_bedtime">सोते समय</string>
+    <string name="notif_dose_text_food">%1$s, %2$s - लेने के बाद \"ले ली\" दबाएँ</string>
+
+    <string name="inter_button">पारस्परिक प्रभाव जाँच</string>
+    <string name="inter_title">पारस्परिक प्रभाव जाँच</string>
+    <string name="inter_intro">देखता है कि आपकी एक दवा का नाम दूसरी दवा के आधिकारिक लेबल में आता है या नहीं। केवल जेनेरिक नाम भेजे जाते हैं।</string>
+    <string name="inter_loading">आधिकारिक लेबल पढ़े जा रहे हैं...</string>
+    <string name="inter_none">आधिकारिक लेबल के पाठ में कोई पारस्परिक प्रभाव नहीं मिला। इसका मतलब यह नहीं कि कोई है ही नहीं।</string>
+    <string name="inter_too_few">एक-दूसरे से जाँचने के लिए कम से कम दो दवाओं के जेनेरिक नाम जोड़ें।</string>
+    <string name="inter_offline">ऑफ़लाइन - पिछला सहेजा परिणाम दिखाया जा रहा है।</string>
+    <string name="inter_unresolved">इनके लिए आधिकारिक लेबल नहीं मिला: %1$s</string>
+    <string name="inter_error">पारस्परिक प्रभाव की जाँच नहीं हो सकी और कुछ सहेजा हुआ नहीं है। इंटरनेट जाँचें।</string>
+    <string name="disclaimer_interactions">केवल जानकारी के लिए, चिकित्सा सलाह नहीं। अपने डॉक्टर या केमिस्ट से पूछें।</string>
+
+    <string name="data_title">आपका डेटा</string>
+    <string name="data_intro">बैकअप फ़ाइल निकालें, नए फ़ोन में वापस लाएँ, या सब कुछ मिटा दें। नेटवर्क पर कुछ नहीं भेजा जाता।</string>
+    <string name="data_export">मेरा डेटा निर्यात करें</string>
+    <string name="data_restore">फ़ाइल से वापस लाएँ</string>
+    <string name="data_delete_all">मेरा सारा डेटा मिटाएँ</string>
+    <string name="data_export_done">बैकअप सहेज लिया गया।</string>
+    <string name="data_export_failed">बैकअप सहेजा नहीं जा सका।</string>
+    <string name="data_restore_done">वापस आ गया। याद दिलाना फिर से तय हो गया।</string>
+    <string name="data_restore_bad">यह फ़ाइल मान्य CareCircle बैकअप नहीं है।</string>
+    <string name="data_restore_newer">CareCircle के नए संस्करण से बनी है। इसे वापस लाने के लिए ऐप अपडेट करें।</string>
+    <string name="data_restore_confirm_title">आपका डेटा बदलें?</string>
+    <string name="data_restore_confirm_text">इस फ़ाइल में %1$s और %2$s का इतिहास है। वापस लाने पर इस फ़ोन का मौजूदा सब कुछ बदल जाएगा।</string>
+    <string name="data_restore_replace">बदलें</string>
+    <string name="data_delete_title">सारा डेटा मिटाएँ?</string>
+    <string name="data_delete_text">इससे इस फ़ोन से सभी दवाइयाँ, इतिहास, सहेजी जानकारी, संपर्क और याद दिलाना हट जाएँगे।</string>
+    <string name="data_delete_final_title">क्या आप निश्चित हैं?</string>
+    <string name="data_delete_final_text">यह वापस नहीं हो सकता। ज़रूरत हो सकती है तो पहले बैकअप निकाल लें।</string>
+    <string name="data_delete_final_yes">सब मिटाएँ</string>
+    <string name="data_deleted">सारा डेटा मिटा दिया गया।</string>
+    <plurals name="medicines_count">
+        <item quantity="one">%d दवा</item>
+        <item quantity="other">%d दवाइयाँ</item>
+    </plurals>
+    <plurals name="doses_count">
+        <item quantity="one">%d खुराक</item>
+        <item quantity="other">%d खुराकें</item>
+    </plurals>
+
+    <string name="tab_insurance">बीमा</string>
+    <string name="action_delete">मिटाएँ</string>
+    <string name="action_done">हो गया</string>
+    <string name="disclaimer_insurance">केवल जानकारी के लिए। अपने बीमाकर्ता से पुष्टि करें।</string>
+    <string name="ins_intro">अपनी पॉलिसी जोड़ें और छोटा सारांश पाएँ, जिसमें हर बात के साथ पृष्ठ और खंड दिखता है। पाठ पहले इसी फ़ोन पर पढ़ा जाता है।</string>
+    <string name="ins_add_policy">पॉलिसी जोड़ें (PDF या फ़ोटो)</string>
+    <string name="ins_photograph">पन्नों की फ़ोटो लें</string>
+    <plurals name="ins_photos_ready">
+        <item quantity="one">%d फ़ोटो तैयार</item>
+        <item quantity="other">%d फ़ोटो तैयार</item>
+    </plurals>
+    <string name="ins_read_photos">फ़ोटो पढ़ें</string>
+    <string name="ins_clear_photos">साफ़ करें</string>
+    <string name="ins_saved_title">सहेजे सारांश</string>
+    <string name="ins_saved_empty">अभी कुछ सहेजा नहीं है। सहेजा सारांश केवल इसी फ़ोन में रहता है।</string>
+    <string name="ins_saved_on">%1$s को सहेजा</string>
+    <string name="ins_reading_start">तैयारी हो रही है...</string>
+    <string name="ins_reading_progress">पृष्ठ %1$d / %2$d पढ़ा जा रहा है</string>
+    <string name="ins_reading_note">पढ़ना इसी फ़ोन पर होता है। अभी कुछ भेजा नहीं गया है।</string>
+    <string name="ins_err_password">यह PDF पासवर्ड से सुरक्षित है। पासवर्ड हटाकर फिर कोशिश करें।</string>
+    <string name="ins_err_unreadable">यह फ़ाइल खुल नहीं सकी। दूसरी फ़ाइल या फ़ोटो आज़माएँ।</string>
+    <string name="ins_err_little_text">यह दस्तावेज़ पढ़ा नहीं जा सका, साफ़ फ़ोटो आज़माएँ।</string>
+    <string name="ins_try_again">फिर कोशिश करें</string>
+    <string name="ins_err_large">दस्तावेज़ बहुत बड़ा है। कम पन्ने आज़माएँ।</string>
+    <string name="ins_err_offline">इंटरनेट नहीं है। जुड़कर फिर कोशिश करें।</string>
+    <string name="ins_err_other">कुछ गड़बड़ हुई। थोड़ी देर बाद फिर कोशिश करें।</string>
+    <string name="ins_sending">सारांश बनाया जा रहा है...</string>
+    <plurals name="ins_pages_read">
+        <item quantity="one">इस फ़ोन पर %d पन्ना पढ़ा गया।</item>
+        <item quantity="other">इस फ़ोन पर %d पन्ने पढ़े गए।</item>
+    </plurals>
+    <string name="ins_first_pages_note">पहले 40 पन्ने इस्तेमाल हुए।</string>
+    <string name="consent_title">सारांश बनाने से पहले</string>
+    <string name="consent_what_title">क्या भेजा जाएगा</string>
+    <string name="consent_what">केवल आपके दस्तावेज़ से निकाला गया पाठ। मूल फ़ाइल या कोई चित्र नहीं।</string>
+    <string name="consent_who_title">किसे</string>
+    <string name="consent_who">CareCircle सर्वर और उसके AI प्रदाता को, सारांश लिखने के लिए।</string>
+    <string name="consent_stored_title">क्या यह रखा जाता है?</string>
+    <string name="consent_stored">नहीं। सर्वर पाठ को सहेजता नहीं और लॉग भी नहीं करता।</string>
+    <string name="consent_agree">मैं सहमत हूँ, सारांश बनाएँ</string>
+    <string name="ins_notice_pill">अपने बीमाकर्ता से पुष्टि करें</string>
+    <string name="ins_nothing_found">इस दस्तावेज़ में कोई स्पष्ट तथ्य सत्यापित नहीं हो सका।</string>
+    <string name="ins_summary_title">पॉलिसी सारांश</string>
+    <string name="ins_unverified_title">सत्यापित नहीं हो सका - अपनी पॉलिसी देखें</string>
+    <string name="ins_save">सारांश इस फ़ोन में सहेजें</string>
+    <string name="ins_saved_note">इस फ़ोन में सहेजा गया।</string>
+    <string name="ins_show_source">मूल पाठ दिखाएँ</string>
+    <string name="ins_hide_source">मूल पाठ छिपाएँ</string>
+    <string name="cite_page">पृष्ठ %1$d</string>
+    <string name="cite_page_clause">पृष्ठ %1$d, खंड %2$s</string>
+    <string name="ins_f_sum_insured">बीमित राशि</string>
+    <string name="ins_f_room_rent">कमरे के किराये की सीमा</string>
+    <string name="ins_f_copay">सह-भुगतान</string>
+    <string name="ins_f_wait_initial">शुरुआती प्रतीक्षा अवधि</string>
+    <string name="ins_f_wait_pre">पहले से मौजूद बीमारी की प्रतीक्षा अवधि</string>
+    <string name="ins_f_wait_specific">प्रतीक्षा अवधि</string>
+    <string name="ins_f_inclusions">शामिल</string>
+    <string name="ins_f_exclusions">शामिल नहीं</string>
+    <string name="ins_f_day_care">डे-केयर इलाज</string>
+    <string name="ins_f_pre_hosp">अस्पताल में भर्ती से पहले</string>
+    <string name="ins_f_post_hosp">अस्पताल में भर्ती के बाद</string>
+    <string name="ins_f_helpline">क्लेम हेल्पलाइन</string>
+    <string name="ins_f_tpa">TPA</string>
+
+    <string name="scan_read_check">पढ़ा: %1$s - छपाई पढ़ने में कठिन थी, कृपया ध्यान से जाँचें।</string>
+    <string name="scan_cam_title">पट्टी स्कैन के लिए कैमरा</string>
+    <string name="scan_cam_why">CareCircle कैमरे का उपयोग केवल छपा दवा का नाम पढ़ने के लिए करता है। चित्र इसी फ़ोन पर पढ़ा जाता है, कभी सहेजा या भेजा नहीं जाता।</string>
+    <string name="scan_cam_allow">कैमरे की अनुमति दें</string>
+    <string name="scan_cam_denied">कैमरे की अनुमति नहीं मिली। आप फ़ोटो चुन सकते हैं या नाम टाइप कर सकते हैं।</string>
+    <string name="scan_gallery">इसके बजाय फ़ोटो चुनें</string>
+    <string name="scan_type_instead">इसके बजाय टाइप करें</string>
+    <string name="scan_guide">छपी हुई संरचना को फ़्रेम के अंदर रखें</string>
+    <string name="scan_capture">फ़ोटो लें</string>
+    <string name="scan_reading">पढ़ रहा है...</string>
+    <string name="scan_fail">संरचना पढ़ी नहीं जा सकी। पास जाएँ, चमक से बचें और फिर कोशिश करें।</string>
+    <string name="cd_torch">टॉर्च</string>
+
+    <string name="notif_time_for_person">%1$s लेने का समय (%2$s)</string>
+    <string name="msg_missed">CareCircle सूचना: %1$s ने %3$s पर %2$s नहीं ली। कृपया हालचाल पूछ लें।</string>
+    <string name="msg_reorder">नमस्ते, मैं %2$s के लिए %1$s दोबारा मँगवाना चाहता/चाहती हूँ। लगभग %3$d दिन का स्टॉक बचा है। कृपया उपलब्धता बताएँ।</string>
+    <string name="alert_add_number">सेटिंग्स, लोग में %1$s के लिए देखभालकर्ता का नंबर जोड़ें।</string>
+    <string name="reorder_add_number">सेटिंग्स, लोग में %1$s के लिए केमिस्ट का नंबर जोड़ें।</string>
+    <string name="people_all">सभी लोग</string>
+    <string name="people_manage">लोगों को प्रबंधित करें</string>
+    <string name="people_intro">हर व्यक्ति की अपनी दवाइयाँ, सारांश और संपर्क होते हैं। नंबर केवल तब इस्तेमाल होते हैं जब आप संदेश भेजते हैं।</string>
+    <string name="people_add">व्यक्ति जोड़ें</string>
+    <string name="people_new_name">व्यक्ति %1$d</string>
+    <string name="people_delete">व्यक्ति हटाएँ</string>
+    <string name="people_delete_title">%1$s को हटाएँ?</string>
+    <plurals name="people_delete_text">
+        <item quantity="one">इससे %d दवा, उसका इतिहास, सहेजे सारांश और याद दिलाना भी हट जाएँगे। यह वापस नहीं हो सकता।</item>
+        <item quantity="other">इससे %d दवाइयाँ, उनका इतिहास, सहेजे सारांश और याद दिलाना भी हट जाएँगे। यह वापस नहीं हो सकता।</item>
+    </plurals>
+    <string name="people_last_one">कम से कम एक व्यक्ति ज़रूरी है, इसलिए इसे हटाया नहीं जा सकता।</string>
+    <string name="field_person_name">नाम</string>
+    <string name="settings_language">भाषा</string>
+    <string name="language_system">सिस्टम की भाषा</string>
+    <string name="pdf_title">मौजूदा दवाइयाँ</string>
+    <string name="pdf_title_person">मौजूदा दवाइयाँ - %1$s</string>
+    <string name="pdf_generated">%1$s को CareCircle से बनाया गया। डॉक्टर के पास ले जाएँ।</string>
+    <string name="pdf_col_medicine">दवा</string>
+    <string name="pdf_col_dose">खुराक</string>
+    <string name="pdf_col_times">समय</string>
+    <string name="pdf_col_generic">जेनेरिक</string>
+    <string name="pdf_share">दवाइयों की सूची भेजें</string>
+</resources>

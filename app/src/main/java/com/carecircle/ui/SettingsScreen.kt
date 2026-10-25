@@ -2,27 +2,32 @@ package com.carecircle.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.res.pluralStringResource
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,8 +35,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.carecircle.AppLocale
 import com.carecircle.R
 import com.carecircle.ui.theme.LogoMark
 import com.carecircle.ui.theme.Muted
@@ -40,11 +50,8 @@ import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 @Composable
-fun SettingsScreen(vm: AppViewModel) {
-    val dataMsg by vm.dataMsg.collectAsStateWithLifecycle()
-    var caregiver by remember(dataMsg) { mutableStateOf(vm.prefs.caregiverPhone) }
-    var pharmacy by remember(dataMsg) { mutableStateOf(vm.prefs.pharmacyPhone) }
-    var patient by remember(dataMsg) { mutableStateOf(vm.prefs.patientName) }
+fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit) {
+    val people by vm.people.collectAsStateWithLifecycle()
     val status by rememberReminderStatus()
     var showSetup by remember { mutableStateOf(false) }
 
@@ -56,10 +63,11 @@ fun SettingsScreen(vm: AppViewModel) {
 
         SoftCard(Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.settings_people), style = MaterialTheme.typography.titleLarge)
-            AppField(patient, { patient = it; vm.prefs.patientName = it }, stringResource(R.string.field_patient_name), Modifier.padding(top = 8.dp))
-            AppField(caregiver, { caregiver = it; vm.prefs.caregiverPhone = it }, stringResource(R.string.field_caregiver), Modifier.padding(top = 8.dp))
-            AppField(pharmacy, { pharmacy = it; vm.prefs.pharmacyPhone = it }, stringResource(R.string.field_pharmacy), Modifier.padding(top = 8.dp))
+            Muted(people.joinToString(", ") { displayName(it, people) })
+            SoftButton(stringResource(R.string.people_manage), onManagePeople, Modifier.padding(top = 10.dp))
         }
+
+        LanguageCard(vm)
 
         SoftCard(Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.settings_reminders), style = MaterialTheme.typography.titleLarge)
@@ -77,7 +85,7 @@ fun SettingsScreen(vm: AppViewModel) {
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
-                    Muted(stringResource(R.string.settings_version, "0.3"))
+                    Muted(stringResource(R.string.settings_version, "0.5"))
                 }
             }
             Text(stringResource(R.string.settings_privacy), Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodySmall)
@@ -85,6 +93,31 @@ fun SettingsScreen(vm: AppViewModel) {
         }
     }
     if (showSetup) OnboardingDialog(status, onDone = { showSetup = false })
+}
+
+/** System default, English, Hindi or Gujarati. The change recreates the screen; the selected person is stored, so it survives. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LanguageCard(vm: AppViewModel) {
+    var current by remember { mutableStateOf(vm.prefs.language) }
+    SoftCard(Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.settings_language), style = MaterialTheme.typography.titleLarge)
+        FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppLocale.supported.forEach { (tag, label) ->
+                FilterChip(
+                    selected = current == tag,
+                    onClick = {
+                        current = tag
+                        vm.prefs.language = tag
+                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+                    },
+                    label = { Text(if (tag.isEmpty()) stringResource(R.string.language_system) else label) },
+                    modifier = Modifier.heightIn(min = 48.dp), shape = CircleShape,
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Palette.Ink, selectedLabelColor = Color.White),
+                )
+            }
+        }
+    }
 }
 
 /** Export, restore and delete-all. Everything stays on the phone; files go through the system file picker. */

@@ -6,7 +6,17 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
-@Entity(tableName = "medicine")
+/** One family member whose medicines are tracked. At least one person always exists. */
+@Entity(tableName = "person")
+data class Person(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val caregiverPhone: String = "",
+    val pharmacyPhone: String = "",
+    val sortOrder: Int = 0,
+)
+
+@Entity(tableName = "medicine", indices = [Index("personId")])
 data class Medicine(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
@@ -15,9 +25,10 @@ data class Medicine(
     val pillCount: Int,
     val pillsPerDose: Int = 1,
     val salt: String = "",         // generic name(s) from strip scan or manual entry
-    val patientName: String = "",
+    val patientName: String = "",  // legacy free-text name from before people existed
     val active: Boolean = true,
     @ColumnInfo(defaultValue = "NONE") val foodTiming: String = "NONE",
+    @ColumnInfo(defaultValue = "1") val personId: Long = 0, // 0 = "not set yet"; the view model fills in the selected person
 )
 
 @Entity(tableName = "dose_event", indices = [Index("medicineId", "scheduledAt", unique = true)])
@@ -45,24 +56,41 @@ data class InteractionCacheEntity(
 )
 
 /** A saved policy summary. Only the summary JSON is stored: no source file, no full text. */
-@Entity(tableName = "policy_summary")
+@Entity(tableName = "policy_summary", indices = [Index("personId")])
 data class PolicySummaryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val savedAt: Long,
     val json: String,
+    @ColumnInfo(defaultValue = "1") val personId: Long = 0,
 )
+
+@Dao
+interface PersonDao {
+    @Query("SELECT * FROM person ORDER BY sortOrder, id") fun observeAll(): Flow<List<Person>>
+    @Query("SELECT * FROM person ORDER BY sortOrder, id") suspend fun all(): List<Person>
+    @Query("SELECT * FROM person WHERE id = :id") suspend fun get(id: Long): Person?
+    @Query("SELECT COUNT(*) FROM person") suspend fun count(): Int
+    @Query("SELECT COALESCE(MAX(sortOrder), -1) FROM person") suspend fun maxSort(): Int
+    @Insert suspend fun insert(p: Person): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(p: List<Person>)
+    @Update suspend fun update(p: Person)
+    @Query("DELETE FROM person WHERE id = :id") suspend fun delete(id: Long)
+}
 
 @Dao
 interface MedicineDao {
     @Query("SELECT * FROM medicine WHERE active = 1 ORDER BY name") fun observeAll(): Flow<List<Medicine>>
     @Query("SELECT * FROM medicine WHERE active = 1") suspend fun all(): List<Medicine>
     @Query("SELECT * FROM medicine") suspend fun allIncludingArchived(): List<Medicine>
+    @Query("SELECT * FROM medicine WHERE personId = :personId") suspend fun forPersonIncludingArchived(personId: Long): List<Medicine>
+    @Query("SELECT COUNT(*) FROM medicine WHERE personId = :personId AND active = 1") suspend fun activeCount(personId: Long): Int
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(m: List<Medicine>)
     @Query("SELECT * FROM medicine WHERE id = :id") suspend fun get(id: Long): Medicine?
     @Insert suspend fun insert(m: Medicine): Long
     @Update suspend fun update(m: Medicine)
     @Query("UPDATE medicine SET active = 0 WHERE id = :id") suspend fun archive(id: Long)
     @Query("UPDATE medicine SET pillCount = MAX(0, pillCount - :n) WHERE id = :id") suspend fun decrementPills(id: Long, n: Int)
+    @Query("DELETE FROM medicine WHERE personId = :personId") suspend fun deleteForPerson(personId: Long)
 }
 
 @Dao
@@ -76,6 +104,8 @@ interface DoseDao {
     @Query("UPDATE dose_event SET missedHandled = 1 WHERE id = :id") suspend fun markMissedHandled(id: Long)
     @Query("SELECT * FROM dose_event WHERE scheduledAt >= :from ORDER BY scheduledAt") suspend fun since(from: Long): List<DoseEvent>
     @Query("SELECT id FROM dose_event") suspend fun allIds(): List<Long>
+    @Query("SELECT id FROM dose_event WHERE medicineId IN (SELECT id FROM medicine WHERE personId = :personId)") suspend fun idsForPerson(personId: Long): List<Long>
+    @Query("DELETE FROM dose_event WHERE medicineId IN (SELECT id FROM medicine WHERE personId = :personId)") suspend fun deleteForPerson(personId: Long)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(e: List<DoseEvent>)
 }
 
@@ -93,11 +123,13 @@ interface InteractionDao {
 
 @Dao
 interface PolicyDao {
-    @Query("SELECT * FROM policy_summary ORDER BY savedAt DESC") fun observeAll(): Flow<List<PolicySummaryEntity>>
+    @Query("SELECT * FROM policy_summary WHERE personId = :personId ORDER BY savedAt DESC") fun observeForPerson(personId: Long): Flow<List<PolicySummaryEntity>>
+    @Query("SELECT * FROM policy_summary WHERE personId = :personId ORDER BY savedAt DESC") suspend fun forPerson(personId: Long): List<PolicySummaryEntity>
     @Query("SELECT * FROM policy_summary ORDER BY savedAt DESC") suspend fun all(): List<PolicySummaryEntity>
     @Insert suspend fun insert(e: PolicySummaryEntity): Long
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(e: List<PolicySummaryEntity>)
     @Query("DELETE FROM policy_summary WHERE id = :id") suspend fun delete(id: Long)
+    @Query("DELETE FROM policy_summary WHERE personId = :personId") suspend fun deleteForPerson(personId: Long)
 }
 
 object Migrations {
@@ -116,14 +148,41 @@ object Migrations {
         }
     }
 
-    val ALL = arrayOf(M1_2, M2_3)
+    /**
+     * v0.4 -> v0.5: people. Creates the default person (id 1) with the caregiver and pharmacy numbers that used to
+     * live in preferences, attaches every medicine and saved summary to it, then removes the numbers from preferences.
+     */
+    fun m3to4(ctx: Context) = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            val sp = ctx.applicationContext.getSharedPreferences("carecircle", Context.MODE_PRIVATE)
+            val caregiver = sp.getString("caregiver", "") ?: ""
+            val pharmacy = sp.getString("pharmacy", "") ?: ""
+            val name = (sp.getString("patient", "") ?: "").trim().take(Persons.MAX_NAME).ifEmpty { Persons.DEFAULT_NAME }
+            db.execSQL("CREATE TABLE IF NOT EXISTS person (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, caregiverPhone TEXT NOT NULL, pharmacyPhone TEXT NOT NULL, sortOrder INTEGER NOT NULL)")
+            db.execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, ?, ?, ?, 0)", arrayOf<Any?>(name, caregiver, pharmacy))
+            db.execSQL("ALTER TABLE medicine ADD COLUMN personId INTEGER NOT NULL DEFAULT 1")
+            db.execSQL("ALTER TABLE policy_summary ADD COLUMN personId INTEGER NOT NULL DEFAULT 1")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_medicine_personId ON medicine (personId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_policy_summary_personId ON policy_summary (personId)")
+            sp.edit().remove("caregiver").remove("pharmacy").remove("patient").apply()
+        }
+    }
+
+    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx))
+}
+
+object Persons {
+    const val DEFAULT_NAME = "Me"
+    const val MAX_NAME = 40
+    fun cleanName(raw: String): String = raw.trim().take(MAX_NAME)
 }
 
 @Database(
-    entities = [Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class],
-    version = 3, exportSchema = true,
+    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class],
+    version = 4, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
+    abstract fun people(): PersonDao
     abstract fun medicines(): MedicineDao
     abstract fun doses(): DoseDao
     abstract fun cards(): InfoCardDao
@@ -134,7 +193,14 @@ abstract class AppDb : RoomDatabase() {
         @Volatile private var inst: AppDb? = null
         fun get(ctx: Context): AppDb = inst ?: synchronized(this) {
             inst ?: Room.databaseBuilder(ctx.applicationContext, AppDb::class.java, "carecircle.db")
-                .addMigrations(*Migrations.ALL).build().also { inst = it }
+                .addMigrations(*Migrations.all(ctx))
+                .addCallback(object : Callback() {
+                    // Fresh install: the default person exists from the start.
+                    override fun onCreate(db: SupportSQLiteDatabase) {
+                        db.execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, '${Persons.DEFAULT_NAME}', '', '', 0)")
+                    }
+                })
+                .build().also { inst = it }
         }
     }
 }

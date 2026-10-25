@@ -22,7 +22,7 @@ Android app helping families manage medicines for elderly parents (India first).
 - No heavy dependencies without need. Follow existing code style (official Kotlin style, 4 spaces; TS strict, ESM with `.js` import suffixes).
 - India defaults: +91 numbers, INN->USAN name map in `backend/lib/sources.ts` (paracetamol -> acetaminophen etc.).
 
-## Status (v0.4)
+## Status (v0.5)
 Android app compiles and `DomainTest` passes (wrapper 8.9, JDK 17, SDK 35; set `sdk.dir` in local.properties, git-ignored). UI lives in `ui/` (screens) and `ui/theme/` (Theme, Components, OrganArt, logo). All user-facing text is in `res/values/strings.xml`. `domain/Condition.kt` maps medicines to conditions/organs for the organ view.
 Notes: RxNorm interaction API was retired, so interactions come from the label's drug_interactions section. Strip scan uses the system camera (TakePicture) instead of CameraX for simplicity; CameraX live preview is a later upgrade.
 
@@ -40,3 +40,11 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - Policy models live in `domain/Policy.kt` (pure, serializable). No claim may be shown without page, clause and quote; always show "Informational only. Verify with your insurer."
 - OCR text (insurance) exists only in `InsuranceState.NeedConsent` memory and is dropped on cancel, decline or send. Never log it.
 - Strip scanner: `ui/StripScanScreen.kt` (CameraX 1.4.1). Result is handed to Edit through `AppViewModel.pendingScan`; Edit form fields use rememberSaveable.
+
+## v0.5 notes
+- Room version 4: `person` table; `medicine.personId` and `policy_summary.personId` (no foreign keys, deletes cascade by hand in `Repository.deletePerson`). At least one person always exists (`Repository.ensureDefaultPerson`, Room `onCreate`, delete-all). Backup schema version 3.
+- Contacts live on `Person`, never in Prefs. Message templates are string resources (`msg_missed`, `msg_reorder`); `Messages` only builds links.
+- Notifications, messages and the PDF use `AppLocale.wrap(ctx)` so they follow the app language, not the system language.
+- **Translations are machine-drafted and must be reviewed by a native speaker before release.** Review first: `disclaimer_medical`, `disclaimer_insurance`, `disclaimer_interactions`, the consent screen (`consent_*`, `ins_notice_pill`), `onb_*`, `data_delete_*`, `msg_missed`, `msg_reorder`.
+- `StringsTest` checks every key exists in en/hi/gu with identical placeholders. Lint treats MissingTranslation and HardcodedText as errors.
+- CI: `.github/workflows/ci.yml`. Release signing is read from gradle properties or `CARECIRCLE_*` environment variables.

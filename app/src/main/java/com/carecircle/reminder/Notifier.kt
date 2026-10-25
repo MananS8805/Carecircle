@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.carecircle.MainActivity
+import com.carecircle.AppLocale
 import com.carecircle.R
 import com.carecircle.data.DoseEvent
 import com.carecircle.data.Medicine
@@ -40,8 +41,9 @@ object Notifier {
 
     /** Posts (or re-posts after a snooze) the reminder for one dose. The notification id is derived from the dose id. */
     @SuppressLint("MissingPermission") // canPost() checks POST_NOTIFICATIONS first
-    fun postDose(ctx: Context, dose: DoseEvent, med: Medicine) {
-        if (!canPost(ctx)) return
+    fun postDose(base: Context, dose: DoseEvent, med: Medicine, personLabel: String? = null) {
+        if (!canPost(base)) return
+        val ctx = AppLocale.wrap(base)
         ensureChannels(ctx)
         val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         val taken = PendingIntent.getBroadcast(
@@ -56,7 +58,7 @@ object Notifier {
         val text = if (food == FoodTiming.NONE) ctx.getString(R.string.notif_dose_text, doseLabel)
         else ctx.getString(R.string.notif_dose_text_food, doseLabel, ctx.getString(food.labelRes()))
         val n = NotificationCompat.Builder(ctx, CH_DOSE)
-            .setSmallIcon(R.drawable.ic_notif).setContentTitle(ctx.getString(R.string.notif_time_for, med.name)).setContentText(text)
+            .setSmallIcon(R.drawable.ic_notif).setContentTitle(if (personLabel == null) ctx.getString(R.string.notif_time_for, med.name) else ctx.getString(R.string.notif_time_for_person, med.name, personLabel)).setContentText(text)
             .setColor(0xFFF26A21.toInt())
             .setPriority(NotificationCompat.PRIORITY_HIGH).setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setContentIntent(openApp(ctx)).setAutoCancel(true)

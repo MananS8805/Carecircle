@@ -49,6 +49,7 @@ import com.carecircle.ui.theme.SoftCard
 @Composable
 fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit, onInteractions: () -> Unit) {
     val meds by vm.medicines.collectAsStateWithLifecycle()
+    val scope by vm.scopePerson.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
     LazyColumn(
         Modifier.fillMaxSize().statusBarsPadding(),
@@ -58,10 +59,11 @@ fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit,
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.tab_medicines), style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
                 IconButton(
-                    onClick = { PdfExport.share(ctx, PdfExport.create(ctx, vm.prefs.patientName, meds)) }, enabled = meds.isNotEmpty(),
+                    onClick = { PdfExport.share(ctx, PdfExport.create(ctx, scope?.name.orEmpty(), meds)) }, enabled = meds.isNotEmpty(),
                 ) { Icon(Icons.Default.PictureAsPdf, stringResource(R.string.cd_doctor_pdf)) }
             }
         }
+        item { PersonSwitcher(vm, allowAll = false) }
         item { BigButton(stringResource(R.string.meds_add), onAdd, icon = Icons.Default.Add) }
         item { SoftButton(stringResource(R.string.inter_button), onInteractions, Modifier.fillMaxWidth(), icon = Icons.Default.CompareArrows) }
         if (meds.isEmpty()) item { Muted(stringResource(R.string.meds_empty)) }

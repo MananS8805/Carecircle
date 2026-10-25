@@ -1,6 +1,7 @@
 package com.carecircle.data
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.carecircle.domain.Refill
 import com.carecircle.domain.SavedPolicy
 import com.carecircle.domain.Schedule
@@ -35,14 +36,16 @@ sealed interface CardResult {
 }
 
 class Repository(ctx: Context) {
+    private val appCtx = ctx.applicationContext
     private val db = AppDb.get(ctx)
+    val people get() = db.people()
     val medicines get() = db.medicines()
     val doses get() = db.doses()
     private val cards = db.cards()
     private val interactionDao = db.interactions()
 
     private val policyDao = db.policies()
-    val savedPolicies get() = policyDao.observeAll()
+    fun savedPolicies(personId: Long) = policyDao.observeForPerson(personId)
 
     /** Sends OCR text only, only after the consent screen. Nothing is logged or kept by this call. */
     suspend fun policySummary(pages: List<PolicyPageText>): PolicyResult = try {
@@ -61,9 +64,46 @@ class Repository(ctx: Context) {
         PolicyResult.Error
     }
 
-    suspend fun savePolicy(r: PolicyResponse, now: Long = System.currentTimeMillis()) {
+    suspend fun savePolicy(personId: Long, r: PolicyResponse, now: Long = System.currentTimeMillis()) {
         val saved = SavedPolicy(r.summary, r.unverified, r.mode, now)
-        policyDao.insert(PolicySummaryEntity(savedAt = now, json = ApiFactory.json.encodeToString(saved)))
+        policyDao.insert(PolicySummaryEntity(savedAt = now, json = ApiFactory.json.encodeToString(saved), personId = personId))
+    }
+
+    // ---- People ----
+
+    /** At least one person must always exist (fresh install, after delete-all, after a restore without people). */
+    suspend fun ensureDefaultPerson(): Person {
+        db.people().all().firstOrNull()?.let { return it }
+        val p = Person(name = Persons.DEFAULT_NAME)
+        return p.copy(id = db.people().insert(p))
+    }
+
+    suspend fun addPerson(name: String): Long {
+        val sort = db.people().maxSort() + 1
+        return db.people().insert(Person(name = Persons.cleanName(name).ifEmpty { Persons.DEFAULT_NAME }, sortOrder = sort))
+    }
+
+    suspend fun updatePerson(p: Person) = db.people().update(p.copy(name = Persons.cleanName(p.name).ifEmpty { Persons.DEFAULT_NAME }))
+
+    /** Number of active medicines that deleting this person would remove (shown in the confirmation). */
+    suspend fun medicineCount(personId: Long): Int = db.medicines().activeCount(personId)
+
+    /**
+     * Deletes one person and only their data: cancels their alarms, then removes doses, medicines and summaries.
+     * The last remaining person cannot be deleted.
+     */
+    suspend fun deletePerson(personId: Long): Boolean {
+        if (db.people().count() <= 1) return false
+        val meds = db.medicines().forPersonIncludingArchived(personId)
+        meds.forEach { com.carecircle.reminder.ReminderScheduler.cancel(appCtx, it.id) }
+        db.doses().idsForPerson(personId).forEach { com.carecircle.reminder.ReminderScheduler.cancelSnooze(appCtx, it) }
+        db.withTransaction {
+            db.doses().deleteForPerson(personId)
+            db.policies().deleteForPerson(personId)
+            db.medicines().deleteForPerson(personId)
+            db.people().delete(personId)
+        }
+        return true
     }
 
     suspend fun deletePolicy(id: Long) = policyDao.delete(id)

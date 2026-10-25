@@ -13,3 +13,9 @@ node_modules
 *.jks
 *.keystore
 local.properties
+*.hprof
+/app/release
+.env
+.env.*
+backend/.vercel
+backend/node_modules

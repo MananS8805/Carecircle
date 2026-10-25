@@ -60,6 +60,8 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
     val ctx = LocalContext.current
     val m = med ?: return
     LaunchedEffect(m.salt) { if (m.salt.isBlank()) vm.clearCard() else vm.loadCard(m.salt) }
+    val people by vm.people.collectAsStateWithLifecycle()
+    val owner = people.firstOrNull { it.id == m.personId }
     val left = vm.repo.daysLeft(m)
     val condition = Conditions.infer(m.name, m.salt)
     val organ = condition?.organ ?: OrganKind.BODY
@@ -91,12 +93,13 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
                 SoftButton(stringResource(R.string.action_edit), { onEdit(m.id) })
                 SoftButton(stringResource(R.string.action_add_pills), { vm.refillAdd(m, 30); onBack() })
                 SoftButton(stringResource(R.string.action_reorder), {
-                    val p = vm.prefs
-                    val who = m.patientName.ifBlank { p.patientName.ifBlank { ctx.getString(R.string.family_member_fallback) } }
-                    val url = Messages.whatsAppUrl(Messages.normalizePhone(p.pharmacyPhone), Messages.reorder(m.name, left, who))
+                    val who = owner?.name ?: ctx.getString(R.string.family_member_fallback)
+                    val text = ctx.getString(R.string.msg_reorder, Messages.medicineLabel(m.name, m.doseText), who, left)
+                    val url = Messages.whatsAppUrl(Messages.normalizePhone(owner?.pharmacyPhone.orEmpty()), text)
                     ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                })
+                }, enabled = !owner?.pharmacyPhone.isNullOrBlank())
             }
+            if (owner?.pharmacyPhone.isNullOrBlank()) Muted(stringResource(R.string.reorder_add_number, owner?.name ?: ""))
             TextButton(onClick = { vm.archive(m.id); onBack() }) { Text(stringResource(R.string.action_remove), color = Palette.Bad) }
             }
         }

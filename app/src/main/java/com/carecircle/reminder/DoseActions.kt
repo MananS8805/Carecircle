@@ -3,7 +3,7 @@ package com.carecircle.reminder
 import android.content.Context
 import com.carecircle.R
 import com.carecircle.data.AppDb
-import com.carecircle.data.Prefs
+import com.carecircle.AppLocale
 import com.carecircle.domain.Messages
 import com.carecircle.domain.Refill
 import com.carecircle.domain.Schedule
@@ -22,12 +22,14 @@ object DoseActions {
         val updated = db.medicines().get(med.id) ?: return
         val left = Refill.daysLeft(updated.pillCount, updated.pillsPerDose, Schedule.parseTimes(updated.timesCsv).size)
         if (Refill.needsReorder(left)) {
-            val prefs = Prefs(ctx)
-            val text = Messages.reorder(updated.name, left, updated.patientName.ifBlank { prefs.patientName.ifBlank { "my family member" } })
-            val url = Messages.whatsAppUrl(Messages.normalizePhone(prefs.pharmacyPhone), text)
+            val person = db.people().get(updated.personId)
+            val lc = AppLocale.wrap(ctx)
+            val who = person?.name ?: lc.getString(R.string.family_member_fallback)
+            val text = lc.getString(R.string.msg_reorder, Messages.medicineLabel(updated.name, updated.doseText), who, left)
+            val url = Messages.whatsAppUrl(Messages.normalizePhone(person?.pharmacyPhone.orEmpty()), text)
             Notifier.linkAlert(
                 ctx, 2_000_000 + updated.id.toInt(),
-                ctx.getString(R.string.notif_reorder_title, updated.name, left), ctx.getString(R.string.notif_reorder_text), url,
+                lc.getString(R.string.notif_reorder_title, updated.name, left), lc.getString(R.string.notif_reorder_text), url,
             )
         }
     }

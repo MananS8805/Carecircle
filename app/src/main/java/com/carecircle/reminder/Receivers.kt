@@ -7,16 +7,15 @@ import androidx.work.*
 import com.carecircle.R
 import com.carecircle.data.AppDb
 import com.carecircle.data.DoseEvent
-import com.carecircle.data.Prefs
+import com.carecircle.AppLocale
+import com.carecircle.data.Medicine
+import com.carecircle.ui.Fmt
 import com.carecircle.domain.MissedDose
 import com.carecircle.domain.Snooze
 import com.carecircle.domain.Messages
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 /** Fires at each scheduled dose time. */
@@ -34,7 +33,7 @@ class DoseAlarmReceiver : BroadcastReceiver() {
                     db.doses().insert(DoseEvent(medicineId = medId, scheduledAt = at)) // unique index ignores duplicates
                     val dose = db.doses().find(medId, at)
                     if (dose != null && dose.takenAt == null) {
-                        Notifier.postDose(ctx, dose, med)
+                        Notifier.postDose(ctx, dose, med, personLabel(db, med))
                         val req = OneTimeWorkRequestBuilder<MissedDoseWorker>()
                             .setInitialDelay(MissedDose.GRACE_MINUTES, TimeUnit.MINUTES)
                             .setInputData(workDataOf(Notifier.EXTRA_DOSE_ID to dose.id)).build()
@@ -75,7 +74,7 @@ class SnoozeReceiver : BroadcastReceiver() {
                 }
                 if (repost) {
                     val med = db.medicines().get(dose.medicineId)
-                    if (med != null && med.active) Notifier.postDose(ctx, dose, med)
+                    if (med != null && med.active) Notifier.postDose(ctx, dose, med, personLabel(db, med))
                 } else {
                     Notifier.cancelDose(ctx, doseId)
                     ReminderScheduler.scheduleSnooze(ctx, doseId, Snooze.fireAt(System.currentTimeMillis()))
@@ -108,15 +107,21 @@ class MissedDoseWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         val dose = db.doses().get(id) ?: return Result.success()
         if (dose.missedHandled || !MissedDose.isMissed(dose.scheduledAt, System.currentTimeMillis(), dose.takenAt)) return Result.success()
         val med = db.medicines().get(dose.medicineId) ?: return Result.success()
-        val prefs = Prefs(applicationContext)
-        val time = Instant.ofEpochMilli(dose.scheduledAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("h:mm a"))
-        val patient = med.patientName.ifBlank { prefs.patientName.ifBlank { "your family member" } }
-        val url = Messages.whatsAppUrl(Messages.normalizePhone(prefs.caregiverPhone), Messages.missedDose(patient, med.name, time))
+        val ctx = AppLocale.wrap(applicationContext)
+        val person = db.people().get(med.personId)
+        val time = Fmt.time(dose.scheduledAt, AppLocale.locale(applicationContext))
+        val who = person?.name ?: ctx.getString(R.string.family_member_fallback)
+        val text = ctx.getString(R.string.msg_missed, who, Messages.medicineLabel(med.name, med.doseText), time)
+        val url = Messages.whatsAppUrl(Messages.normalizePhone(person?.caregiverPhone.orEmpty()), text)
         Notifier.linkAlert(
             applicationContext, 3_000_000 + (id % 1_000_000).toInt(),
-            applicationContext.getString(R.string.notif_missed_title, med.name, time), applicationContext.getString(R.string.notif_missed_text), url,
+            ctx.getString(R.string.notif_missed_title, med.name, time), ctx.getString(R.string.notif_missed_text), url,
         )
         db.doses().markMissedHandled(id)
         return Result.success()
     }
 }
+
+/** The person's name for notification titles, only when more than one person is tracked. */
+private suspend fun personLabel(db: AppDb, med: Medicine): String? =
+    if (db.people().count() > 1) db.people().get(med.personId)?.name else null

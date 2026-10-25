@@ -76,6 +76,7 @@ fun InsuranceScreen(vm: AppViewModel) {
     ) {
         item { BrandRow() }
         item { Text(stringResource(R.string.tab_insurance), style = MaterialTheme.typography.headlineLarge) }
+        item { PersonSwitcher(vm, allowAll = false) }
         when (val s = state) {
             InsuranceState.Idle -> {
                 item { Muted(stringResource(R.string.ins_intro)) }

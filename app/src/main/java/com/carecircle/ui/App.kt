@@ -64,7 +64,8 @@ fun CareCircleApp(vm: AppViewModel) {
                         onEdit = { nav.navigate("edit/$it") }, onBack = { nav.popBackStack() },
                     )
                 }
-                composable("settings") { SettingsScreen(vm) }
+                composable("settings") { SettingsScreen(vm, onManagePeople = { nav.navigate("people") }) }
+                composable("people") { ManagePeopleScreen(vm, onBack = { nav.popBackStack() }) }
             }
         }
     }

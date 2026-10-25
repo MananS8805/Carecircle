@@ -95,7 +95,6 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
             AppField(pills, { pills = it.filter(Char::isDigit) }, stringResource(R.string.field_pills), Modifier.weight(1f))
             AppField(perDose, { perDose = it.filter(Char::isDigit) }, stringResource(R.string.field_per_dose), Modifier.weight(1f))
         }
-        AppField(patient, { patient = it }, stringResource(R.string.field_patient))
         AppField(salt, { salt = it }, stringResource(R.string.field_salt))
         SoftButton(stringResource(R.string.scan_strip), onScan, Modifier.fillMaxWidth(), icon = Icons.Default.CameraAlt)
         if (scanMsg.isNotEmpty()) Muted(scanMsg)

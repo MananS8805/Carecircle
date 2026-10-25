@@ -1,8 +1,8 @@
 package com.carecircle.data
 
 import android.content.Context
-import androidx.work.WorkManager
 import androidx.core.app.NotificationManagerCompat
+import androidx.work.WorkManager
 import com.carecircle.reminder.ReminderScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,6 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.InputStream
 import java.io.OutputStream
 
+/** [personId] 0 (older files) means "the default person". */
 @Serializable
 data class BackupMedicine(
     val id: Long,
@@ -28,6 +29,7 @@ data class BackupMedicine(
     val patientName: String = "",
     val active: Boolean = true,
     val foodTiming: String = "NONE",
+    val personId: Long = 0,
 )
 
 @Serializable
@@ -35,8 +37,13 @@ data class BackupDose(val medicineId: Long, val scheduledAt: Long, val takenAt: 
 
 /** A saved policy summary (the summary JSON only). Added in backup version 2. */
 @Serializable
-data class BackupPolicy(val savedAt: Long, val json: String)
+data class BackupPolicy(val savedAt: Long, val json: String, val personId: Long = 0)
 
+/** A family member with their own contacts. Added in backup version 3. */
+@Serializable
+data class BackupPerson(val id: Long, val name: String, val caregiverPhone: String = "", val pharmacyPhone: String = "", val sortOrder: Int = 0)
+
+/** Contacts of the single implicit person in version 1 and 2 files. Version 3 stores them on each person instead. */
 @Serializable
 data class BackupSettings(val caregiverPhone: String = "", val pharmacyPhone: String = "", val patientName: String = "")
 
@@ -47,6 +54,7 @@ data class BackupFile(
     val schemaVersion: Int,
     val exportedAt: Long,
     val settings: BackupSettings = BackupSettings(),
+    val people: List<BackupPerson> = emptyList(),
     val medicines: List<BackupMedicine> = emptyList(),
     val doses: List<BackupDose> = emptyList(),
     val policySummaries: List<BackupPolicy> = emptyList(),
@@ -62,7 +70,7 @@ sealed interface BackupParse {
 /** Pure JSON encode / decode / validation, so it can be unit-tested on the JVM. */
 object BackupCodec {
     const val APP_ID = "carecircle"
-    const val CURRENT_VERSION = 2
+    const val CURRENT_VERSION = 3
     const val HISTORY_DAYS = 90
     const val MAX_BYTES = 10 * 1024 * 1024
 
@@ -71,19 +79,42 @@ object BackupCodec {
     fun encode(file: BackupFile): String = json.encodeToString(BackupFile.serializer(), file)
 
     fun build(
-        meds: List<Medicine>, doses: List<DoseEvent>, settings: BackupSettings, now: Long,
+        people: List<Person>, meds: List<Medicine>, doses: List<DoseEvent>, now: Long,
         policies: List<PolicySummaryEntity> = emptyList(),
     ): BackupFile {
         val from = now - HISTORY_DAYS * 24L * 3600_000L
         val ids = meds.map { it.id }.toSet()
         return BackupFile(
-            schemaVersion = CURRENT_VERSION, exportedAt = now, settings = settings,
+            schemaVersion = CURRENT_VERSION, exportedAt = now,
+            people = people.map { BackupPerson(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder) },
             medicines = meds.map {
-                BackupMedicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming)
+                BackupMedicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming, it.personId)
             },
             doses = doses.filter { it.scheduledAt >= from && it.medicineId in ids }
                 .map { BackupDose(it.medicineId, it.scheduledAt, it.takenAt, it.missedHandled) },
-            policySummaries = policies.map { BackupPolicy(it.savedAt, it.json) },
+            policySummaries = policies.map { BackupPolicy(it.savedAt, it.json, it.personId) },
+        )
+    }
+
+    /**
+     * Older files had no people: their contacts become the default person and every medicine and summary is attached to it.
+     * The result always has at least one person, and every reference points at one of them.
+     */
+    fun withPeople(f: BackupFile): BackupFile {
+        if (f.people.isNotEmpty()) {
+            val first = f.people.first().id
+            val known = f.people.map { it.id }.toSet()
+            return f.copy(
+                medicines = f.medicines.map { if (it.personId in known) it else it.copy(personId = first) },
+                policySummaries = f.policySummaries.map { if (it.personId in known) it else it.copy(personId = first) },
+            )
+        }
+        val s = f.settings
+        val me = BackupPerson(1, s.patientName.trim().take(Persons.MAX_NAME).ifEmpty { Persons.DEFAULT_NAME }, s.caregiverPhone, s.pharmacyPhone, 0)
+        return f.copy(
+            people = listOf(me),
+            medicines = f.medicines.map { it.copy(personId = me.id) },
+            policySummaries = f.policySummaries.map { it.copy(personId = me.id) },
         )
     }
 
@@ -102,6 +133,9 @@ object BackupCodec {
         if (ids.any { it <= 0 } || ids.toSet().size != ids.size) return false
         if (f.medicines.any { it.name.isBlank() || it.pillCount < 0 || it.pillsPerDose < 1 }) return false
         if (f.doses.any { it.medicineId !in ids }) return false
+        val pids = f.people.map { it.id }
+        if (pids.any { it <= 0 } || pids.toSet().size != pids.size) return false
+        if (f.people.any { it.name.isBlank() }) return false
         return true
     }
 }
@@ -113,8 +147,7 @@ class BackupService(private val ctx: Context) {
 
     suspend fun export(out: OutputStream, now: Long = System.currentTimeMillis()) = withContext(Dispatchers.IO) {
         val file = BackupCodec.build(
-            db.medicines().allIncludingArchived(), db.doses().since(now - BackupCodec.HISTORY_DAYS * 24L * 3600_000L),
-            BackupSettings(prefs.caregiverPhone, prefs.pharmacyPhone, prefs.patientName), now,
+            db.people().all(), db.medicines().allIncludingArchived(), db.doses().since(now - BackupCodec.HISTORY_DAYS * 24L * 3600_000L), now,
             db.policies().all(),
         )
         out.use { it.write(BackupCodec.encode(file).toByteArray(Charsets.UTF_8)) }
@@ -136,26 +169,29 @@ class BackupService(private val ctx: Context) {
     }
 
     /** Replaces everything (after the user confirmed). Alarms are re-armed for the restored medicines. */
-    suspend fun restore(file: BackupFile) = withContext(Dispatchers.IO) {
+    suspend fun restore(raw: BackupFile) = withContext(Dispatchers.IO) {
+        val file = BackupCodec.withPeople(raw)
         cancelEverything()
         db.clearAllTables()
+        db.people().insertAll(file.people.map { Person(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder) })
         db.medicines().insertAll(
             file.medicines.map {
-                Medicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming)
+                Medicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming, it.personId)
             },
         )
         db.doses().insertAll(file.doses.map { DoseEvent(medicineId = it.medicineId, scheduledAt = it.scheduledAt, takenAt = it.takenAt, missedHandled = it.missedHandled) })
-        db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json) })
-        prefs.caregiverPhone = file.settings.caregiverPhone
-        prefs.pharmacyPhone = file.settings.pharmacyPhone
-        prefs.patientName = file.settings.patientName
+        db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json, personId = it.personId) })
+        prefs.selectedPersonId = Prefs.UNSET
         ReminderScheduler.scheduleAll(ctx)
     }
 
     suspend fun deleteAll() = withContext(Dispatchers.IO) {
         cancelEverything()
         db.clearAllTables()
+        val language = prefs.language
         prefs.clearAll()
+        prefs.language = language // a language choice is not health data
+        db.people().insert(Person(id = 1, name = Persons.DEFAULT_NAME))
         ctx.cacheDir.listFiles()?.forEach { it.delete() }
     }
 

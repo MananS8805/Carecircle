@@ -30,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -115,7 +114,7 @@ fun OrganHero(groups: List<OrganGroup>, taken: Int, total: Int, next: TodayItem?
             )
         } else if (!open) {
             Text(
-                pluralStringResource(R.plurals.hero_tap_hint, groups.size), Modifier.padding(top = 10.dp),
+                stringResource(if (groups.size > 1) R.string.hero_tap_hint_many else R.string.hero_tap_hint_one), Modifier.padding(top = 10.dp),
                 style = MaterialTheme.typography.bodySmall, color = Palette.Muted,
             )
         }

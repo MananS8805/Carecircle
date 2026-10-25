@@ -15,6 +15,29 @@ class MigrationTest {
     )
 
     @Test
+    fun migrate3To4CreatesDefaultPersonWithOldContactsAndKeepsEverything() {
+        val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+        ctx.getSharedPreferences("carecircle", android.content.Context.MODE_PRIVATE).edit()
+            .putString("caregiver", "919876543210").putString("pharmacy", "919000000000").putString("patient", "").apply()
+        helper.createDatabase("mig34", 3).apply {
+            execSQL("INSERT INTO medicine (id, name, doseText, timesCsv, pillCount, pillsPerDose, salt, patientName, active, foodTiming) VALUES (1, 'Telma', '40 mg', '08:00', 30, 1, 'telmisartan', '', 1, 'NONE')")
+            execSQL("INSERT INTO dose_event (medicineId, scheduledAt, takenAt, missedHandled) VALUES (1, 1000, 2000, 0)")
+            execSQL("INSERT INTO policy_summary (savedAt, json) VALUES (5, '{}')")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate("mig34", 4, true, Migrations.m3to4(ctx))
+        db.query("SELECT id, name, caregiverPhone, pharmacyPhone FROM person").use {
+            it.moveToFirst()
+            assertEquals(1, it.getInt(0)); assertEquals("Me", it.getString(1))
+            assertEquals("919876543210", it.getString(2)); assertEquals("919000000000", it.getString(3))
+        }
+        db.query("SELECT personId FROM medicine").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
+        db.query("SELECT personId FROM policy_summary").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
+        db.query("SELECT COUNT(*) FROM dose_event").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
+        assertEquals("", ctx.getSharedPreferences("carecircle", android.content.Context.MODE_PRIVATE).getString("caregiver", ""))
+    }
+
+    @Test
     fun migrate2To3AddsPolicyTableAndKeepsData() {
         helper.createDatabase("mig23", 2).apply {
             execSQL("INSERT INTO medicine (id, name, doseText, timesCsv, pillCount, pillsPerDose, salt, patientName, active, foodTiming) VALUES (1, 'Telma', '40 mg', '08:00', 30, 1, 'telmisartan', '', 1, 'AFTER_FOOD')")

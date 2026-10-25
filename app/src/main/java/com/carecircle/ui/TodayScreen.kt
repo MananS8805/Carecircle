@@ -35,6 +35,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.carecircle.R
+import com.carecircle.data.Person
+import com.carecircle.data.Persons
+import com.carecircle.data.Prefs
 import com.carecircle.domain.FoodTiming
 import com.carecircle.domain.Messages
 import com.carecircle.ui.theme.BigButton
@@ -53,7 +56,11 @@ fun TodayScreen(vm: AppViewModel) {
     val ctx = LocalContext.current
     var onboarding by remember { mutableStateOf(!vm.prefs.onboardingDone) }
 
-    val name = vm.prefs.patientName.trim()
+    val people by vm.people.collectAsStateWithLifecycle()
+    val selection by vm.selection.collectAsStateWithLifecycle()
+    val scope by vm.scopePerson.collectAsStateWithLifecycle()
+    val showAll = selection == Prefs.ALL_PEOPLE && people.size > 1
+    val name = if (showAll) "" else (scope?.name ?: "").takeIf { it != Persons.DEFAULT_NAME }.orEmpty()
     val taken = doses.count { it.status == DoseStatus.TAKEN }
     val next = doses.firstOrNull { it.status == DoseStatus.UPCOMING || it.status == DoseStatus.DUE }
 
@@ -63,6 +70,7 @@ fun TodayScreen(vm: AppViewModel) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item { BrandRow() }
+        item { PersonSwitcher(vm, allowAll = true) }
         item {
             Column {
                 Text(
@@ -91,16 +99,21 @@ fun TodayScreen(vm: AppViewModel) {
         item { OrganHero(groups, taken, doses.size, next) }
         item { Text(stringResource(R.string.today_doses), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 6.dp)) }
         if (doses.isEmpty()) item { Muted(stringResource(R.string.today_empty)) }
-        items(doses, key = { "${it.med.id}-${it.scheduledAt}" }) { d ->
-            DoseCard(d, vm, onAlert = {
-                val p = vm.prefs
-                val who = d.med.patientName.ifBlank { p.patientName.ifBlank { ctx.getString(R.string.family_member_fallback) } }
-                val url = Messages.whatsAppUrl(
-                    Messages.normalizePhone(p.caregiverPhone),
-                    Messages.missedDose(who, d.med.name, Fmt.time(d.scheduledAt)),
-                )
-                ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            })
+        val groups = if (showAll) people.map { p -> p to doses.filter { it.med.personId == p.id } }.filter { it.second.isNotEmpty() }
+        else listOf(null to doses)
+        groups.forEach { (person, list) ->
+            if (person != null) item(key = "h-${person.id}") {
+                Text(displayName(person, people), style = MaterialTheme.typography.titleMedium, color = Palette.Orange, modifier = Modifier.padding(top = 4.dp))
+            }
+            items(list, key = { "${it.med.id}-${it.scheduledAt}" }) { d ->
+                val owner = person ?: people.firstOrNull { it.id == d.med.personId }
+                DoseCard(d, vm, owner, onAlert = {
+                    val who = owner?.name ?: ctx.getString(R.string.family_member_fallback)
+                    val text = ctx.getString(R.string.msg_missed, who, Messages.medicineLabel(d.med.name, d.med.doseText), Fmt.time(d.scheduledAt))
+                    val url = Messages.whatsAppUrl(Messages.normalizePhone(owner?.caregiverPhone.orEmpty()), text)
+                    ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                })
+            }
         }
         item { Spacer(Modifier.height(8.dp)) }
     }
@@ -109,7 +122,7 @@ fun TodayScreen(vm: AppViewModel) {
 }
 
 @Composable
-private fun DoseCard(d: TodayItem, vm: AppViewModel, onAlert: () -> Unit) {
+private fun DoseCard(d: TodayItem, vm: AppViewModel, owner: Person?, onAlert: () -> Unit) {
     val (label, bg, fg) = when (d.status) {
         DoseStatus.TAKEN -> Triple(stringResource(R.string.status_taken), Palette.GoodSoft, Palette.Good)
         DoseStatus.MISSED -> Triple(stringResource(R.string.status_missed), Palette.BadSoft, Palette.Bad)
@@ -134,7 +147,9 @@ private fun DoseCard(d: TodayItem, vm: AppViewModel, onAlert: () -> Unit) {
             BigButton(stringResource(R.string.action_taken), { vm.markTaken(d) }, Modifier.padding(top = 12.dp))
         }
         if (d.status == DoseStatus.MISSED) {
-            SoftButton(stringResource(R.string.alert_caregiver), onAlert, Modifier.fillMaxWidth().padding(top = 8.dp))
+            val hasNumber = !owner?.caregiverPhone.isNullOrBlank()
+            SoftButton(stringResource(R.string.alert_caregiver), onAlert, Modifier.fillMaxWidth().padding(top = 8.dp), enabled = hasNumber)
+            if (!hasNumber) Muted(stringResource(R.string.alert_add_number, owner?.name ?: ""), Modifier.padding(top = 4.dp))
         }
     }
 }

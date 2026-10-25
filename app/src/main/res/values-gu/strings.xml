@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-drafted Gujarati. Needs review by a native speaker before release (see CLAUDE.md). -->
+<resources>
+    <string name="app_name">CareCircle</string>
+
+    <string name="tab_today">આજે</string>
+    <string name="tab_medicines">દવાઓ</string>
+    <string name="tab_settings">સેટિંગ્સ</string>
+
+    <string name="action_taken">લીધી</string>
+    <string name="action_snooze">10 મિનિટ પછી યાદ અપાવો</string>
+    <string name="action_save">સાચવો</string>
+    <string name="action_edit">બદલો</string>
+    <string name="action_back">પાછા</string>
+    <string name="action_retry">ફરી પ્રયત્ન કરો</string>
+    <string name="action_remove">દવા કાઢી નાખો</string>
+    <string name="action_add_pills">+30 ગોળીઓ</string>
+    <string name="action_reorder">ફરી મંગાવો</string>
+    <string name="alert_caregiver">સંભાળ રાખનારને WhatsApp પર જણાવો</string>
+    <string name="family_member_fallback">તમારા પરિવારના સભ્ય</string>
+    <string name="cd_doctor_pdf">ડૉક્ટર માટે PDF</string>
+
+    <string name="disclaimer_medical">ફક્ત માહિતી માટે, તબીબી સલાહ નથી.</string>
+
+    <string name="greeting_anon">નમસ્તે!</string>
+    <string name="greeting_name">નમસ્તે, %1$s!</string>
+    <string name="today_headline">ચાલો આજની દવાઓનું ધ્યાન રાખીએ</string>
+    <string name="today_doses">આજના ડોઝ</string>
+    <string name="today_empty">કોઈ દવા નક્કી નથી. દવાઓ ટૅબમાં ઉમેરો.</string>
+    <string name="status_taken">લીધી</string>
+    <string name="status_missed">ચૂકી ગયા</string>
+    <string name="status_due">હમણાં લેવાની છે</string>
+    <string name="status_upcoming">આગામી</string>
+    <plurals name="pills_count">
+        <item quantity="one">%d ગોળી</item>
+        <item quantity="other">%d ગોળીઓ</item>
+    </plurals>
+
+    <string name="hero_taken_today">આજે લીધી</string>
+    <string name="hero_doses_scheduled">કુલ %1$d ડોઝમાંથી</string>
+    <string name="hero_next_dose">આગળનો ડોઝ</string>
+    <string name="hero_empty_pill">તમારો શરીર નકશો</string>
+    <string name="hero_empty_hint">દવા ઉમેરો, જે અંગની સારવાર છે તે અહીં દેખાશે.</string>
+    <string name="hero_organ_desc">%1$s, ઇન્ટરેક્ટિવ અંગનું ચિત્ર</string>
+    <string name="hero_acts_on">%1$s - તમારા %2$s પર અસર</string>
+    <string name="hero_tap_hint_one">દવાઓ જોવા માટે અંગ પર ટૅપ કરો</string>
+    <string name="hero_tap_hint_many">દવાઓ જોવા માટે અંગ પર ટૅપ કરો, વધુ માટે સ્વાઇપ કરો</string>
+    <string name="organ_heart">હૃદય</string>
+    <string name="organ_pancreas">સ્વાદુપિંડ</string>
+    <string name="organ_lungs">ફેફસાં</string>
+    <string name="organ_kidney">કિડની</string>
+    <string name="organ_brain">મગજ</string>
+    <string name="organ_thyroid">થાઇરોઇડ</string>
+    <string name="organ_joint">સાંધા</string>
+    <string name="organ_body">આખું શરીર</string>
+
+    <string name="cond_diabetes">ડાયાબિટીસ</string>
+    <string name="cond_blood_pressure">બ્લડ પ્રેશર</string>
+    <string name="cond_cholesterol">કોલેસ્ટ્રોલ</string>
+    <string name="cond_thyroid">થાઇરોઇડ</string>
+    <string name="cond_heart">હૃદય</string>
+    <string name="cond_asthma">અસ્થમા</string>
+    <string name="cond_arthritis">સંધિવા</string>
+    <string name="cond_kidney">કિડની</string>
+    <string name="cond_brain">મગજ અને ચેતાઓ</string>
+    <string name="cond_infection">ચેપ</string>
+    <string name="cond_pain">દુખાવો</string>
+    <string name="cond_other">અન્ય</string>
+
+    <string name="banner_title">યાદ અપાવવામાં મોડું થઈ શકે અથવા ચૂકી જવાય</string>
+    <string name="banner_notifications">CareCircle માટે નોટિફિકેશન બંધ છે.</string>
+    <string name="banner_exact">ચોક્કસ એલાર્મની પરવાનગી નથી, તેથી ડોઝમાં થોડી મિનિટ મોડું થઈ શકે.</string>
+    <string name="banner_fix">સુધારો</string>
+    <string name="onb_title">ચાલો ખાતરી કરીએ કે યાદ તમારા સુધી પહોંચે</string>
+    <string name="onb_intro">દવાની ઍપમાં યાદ ન આવવી એ સૌથી મોટી ખામી છે. ત્રણ નાના સેટિંગ્સ મદદ કરે છે.</string>
+    <string name="onb_notif_title">નોટિફિકેશન</string>
+    <string name="onb_notif_why">જેથી ડોઝની યાદ \"લીધી\" અને \"પછી\" બટન સાથે દેખાય.</string>
+    <string name="onb_exact_title">ચોક્કસ એલાર્મ</string>
+    <string name="onb_exact_why">જેથી ફોન નિષ્ક્રિય હોય ત્યારે પણ યાદ બરાબર સમયે આવે.</string>
+    <string name="onb_battery_title">બૅટરી ઑપ્ટિમાઇઝેશન</string>
+    <string name="onb_battery_why">CareCircle માટે \"ઑપ્ટિમાઇઝ ન કરો\" પસંદ કરો, જેથી ફોન યાદ આપવામાં વિલંબ ન કરે.</string>
+    <string name="onb_allow">પરવાનગી આપો</string>
+    <string name="onb_open_settings">સેટિંગ્સ ખોલો</string>
+    <string name="onb_done">થઈ ગયું</string>
+
+    <string name="channel_doses">ડોઝની યાદ</string>
+    <string name="channel_alerts">ચૂકેલા ડોઝ અને ફરી મંગાવવાની સૂચનાઓ</string>
+    <string name="notif_time_for">%1$s લેવાનો સમય</string>
+    <string name="notif_dose_text">%1$s - લીધા પછી \"લીધી\" દબાવો</string>
+    <string name="notif_dose_fallback">તમારો ડોઝ</string>
+    <string name="notif_missed_title">ચૂકી ગયા: %1$s (%2$s)</string>
+    <string name="notif_missed_text">સંભાળ રાખનારને WhatsApp પર જણાવવા ટૅપ કરો.</string>
+    <string name="notif_reorder_title">%1$s: %2$d દિવસ બાકી</string>
+    <string name="notif_reorder_text">દવા ફરી મંગાવવા કેમિસ્ટને સંદેશ મોકલવા ટૅપ કરો.</string>
+
+    <string name="meds_add">દવા ઉમેરો</string>
+    <string name="meds_empty">હજી કોઈ દવા નથી. યાદ શરૂ કરવા પહેલી દવા ઉમેરો.</string>
+    <plurals name="pills_left">
+        <item quantity="one">%1$d ગોળી બાકી (લગભગ %2$d દિવસ)</item>
+        <item quantity="other">%1$d ગોળીઓ બાકી (લગભગ %2$d દિવસ)</item>
+    </plurals>
+
+    <string name="edit_add_title">દવા ઉમેરો</string>
+    <string name="edit_edit_title">દવા બદલો</string>
+    <string name="field_name">દવાનું નામ</string>
+    <string name="field_dose">ડોઝ (જેમ કે 500 mg)</string>
+    <string name="field_pills">સ્ટોકમાં ગોળીઓ</string>
+    <string name="field_per_dose">દરેક ડોઝ દીઠ ગોળીઓ</string>
+    <string name="field_salt">જેનેરિક નામ / સોલ્ટ</string>
+    <string name="scan_strip">દવાની પટ્ટી સ્કૅન કરો</string>
+    <string name="scan_read">વાંચ્યું: %1$s - કૃપા કરીને ચકાસો.</string>
+
+    <string name="info_title">આ દવા વિશે</string>
+    <string name="info_need_name">અધિકૃત દવાની માહિતી જોવા જેનેરિક નામ ઉમેરો (અથવા પટ્ટી સ્કૅન કરો).</string>
+    <string name="info_edit_name">નામ બદલો</string>
+    <string name="info_loading">અધિકૃત માહિતી શોધાઈ રહી છે...</string>
+    <string name="info_offline">ઑફલાઇન - સાચવેલી માહિતી બતાવી રહ્યા છીએ.</string>
+    <string name="info_partial">આના માટે અધિકૃત માહિતી મળી નથી: %1$s</string>
+    <string name="info_not_found">%1$s માટે અધિકૃત માહિતી મળી નથી. જેનેરિક નામની જોડણી ચકાસો.</string>
+    <string name="info_rate_limited">ઘણી બધી વિનંતીઓ, એક મિનિટ પછી ફરી પ્રયત્ન કરો.</string>
+    <string name="info_error">માહિતી લોડ થઈ શકી નથી અને કશું સાચવેલું નથી. ઇન્ટરનેટ ચકાસો.</string>
+    <string name="info_why">તમે તે કેમ લો છો</string>
+    <string name="info_how">કેવી રીતે અને ક્યારે લેવી</string>
+    <string name="info_side_effects">સામાન્ય આડઅસરો</string>
+    <string name="info_call_doctor">ડૉક્ટરને ક્યારે બોલાવવા</string>
+    <string name="info_interactions">મુખ્ય પારસ્પરિક અસરો</string>
+    <string name="info_sources">સ્ત્રોતો</string>
+
+    <string name="settings_people">લોકો</string>
+    <string name="field_caregiver">સંભાળ રાખનારનો WhatsApp નંબર</string>
+    <string name="field_pharmacy">કેમિસ્ટનો WhatsApp નંબર</string>
+    <string name="settings_reminders">યાદ અપાવવી</string>
+    <string name="settings_review_setup">યાદ અપાવવાનું સેટઅપ જુઓ</string>
+    <string name="settings_version">આવૃત્તિ %1$s</string>
+    <string name="settings_privacy">તમારો ડેટા આ ફોનમાં જ રહે છે. જાહેર દવાની માહિતી લાવવા માટે ફક્ત દવાનું જેનેરિક નામ CareCircle સર્વરને મોકલવામાં આવે છે.</string>
+
+    <string name="action_ok">બરાબર</string>
+    <string name="action_cancel">રદ કરો</string>
+    <string name="action_continue">આગળ વધો</string>
+    <string name="field_times_title">તમે તે ક્યારે લો છો?</string>
+    <string name="times_add">સમય ઉમેરો</string>
+    <string name="times_need_one">ઓછામાં ઓછો એક સમય ઉમેરો.</string>
+    <string name="cd_remove_time">%1$s કાઢી નાખો</string>
+    <string name="field_how_to_take">કેવી રીતે લેવી</string>
+    <string name="food_none">કોઈ પસંદગી નથી</string>
+    <string name="food_before">જમતા પહેલાં</string>
+    <string name="food_with">જમવા સાથે</string>
+    <string name="food_after">જમ્યા પછી</string>
+    <string name="food_empty">ખાલી પેટે</string>
+    <string name="food_bedtime">સૂતી વખતે</string>
+    <string name="notif_dose_text_food">%1$s, %2$s - લીધા પછી \"લીધી\" દબાવો</string>
+
+    <string name="inter_button">પારસ્પરિક અસર તપાસ</string>
+    <string name="inter_title">પારસ્પરિક અસર તપાસ</string>
+    <string name="inter_intro">તમારી એક દવાનું નામ બીજી દવાના અધિકૃત લેબલમાં આવે છે કે નહીં તે જુએ છે. ફક્ત જેનેરિક નામ મોકલાય છે.</string>
+    <string name="inter_loading">અધિકૃત લેબલ વાંચી રહ્યા છીએ...</string>
+    <string name="inter_none">અધિકૃત લેબલના લખાણમાં કોઈ પારસ્પરિક અસર મળી નથી. તેનો અર્થ એવો નથી કે કોઈ નથી જ.</string>
+    <string name="inter_too_few">એકબીજા સાથે તપાસવા માટે ઓછામાં ઓછી બે દવાઓના જેનેરિક નામ ઉમેરો.</string>
+    <string name="inter_offline">ઑફલાઇન - છેલ્લું સાચવેલું પરિણામ બતાવી રહ્યા છીએ.</string>
+    <string name="inter_unresolved">આના માટે અધિકૃત લેબલ મળ્યું નથી: %1$s</string>
+    <string name="inter_error">પારસ્પરિક અસર તપાસી શકાઈ નથી અને કશું સાચવેલું નથી. ઇન્ટરનેટ ચકાસો.</string>
+    <string name="disclaimer_interactions">ફક્ત માહિતી માટે, તબીબી સલાહ નથી. તમારા ડૉક્ટર અથવા કેમિસ્ટને પૂછો.</string>
+
+    <string name="data_title">તમારો ડેટા</string>
+    <string name="data_intro">બૅકઅપ ફાઇલ કાઢો, નવા ફોનમાં પાછી લાવો, અથવા બધું કાઢી નાખો. નેટવર્ક પર કશું મોકલાતું નથી.</string>
+    <string name="data_export">મારો ડેટા નિકાસ કરો</string>
+    <string name="data_restore">ફાઇલમાંથી પાછું લાવો</string>
+    <string name="data_delete_all">મારો બધો ડેટા કાઢી નાખો</string>
+    <string name="data_export_done">બૅકઅપ સાચવાઈ ગયું.</string>
+    <string name="data_export_failed">બૅકઅપ સાચવી શકાયું નથી.</string>
+    <string name="data_restore_done">પાછું આવી ગયું. યાદ ફરી ગોઠવાઈ ગઈ.</string>
+    <string name="data_restore_bad">આ ફાઇલ માન્ય CareCircle બૅકઅપ નથી.</string>
+    <string name="data_restore_newer">CareCircle ની નવી આવૃત્તિથી બનેલી છે. તેને પાછી લાવવા ઍપ અપડેટ કરો.</string>
+    <string name="data_restore_confirm_title">તમારો ડેટા બદલવો?</string>
+    <string name="data_restore_confirm_text">આ ફાઇલમાં %1$s અને %2$s નો ઇતિહાસ છે. પાછું લાવવાથી આ ફોન પરનું હાલનું બધું બદલાઈ જશે.</string>
+    <string name="data_restore_replace">બદલો</string>
+    <string name="data_delete_title">બધો ડેટા કાઢી નાખવો?</string>
+    <string name="data_delete_text">આથી આ ફોનમાંથી બધી દવાઓ, ઇતિહાસ, સાચવેલી માહિતી, સંપર્કો અને યાદો કાઢી નંખાશે.</string>
+    <string name="data_delete_final_title">શું તમને ખાતરી છે?</string>
+    <string name="data_delete_final_text">આ પાછું ન થઈ શકે. જરૂર પડે તો પહેલા બૅકઅપ કાઢી લો.</string>
+    <string name="data_delete_final_yes">બધું કાઢી નાખો</string>
+    <string name="data_deleted">બધો ડેટા કાઢી નાખ્યો.</string>
+    <plurals name="medicines_count">
+        <item quantity="one">%d દવા</item>
+        <item quantity="other">%d દવાઓ</item>
+    </plurals>
+    <plurals name="doses_count">
+        <item quantity="one">%d ડોઝ</item>
+        <item quantity="other">%d ડોઝ</item>
+    </plurals>
+
+    <string name="tab_insurance">વીમો</string>
+    <string name="action_delete">કાઢી નાખો</string>
+    <string name="action_done">થઈ ગયું</string>
+    <string name="disclaimer_insurance">ફક્ત માહિતી માટે. તમારા વીમાદાતા પાસે ખાતરી કરો.</string>
+    <string name="ins_intro">તમારી પૉલિસી ઉમેરો અને ટૂંકો સારાંશ મેળવો, જેમાં દરેક મુદ્દા સાથે પાનું અને કલમ દેખાય છે. લખાણ પહેલા આ ફોન પર વંચાય છે.</string>
+    <string name="ins_add_policy">પૉલિસી ઉમેરો (PDF અથવા ફોટા)</string>
+    <string name="ins_photograph">પાનાંના ફોટા લો</string>
+    <plurals name="ins_photos_ready">
+        <item quantity="one">%d ફોટો તૈયાર</item>
+        <item quantity="other">%d ફોટા તૈયાર</item>
+    </plurals>
+    <string name="ins_read_photos">ફોટા વાંચો</string>
+    <string name="ins_clear_photos">સાફ કરો</string>
+    <string name="ins_saved_title">સાચવેલા સારાંશ</string>
+    <string name="ins_saved_empty">હજી કશું સાચવેલું નથી. સાચવેલો સારાંશ ફક્ત આ ફોનમાં રહે છે.</string>
+    <string name="ins_saved_on">%1$s ના રોજ સાચવ્યો</string>
+    <string name="ins_reading_start">તૈયારી થઈ રહી છે...</string>
+    <string name="ins_reading_progress">પાનું %1$d / %2$d વંચાઈ રહ્યું છે</string>
+    <string name="ins_reading_note">વાંચન આ ફોન પર થાય છે. હજી કશું મોકલાયું નથી.</string>
+    <string name="ins_err_password">આ PDF પાસવર્ડથી સુરક્ષિત છે. પાસવર્ડ કાઢીને ફરી પ્રયત્ન કરો.</string>
+    <string name="ins_err_unreadable">આ ફાઇલ ખુલી શકી નથી. બીજી ફાઇલ અથવા ફોટા અજમાવો.</string>
+    <string name="ins_err_little_text">આ દસ્તાવેજ વાંચી શકાયો નથી, વધુ સ્પષ્ટ ફોટા અજમાવો.</string>
+    <string name="ins_try_again">ફરી પ્રયત્ન કરો</string>
+    <string name="ins_err_large">દસ્તાવેજ ઘણો મોટો છે. ઓછાં પાનાં અજમાવો.</string>
+    <string name="ins_err_offline">ઇન્ટરનેટ નથી. જોડાઈને ફરી પ્રયત્ન કરો.</string>
+    <string name="ins_err_other">કંઈક ખોટું થયું. થોડી વાર પછી ફરી પ્રયત્ન કરો.</string>
+    <string name="ins_sending">સારાંશ બની રહ્યો છે...</string>
+    <plurals name="ins_pages_read">
+        <item quantity="one">આ ફોન પર %d પાનું વંચાયું.</item>
+        <item quantity="other">આ ફોન પર %d પાનાં વંચાયાં.</item>
+    </plurals>
+    <string name="ins_first_pages_note">પહેલાં 40 પાનાં વપરાયાં.</string>
+    <string name="consent_title">સારાંશ બનાવતા પહેલાં</string>
+    <string name="consent_what_title">શું મોકલાશે</string>
+    <string name="consent_what">ફક્ત તમારા દસ્તાવેજમાંથી કાઢેલું લખાણ. મૂળ ફાઇલ કે કોઈ ચિત્રો નહીં.</string>
+    <string name="consent_who_title">કોને</string>
+    <string name="consent_who">CareCircle સર્વર અને તેના AI પ્રદાતાને, સારાંશ લખવા માટે.</string>
+    <string name="consent_stored_title">શું તે રાખવામાં આવે છે?</string>
+    <string name="consent_stored">ના. સર્વર લખાણ સાચવતું નથી અને લૉગ પણ કરતું નથી.</string>
+    <string name="consent_agree">હું સંમત છું, સારાંશ બનાવો</string>
+    <string name="ins_notice_pill">તમારા વીમાદાતા પાસે ખાતરી કરો</string>
+    <string name="ins_nothing_found">આ દસ્તાવેજમાં કોઈ સ્પષ્ટ હકીકત ચકાસી શકાઈ નથી.</string>
+    <string name="ins_summary_title">પૉલિસી સારાંશ</string>
+    <string name="ins_unverified_title">ચકાસી શકાયું નથી - તમારી પૉલિસી જુઓ</string>
+    <string name="ins_save">સારાંશ આ ફોનમાં સાચવો</string>
+    <string name="ins_saved_note">આ ફોનમાં સાચવ્યું.</string>
+    <string name="ins_show_source">મૂળ લખાણ બતાવો</string>
+    <string name="ins_hide_source">મૂળ લખાણ છુપાવો</string>
+    <string name="cite_page">પાનું %1$d</string>
+    <string name="cite_page_clause">પાનું %1$d, કલમ %2$s</string>
+    <string name="ins_f_sum_insured">વીમાની રકમ</string>
+    <string name="ins_f_room_rent">રૂમ ભાડાની મર્યાદા</string>
+    <string name="ins_f_copay">સહ-ચુકવણી</string>
+    <string name="ins_f_wait_initial">શરૂઆતનો પ્રતીક્ષા સમય</string>
+    <string name="ins_f_wait_pre">પહેલાંથી હોય તેવા રોગનો પ્રતીક્ષા સમય</string>
+    <string name="ins_f_wait_specific">પ્રતીક્ષા સમય</string>
+    <string name="ins_f_inclusions">સમાવેશ</string>
+    <string name="ins_f_exclusions">સમાવેશ નથી</string>
+    <string name="ins_f_day_care">ડે-કેર સારવાર</string>
+    <string name="ins_f_pre_hosp">હૉસ્પિટલમાં દાખલ થતા પહેલાં</string>
+    <string name="ins_f_post_hosp">હૉસ્પિટલમાં દાખલ થયા પછી</string>
+    <string name="ins_f_helpline">ક્લેઇમ હેલ્પલાઇન</string>
+    <string name="ins_f_tpa">TPA</string>
+
+    <string name="scan_read_check">વાંચ્યું: %1$s - છાપકામ વાંચવું મુશ્કેલ હતું, કૃપા કરીને ધ્યાનથી ચકાસો.</string>
+    <string name="scan_cam_title">પટ્ટી સ્કૅન માટે કૅમેરા</string>
+    <string name="scan_cam_why">CareCircle કૅમેરાનો ઉપયોગ ફક્ત છપાયેલું દવાનું નામ વાંચવા માટે કરે છે. ચિત્ર આ ફોન પર જ વંચાય છે, ક્યારેય સાચવાતું કે મોકલાતું નથી.</string>
+    <string name="scan_cam_allow">કૅમેરાની પરવાનગી આપો</string>
+    <string name="scan_cam_denied">કૅમેરાની પરવાનગી મળી નથી. તમે ફોટો પસંદ કરી શકો છો અથવા નામ ટાઇપ કરી શકો છો.</string>
+    <string name="scan_gallery">તેના બદલે ફોટો પસંદ કરો</string>
+    <string name="scan_type_instead">તેના બદલે ટાઇપ કરો</string>
+    <string name="scan_guide">છપાયેલી રચનાને ફ્રેમની અંદર રાખો</string>
+    <string name="scan_capture">ફોટો લો</string>
+    <string name="scan_reading">વાંચી રહ્યું છે...</string>
+    <string name="scan_fail">રચના વાંચી શકાઈ નથી. નજીક જાઓ, ચમક ટાળો અને ફરી પ્રયત્ન કરો.</string>
+    <string name="cd_torch">ટૉર્ચ</string>
+
+    <string name="notif_time_for_person">%1$s લેવાનો સમય (%2$s)</string>
+    <string name="msg_missed">CareCircle સૂચના: %1$s એ %3$s એ %2$s લીધી નથી. કૃપા કરીને ખબર પૂછી લો.</string>
+    <string name="msg_reorder">નમસ્તે, મારે %2$s માટે %1$s ફરી મંગાવવી છે. લગભગ %3$d દિવસનો સ્ટોક બાકી છે. કૃપા કરીને ઉપલબ્ધતા જણાવો.</string>
+    <string name="alert_add_number">સેટિંગ્સ, લોકોમાં %1$s માટે સંભાળ રાખનારનો નંબર ઉમેરો.</string>
+    <string name="reorder_add_number">સેટિંગ્સ, લોકોમાં %1$s માટે કેમિસ્ટનો નંબર ઉમેરો.</string>
+    <string name="people_all">બધા લોકો</string>
+    <string name="people_manage">લોકોનું સંચાલન કરો</string>
+    <string name="people_intro">દરેક વ્યક્તિની પોતાની દવાઓ, સારાંશ અને સંપર્કો હોય છે. નંબર ફક્ત તમે સંદેશ મોકલો ત્યારે વપરાય છે.</string>
+    <string name="people_add">વ્યક્તિ ઉમેરો</string>
+    <string name="people_new_name">વ્યક્તિ %1$d</string>
+    <string name="people_delete">વ્યક્તિ કાઢી નાખો</string>
+    <string name="people_delete_title">%1$s ને કાઢી નાખવા?</string>
+    <plurals name="people_delete_text">
+        <item quantity="one">આથી %d દવા, તેનો ઇતિહાસ, સાચવેલા સારાંશ અને યાદો પણ કાઢી નંખાશે. આ પાછું ન થઈ શકે.</item>
+        <item quantity="other">આથી %d દવાઓ, તેમનો ઇતિહાસ, સાચવેલા સારાંશ અને યાદો પણ કાઢી નંખાશે. આ પાછું ન થઈ શકે.</item>
+    </plurals>
+    <string name="people_last_one">ઓછામાં ઓછી એક વ્યક્તિ જરૂરી છે, તેથી આને કાઢી શકાય નહીં.</string>
+    <string name="field_person_name">નામ</string>
+    <string name="settings_language">ભાષા</string>
+    <string name="language_system">સિસ્ટમની ભાષા</string>
+    <string name="pdf_title">હાલની દવાઓ</string>
+    <string name="pdf_title_person">હાલની દવાઓ - %1$s</string>
+    <string name="pdf_generated">%1$s ના રોજ CareCircle દ્વારા બનાવ્યું. ડૉક્ટર પાસે લઈ જાઓ.</string>
+    <string name="pdf_col_medicine">દવા</string>
+    <string name="pdf_col_dose">ડોઝ</string>
+    <string name="pdf_col_times">સમય</string>
+    <string name="pdf_col_generic">જેનેરિક</string>
+    <string name="pdf_share">દવાઓની યાદી મોકલો</string>
+</resources>

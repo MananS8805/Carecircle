@@ -2,6 +2,12 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v0.5
+- People: each person has their own medicines, saved policy summaries and caregiver/pharmacy numbers. Person chips on Today (with "All people", grouped), Medicines and Insurance; "Manage people" in Settings (add, rename, edit numbers, delete with a confirmation that states how many medicines go). Room migration 3 to 4 moves the old numbers into the default person. Backup schema version 3 (reads 1 and 2). WhatsApp messages name the person; buttons are disabled with a hint when a number is missing; notification titles include the name when there is more than one person.
+- Hindi and Gujarati across every screen, notification, message template and the PDF, with an in-app language switch (per-app locale, `localeConfig`). Dates use a 12-hour clock with Latin digits.
+- CI (GitHub Actions: backend typecheck and tests; Android unit tests, lint, debug build), release signing config that is skipped without secrets, lint fails on missing translations and hard-coded text.
+- Today now refreshes its day window after midnight.
+
 ## v0.4
 - Insurance tab: pick PDFs or photos (PdfRenderer + on-device ML Kit), consent screen every time (what is sent, to whom, not stored), cited summary (page, clause, expandable quote), "could not verify" list, save or delete summaries on the phone. Room migration 2 to 3; backup schema version 2 (still reads version 1).
 - Backend `POST /api/policy-summary`: quote verification, 413 limits, extractive fallback, 5 requests/min/IP.

@@ -20,7 +20,7 @@ Every version is a git tag (`v0.1` ... `v0.6`); see [CHANGELOG.md](CHANGELOG.md)
 | v0.2 | Compiles; new interface and organ view; info card states; reminder onboarding; Snooze 10 min |
 | v0.3 | Time picker, food hints, interaction check, export / restore / delete all |
 | v0.4 | Insurance policy summary with clause citations, CameraX strip scanner |
-| v0.5 | Multiple people, Hindi and Gujarati, CI |
+| v0.5 | Multiple people with separate data, Hindi and Gujarati UI with in-app switch, CI and release signing config |
 | v0.6 | Condition tags with cited policy notes, voice entry, adherence history |
 
 ## Run the Android app
@@ -47,6 +47,23 @@ npx vercel dev      # local
 npx vercel --prod   # deploy
 ```
 Environment variables (Vercel project settings): `ANTHROPIC_API_KEY` (optional; without it cards use extractive text from the label, never invented text), `LLM_MODEL` (default `claude-haiku-4-5`), `APP_KEY` (optional shared secret sent by the app as `x-app-key`). The LLM key lives only on the server. Add a Vercel Firewall rate-limit rule for `/api/*` for real abuse protection (the in-code limiter is per instance).
+
+## Screenshots
+
+_Placeholder: add phone screenshots here (Today with the organ view, Medicines, Insurance summary, Settings) before a public release._
+
+| Today | Medicines | Insurance | Settings |
+|-------|-----------|-----------|----------|
+| `docs/screenshots/today.png` | `docs/screenshots/meds.png` | `docs/screenshots/insurance.png` | `docs/screenshots/settings.png` |
+
+## Release checklist
+
+1. `cd backend && npm ci && npm run typecheck && npm test`, then deploy (`npx vercel --prod`) and set `ANTHROPIC_API_KEY`, `LLM_MODEL`, `APP_KEY` in Vercel.
+2. Point the app at the deployed backend (`careCircleApi`, `careCircleAppKey` in `~/.gradle/gradle.properties`).
+3. `./gradlew :app:testDebugUnitTest :app:lintDebug`; on a phone run `./gradlew :app:connectedDebugAndroidTest` (migrations) on a test device only: it reinstalls the app.
+4. Have a native speaker review the Hindi and Gujarati strings (disclaimers and the insurance consent screen first).
+5. Bump `versionCode` / `versionName` in `app/build.gradle.kts`, update `CHANGELOG.md`, tag the release (`git tag vX.Y`).
+6. Build a signed release: set `careCircleKeystore`, `careCircleKeystorePassword`, `careCircleKeyAlias`, `careCircleKeyPassword` (gradle properties) or `CARECIRCLE_KEYSTORE`, `CARECIRCLE_KEYSTORE_PASSWORD`, `CARECIRCLE_KEY_ALIAS`, `CARECIRCLE_KEY_PASSWORD` (environment) and run `./gradlew :app:bundleRelease`. Without them the release is unsigned. Never commit keystores or passwords.
 
 ## API
 

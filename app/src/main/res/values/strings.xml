@@ -47,10 +47,8 @@
     <string name="hero_empty_hint">Add a medicine and the organ it treats appears here.</string>
     <string name="hero_organ_desc">%1$s, interactive organ illustration</string>
     <string name="hero_acts_on">%1$s - acts on your %2$s</string>
-    <plurals name="hero_tap_hint">
-        <item quantity="one">Tap the organ to see its medicines</item>
-        <item quantity="other">Tap the organ to see its medicines, swipe for more</item>
-    </plurals>
+    <string name="hero_tap_hint_one">Tap the organ to see its medicines</string>
+    <string name="hero_tap_hint_many">Tap the organ to see its medicines, swipe for more</string>
     <string name="organ_heart">heart</string>
     <string name="organ_pancreas">pancreas</string>
     <string name="organ_lungs">lungs</string>
@@ -115,15 +113,11 @@
     <string name="edit_edit_title">Edit medicine</string>
     <string name="field_name">Medicine name</string>
     <string name="field_dose">Dose (e.g. 500 mg)</string>
-    <string name="field_times">Times, 24h, comma separated</string>
     <string name="field_pills">Pills in stock</string>
     <string name="field_per_dose">Pills per dose</string>
-    <string name="field_patient">Patient name (optional)</string>
     <string name="field_salt">Generic name / salt</string>
     <string name="scan_strip">Scan medicine strip</string>
-    <string name="scan_failed_retry">Could not read a composition. Retake closer to the printed salt, or type it.</string>
     <string name="scan_read">Read: %1$s - please confirm.</string>
-    <string name="scan_error">Scan failed. Try again or type the name.</string>
 
     <!-- Info card -->
     <string name="info_title">About this medicine</string>
@@ -143,8 +137,7 @@
     <string name="info_sources">Sources</string>
 
     <!-- Settings -->
-    <string name="settings_people">People and contacts</string>
-    <string name="field_patient_name">Patient name</string>
+    <string name="settings_people">People</string>
     <string name="field_caregiver">Caregiver WhatsApp number</string>
     <string name="field_pharmacy">Pharmacy WhatsApp number</string>
     <string name="settings_reminders">Reminders</string>
@@ -287,4 +280,33 @@
     <string name="scan_reading">Reading...</string>
     <string name="scan_fail">Could not read the composition. Move closer, avoid glare, and try again.</string>
     <string name="cd_torch">Torch</string>
+    <!-- v0.5: people, messages, language -->
+    <string name="notif_time_for_person">Time for %1$s (%2$s)</string>
+    <string name="msg_missed">CareCircle alert: %1$s missed %2$s at %3$s. Please check in.</string>
+    <string name="msg_reorder">Hello, I would like to reorder %1$s for %2$s. About %3$d day(s) of stock left. Please confirm availability.</string>
+    <string name="alert_add_number">Add a caregiver number for %1$s in Settings, People.</string>
+    <string name="reorder_add_number">Add a pharmacy number for %1$s in Settings, People.</string>
+    <string name="people_all">All people</string>
+    <string name="people_manage">Manage people</string>
+    <string name="people_intro">Each person has their own medicines, summaries and contacts. Numbers are used only when you send a message.</string>
+    <string name="people_add">Add person</string>
+    <string name="people_new_name">Person %1$d</string>
+    <string name="people_delete">Delete person</string>
+    <string name="people_delete_title">Delete %1$s?</string>
+    <plurals name="people_delete_text">
+        <item quantity="one">This also removes %d medicine, its history, saved summaries and reminders. It cannot be undone.</item>
+        <item quantity="other">This also removes %d medicines, their history, saved summaries and reminders. It cannot be undone.</item>
+    </plurals>
+    <string name="people_last_one">At least one person is needed, so this one cannot be deleted.</string>
+    <string name="field_person_name">Name</string>
+    <string name="settings_language">Language</string>
+    <string name="language_system">System default</string>
+    <string name="pdf_title">Current medicines</string>
+    <string name="pdf_title_person">Current medicines - %1$s</string>
+    <string name="pdf_generated">Generated %1$s by CareCircle. Bring to your doctor visit.</string>
+    <string name="pdf_col_medicine">Medicine</string>
+    <string name="pdf_col_dose">Dose</string>
+    <string name="pdf_col_times">Times</string>
+    <string name="pdf_col_generic">Generic</string>
+    <string name="pdf_share">Share medicine list</string>
 </resources>

@@ -52,22 +52,53 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val prefs = Prefs(app)
     private val zone = ZoneId.systemDefault()
 
-    val medicines: StateFlow<List<Medicine>> =
+    // ---- People ----
+    val people: StateFlow<List<Person>> =
+        repo.people.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val selectedId = MutableStateFlow(prefs.selectedPersonId)
+
+    /** The raw choice: a person id, or [Prefs.ALL_PEOPLE] (Today only). */
+    val selection: StateFlow<Long> = selectedId
+
+    /** The person whose data Medicines, Insurance and History show. "All people" falls back to the first person. */
+    val scopePerson: StateFlow<Person?> = combine(people, selectedId) { ps, id -> ps.firstOrNull { it.id == id } ?: ps.firstOrNull() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    init { viewModelScope.launch { repo.ensureDefaultPerson() } }
+
+    fun selectPerson(id: Long) { prefs.selectedPersonId = id; selectedId.value = id }
+
+    private val allMedicines: StateFlow<List<Medicine>> =
         repo.medicines.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val bodyMap: StateFlow<List<OrganGroup>> = medicines.map { meds ->
+    /** Medicines of the scope person (Medicines tab, interaction check, PDF, organ map). */
+    val medicines: StateFlow<List<Medicine>> = combine(allMedicines, scopePerson) { meds, p -> if (p == null) meds else meds.filter { it.personId == p.id } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Medicines on Today: the selected person, or everyone when "All people" is chosen. */
+    private val todayMedicines: StateFlow<List<Medicine>> = combine(allMedicines, selectedId, people) { meds, id, ps ->
+        if (id == Prefs.ALL_PEOPLE) meds
+        else (ps.firstOrNull { it.id == id } ?: ps.firstOrNull())?.let { p -> meds.filter { it.personId == p.id } } ?: meds
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val bodyMap: StateFlow<List<OrganGroup>> = todayMedicines.map { meds ->
         meds.groupBy { Conditions.infer(it.name, it.salt) }
             .map { (c, ms) -> OrganGroup(c, c?.organ ?: OrganKind.BODY, ms) }
             .sortedByDescending { it.meds.size }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val ticker = flow { while (true) { emit(System.currentTimeMillis()); kotlinx.coroutines.delay(30_000) } }
+    private val dayKey = flow { while (true) { emit(LocalDate.now(zone)); kotlinx.coroutines.delay(60_000) } }.distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val today: StateFlow<List<TodayItem>> = run {
-        val start = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
-        val end = start + 24 * 3600_000L
-        combine(medicines, repo.doses.observeBetween(start, end), ticker) { meds, events, now ->
+    private val todayEvents = dayKey.flatMapLatest { d ->
+        val start = d.atStartOfDay(zone).toInstant().toEpochMilli()
+        repo.doses.observeBetween(start, start + 24 * 3600_000L)
+    }
+
+    val today: StateFlow<List<TodayItem>> =
+        combine(todayMedicines, todayEvents, ticker) { meds, events, now ->
             val d = LocalDate.now(zone)
             meds.flatMap { m ->
                 Schedule.parseTimes(m.timesCsv).map { t ->
@@ -83,6 +114,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }.sortedBy { it.scheduledAt }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun personOf(id: Long): Person? = people.value.firstOrNull { it.id == id }
+
+    fun addPerson(name: String) = viewModelScope.launch { selectPerson(repo.addPerson(name)) }
+
+    fun updatePerson(p: Person) = viewModelScope.launch { repo.updatePerson(p) }
+
+    suspend fun medicineCount(personId: Long) = repo.medicineCount(personId)
+
+    fun deletePerson(id: Long) = viewModelScope.launch {
+        if (repo.deletePerson(id) && (selectedId.value == id)) selectPerson(Prefs.UNSET)
     }
 
     fun markTaken(item: TodayItem) = viewModelScope.launch {
@@ -93,7 +135,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun save(m: Medicine, onDone: (Long) -> Unit = {}) = viewModelScope.launch {
-        val id = if (m.id == 0L) repo.medicines.insert(m) else { repo.medicines.update(m); m.id }
+        val withPerson = if (m.personId > 0) m else m.copy(personId = scopePerson.value?.id ?: repo.ensureDefaultPerson().id)
+        val id = if (m.id == 0L) repo.medicines.insert(withPerson) else { repo.medicines.update(withPerson); m.id }
         ReminderScheduler.scheduleFor(getApplication(), id)
         onDone(id)
     }
@@ -138,7 +181,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val insurance: StateFlow<InsuranceState> = _insurance
     private var readJob: kotlinx.coroutines.Job? = null
 
-    val savedPolicies: StateFlow<List<SavedPolicyItem>> = repo.savedPolicies.map { list ->
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val savedPolicies: StateFlow<List<SavedPolicyItem>> = scopePerson.flatMapLatest { p ->
+        if (p == null) flowOf(emptyList()) else repo.savedPolicies(p.id)
+    }.map { list ->
         list.mapNotNull { e ->
             runCatching { ApiFactory.json.decodeFromString<SavedPolicy>(e.json) }.getOrNull()?.let { SavedPolicyItem(e.id, it) }
         }
@@ -190,7 +236,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveCurrentPolicy() = viewModelScope.launch {
         val r = _insurance.value as? InsuranceState.Result ?: return@launch
         if (r.saved) return@launch
-        repo.savePolicy(r.response)
+        repo.savePolicy(scopePerson.value?.id ?: return@launch, r.response)
         _insurance.value = r.copy(saved = true)
     }
 
@@ -239,11 +285,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val f = _restorePreview.value ?: return@launch
         _restorePreview.value = null
         backup.restore(f)
+        selectedId.value = Prefs.UNSET
         _dataMsg.value = DataMsg(R.string.data_restore_done)
     }
 
     fun deleteAllData() = viewModelScope.launch {
         backup.deleteAll()
+        selectedId.value = Prefs.UNSET
         _card.value = null; _interactions.value = null; _insurance.value = InsuranceState.Idle
         _dataMsg.value = DataMsg(R.string.data_deleted)
     }

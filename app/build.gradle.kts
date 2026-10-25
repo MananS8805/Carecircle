@@ -6,6 +6,8 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+fun secret(prop: String, env: String): String? = (project.findProperty(prop) as String?) ?: System.getenv(env)
+
 android {
     namespace = "com.carecircle"
     compileSdk = 35
@@ -14,8 +16,8 @@ android {
         applicationId = "com.carecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 5
+        versionName = "0.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Deployed Vercel URL of /backend. Override in local.properties: careCircleApi=https://your-app.vercel.app/
         val api = (project.findProperty("careCircleApi") as String?) ?: "https://carecircle-api.example.vercel.app/"
@@ -30,6 +32,32 @@ android {
     kotlinOptions { jvmTarget = "17" }
     testOptions { unitTests.isReturnDefaultValues = true }
     sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
+
+    // Release signing: reads the keystore from gradle properties or environment variables. Without them the release
+    // build is simply unsigned, so debug builds and CI never need secrets.
+    val keystorePath = secret("careCircleKeystore", "CARECIRCLE_KEYSTORE")
+    val canSign = keystorePath != null && file(keystorePath).exists()
+    signingConfigs {
+        if (canSign) {
+            create("release") {
+                storeFile = file(keystorePath!!)
+                storePassword = secret("careCircleKeystorePassword", "CARECIRCLE_KEYSTORE_PASSWORD")
+                keyAlias = secret("careCircleKeyAlias", "CARECIRCLE_KEY_ALIAS")
+                keyPassword = secret("careCircleKeyPassword", "CARECIRCLE_KEY_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            if (canSign) signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
+    lint {
+        abortOnError = true
+        error += setOf("MissingTranslation", "HardcodedText")
+    }
 }
 
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
@@ -44,6 +72,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.navigation:navigation-compose:2.8.5")
