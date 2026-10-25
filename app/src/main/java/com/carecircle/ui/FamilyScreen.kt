@@ -161,18 +161,19 @@ private fun followMessage(r: FollowResult): String = when (r) {
 
 @Composable
 private fun LinkRow(l: SyncLink, state: LinkState, vm: AppViewModel) {
-    Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.family_code_label) + " " + PairingCode.display(l.linkId), style = MaterialTheme.typography.bodyLarge)
+    androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
+        Text(stringResource(R.string.family_code_label) + " " + PairingCode.display(l.linkId), style = MaterialTheme.typography.bodyLarge)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            val (label, bg, fg) = when (state) {
+                LinkState.LINKED -> Triple(stringResource(R.string.family_state_linked), Palette.GoodSoft, Palette.Good)
+                LinkState.WAITING -> Triple(stringResource(R.string.family_state_waiting), Palette.WarnSoft, Palette.Warn)
+                LinkState.GONE -> Triple(stringResource(R.string.family_state_gone), Palette.Line, Palette.Muted)
+                LinkState.UNKNOWN -> Triple(stringResource(R.string.family_state_unknown), Palette.Line, Palette.Muted)
+            }
+            Pill(label, bg, fg)
+            androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+            TextButton(onClick = { vm.unlink(l.linkId) }) { Text(stringResource(R.string.family_unlink), color = Palette.Bad) }
         }
-        val (label, bg, fg) = when (state) {
-            LinkState.LINKED -> Triple(stringResource(R.string.family_state_linked), Palette.GoodSoft, Palette.Good)
-            LinkState.WAITING -> Triple(stringResource(R.string.family_state_waiting), Palette.WarnSoft, Palette.Warn)
-            LinkState.GONE -> Triple(stringResource(R.string.family_state_gone), Palette.Line, Palette.Muted)
-            LinkState.UNKNOWN -> Triple(stringResource(R.string.family_state_unknown), Palette.Line, Palette.Muted)
-        }
-        Pill(label, bg, fg)
-        TextButton(onClick = { vm.unlink(l.linkId) }) { Text(stringResource(R.string.family_unlink), color = Palette.Bad) }
     }
 }
 
