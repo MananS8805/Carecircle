@@ -57,3 +57,8 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 
 ## v0.6.1 notes
 - `data/OnDeviceAi.kt` wraps `com.google.mlkit:genai-prompt:1.0.0-beta4`. The libraries are built with a newer Kotlin than 2.0.21, hence `-Xskip-metadata-version-check` in `app/build.gradle.kts`; upgrading Kotlin to 2.2+ would remove the need. Unsupported phones report UNAVAILABLE; always keep the extractive fallback.
+
+## v0.7 notes
+- Room version 6: `medicine.expiry` ("2028-02"), `medicine.doctorNote`, `symptom_log` table. Backup schema version 5.
+- `domain/Expiry.kt` reads the printed EXP month only; a strip is valid through the last day of that month.
+- Backend `LLM_PROVIDER` / `GEMINI_API_KEY` / `GEMINI_MODEL` pick the info-card rewriter; keys live only in Vercel env, never in git. The Gemini free tier may use prompts for training, so it must never receive insurance text.

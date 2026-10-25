@@ -8,6 +8,7 @@ import androidx.core.content.FileProvider
 import com.carecircle.AppLocale
 import com.carecircle.R
 import com.carecircle.data.Medicine
+import com.carecircle.data.SymptomLog
 import com.carecircle.domain.AdherenceResult
 import java.io.File
 import java.text.DateFormat
@@ -18,7 +19,7 @@ import java.util.Date
  * Generated and shared on the phone only, in the app language.
  */
 object PdfExport {
-    fun create(base: Context, person: String, meds: List<Medicine>, adherence: AdherenceResult? = null): File {
+    fun create(base: Context, person: String, meds: List<Medicine>, adherence: AdherenceResult? = null, symptoms: List<SymptomLog> = emptyList()): File {
         val ctx = AppLocale.wrap(base)
         val locale = AppLocale.locale(base)
         val doc = PdfDocument()
@@ -82,12 +83,36 @@ object PdfExport {
                 ); y += 16f
             }
         }
+        val own = symptoms.filter { s -> meds.any { it.id == s.medicineId } }
+        if (own.isNotEmpty()) {
+            y += 18f; newPageIfNeeded(60f)
+            page.canvas.drawText(ctx.getString(R.string.pdf_diary_title), 40f, y, title); y += 22f
+            for (s in own.take(40)) {
+                newPageIfNeeded()
+                val name = meds.firstOrNull { it.id == s.medicineId }?.name.orEmpty()
+                val sev = ctx.getString(when (s.severity) { 3 -> R.string.sev_severe; 2 -> R.string.sev_moderate; else -> R.string.sev_mild })
+                page.canvas.drawText(
+                    listOf(fmt.format(Date(s.loggedAt)), name, symptomText(ctx, s.symptom), sev, s.note).filter { it.isNotBlank() }.joinToString("  -  ").take(90),
+                    40f, y, body,
+                ); y += 16f
+            }
+        }
         footer()
         doc.finishPage(page)
         val f = File(base.cacheDir, "current-medicines.pdf")
         f.outputStream().use { doc.writeTo(it) }
         doc.close()
         return f
+    }
+
+    private fun symptomText(ctx: Context, key: String): String = when (key) {
+        "nausea" -> ctx.getString(R.string.sym_nausea)
+        "dizziness" -> ctx.getString(R.string.sym_dizziness)
+        "headache" -> ctx.getString(R.string.sym_headache)
+        "rash" -> ctx.getString(R.string.sym_rash)
+        "sleepy" -> ctx.getString(R.string.sym_sleepy)
+        "stomach" -> ctx.getString(R.string.sym_stomach)
+        else -> key
     }
 
     fun share(base: Context, file: File) {

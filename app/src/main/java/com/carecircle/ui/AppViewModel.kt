@@ -152,7 +152,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val p = scopePerson.value ?: return@launch
         val ctx = getApplication<Application>()
         val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            PdfExport.create(ctx, p.name, medicines.value, repo.adherence(p.id, 30))
+            PdfExport.create(ctx, p.name, medicines.value, repo.adherence(p.id, 30), repo.symptomsSince(System.currentTimeMillis() - 30L * 24 * 3600_000L))
         }
         PdfExport.share(ctx, file)
     }
@@ -175,6 +175,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val ev = repo.doses.find(item.med.id, item.scheduledAt) ?: return@launch
         DoseActions.markTaken(ctx, ev.id)
     }
+
+    fun saveNote(m: Medicine, note: String, onDone: (Medicine) -> Unit) = viewModelScope.launch {
+        val updated = m.copy(doctorNote = note.trim().take(500).ifEmpty { null })
+        repo.medicines.update(updated)
+        onDone(updated)
+    }
+
+    fun symptoms(medicineId: Long) = repo.symptoms(medicineId)
+
+    fun logSymptom(medicineId: Long, symptom: String, severity: Int, note: String) = viewModelScope.launch {
+        repo.logSymptom(SymptomLog(medicineId = medicineId, loggedAt = System.currentTimeMillis(), symptom = symptom.trim().take(60), severity = severity.coerceIn(1, 3), note = note.trim().take(200)))
+    }
+
+    fun deleteSymptom(id: Long) = viewModelScope.launch { repo.deleteSymptom(id) }
 
     fun skip(item: TodayItem) = viewModelScope.launch {
         repo.doses.insert(DoseEvent(medicineId = item.med.id, scheduledAt = item.scheduledAt))

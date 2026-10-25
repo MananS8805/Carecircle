@@ -14,8 +14,8 @@ object Expiry {
         "jul" to 7, "aug" to 8, "sep" to 9, "sept" to 9, "oct" to 10, "nov" to 11, "dec" to 12,
     )
     private val label = Regex("""(?:exp(?:iry)?\.?\s*(?:date)?|best\s*before|use\s*before)""", RegexOption.IGNORE_CASE)
-    private val numeric = Regex("""\s*[:.\-]?\s*(\d{1,2})\s*[/\-.]\s*(\d{2}|\d{4})""")
-    private val named = Regex("""\s*[:.\-]?\s*([A-Za-z]{3,4})\s*[.,/\- ]\s*(\d{2}|\d{4})""")
+    private val numeric = Regex("""\s*[:.\-]?\s*(\d{1,2})\s*[/\-.]\s*(\d{4}|\d{2})""")
+    private val named = Regex("""\s*[:.\-]?\s*([A-Za-z]{3,4})\s*[.,/\- ]\s*(\d{4}|\d{2})""")
 
     private fun year(s: String): Int = if (s.length == 2) 2000 + s.toInt() else s.toInt()
 
@@ -40,7 +40,7 @@ object Expiry {
     /** "02/2028" or "2028-02" as typed by the user, or null. */
     fun parseTyped(raw: String): YearMonth? {
         val t = raw.trim()
-        Regex("""^(\d{1,2})\s*[/\-.]\s*(\d{2}|\d{4})$""").matchEntire(t)?.let {
+        Regex("""^(\d{1,2})\s*[/\-.]\s*(\d{4}|\d{2})$""").matchEntire(t)?.let {
             val mo = it.groupValues[1].toInt(); val y = year(it.groupValues[2])
             return if (mo in 1..12 && y in 2000..2100) YearMonth.of(y, mo) else null
         }

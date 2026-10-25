@@ -51,6 +51,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.carecircle.R
+import com.carecircle.domain.Expiry
 import com.carecircle.domain.SaltParser
 import com.carecircle.domain.ScanQuality
 import com.carecircle.ui.theme.BigButton
@@ -63,7 +64,7 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.Executors
 
-data class ScanResult(val salt: String, val needsCheck: Boolean)
+data class ScanResult(val salt: String, val needsCheck: Boolean, val expiry: String? = null)
 
 /**
  * Live camera preview with a framing guide. The captured frame is read by ML Kit on the phone, kept in memory only
@@ -84,12 +85,13 @@ fun StripScanScreen(onResult: (ScanResult) -> Unit, onTypeInstead: () -> Unit) {
 
     fun handleText(result: com.google.mlkit.vision.text.Text) {
         val found = SaltParser.parse(result.text)
+        val expiry = Expiry.parse(result.text)?.let { Expiry.format(it) }
         val confidences = result.textBlocks.flatMap { it.lines }.flatMap { it.elements }.map { it.confidence }
         val avg = if (confidences.isEmpty()) null else confidences.average().toFloat()
         when (ScanQuality.assess(found, avg)) {
             ScanQuality.Verdict.RETRY -> { failed = true; busy = false }
-            ScanQuality.Verdict.CHECK -> onResult(ScanResult(found.joinToString(" + "), needsCheck = true))
-            ScanQuality.Verdict.GOOD -> onResult(ScanResult(found.joinToString(" + "), needsCheck = false))
+            ScanQuality.Verdict.CHECK -> onResult(ScanResult(found.joinToString(" + "), needsCheck = true, expiry = expiry))
+            ScanQuality.Verdict.GOOD -> onResult(ScanResult(found.joinToString(" + "), needsCheck = false, expiry = expiry))
         }
     }
 

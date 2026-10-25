@@ -92,6 +92,7 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
                     Text(m.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 6.dp))
                     Muted(listOf(m.doseText, m.timesCsv.replace(",", "  ")).filter { it.isNotBlank() }.joinToString("  -  "))
                     Muted(pluralStringResource(R.plurals.pills_left, m.pillCount, m.pillCount, left))
+                    ExpiryPill(m.expiry, Modifier.padding(top = 6.dp))
                 }
             }
             }
@@ -113,6 +114,7 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
             }
         }
 
+        item { DoctorNoteCard(m, vm) { med = it } }
         if (suggestion != null) item {
             SoftCard(Modifier.fillMaxWidth(), tint = Palette.OrangeSoft) {
                 Text(stringResource(R.string.tag_suggest, suggestion.label()), style = MaterialTheme.typography.bodyLarge)
@@ -136,6 +138,7 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
             else -> when (val r = card) {
                 is CardResult.Ok -> {
                     if (r.fromCache) item { NoticeCard(stringResource(R.string.info_offline), null, tint = Palette.WarnSoft) {} }
+                    item { FreshnessRow(r.fetchedAt, r.fromCache) { vm.loadCard(m.salt) } }
                     items(r.response.cards) { c -> InfoCard(c) }
                     if (r.response.unresolved.isNotEmpty()) item {
                         NoticeCard(
@@ -159,6 +162,7 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
                 CardResult.NoSalt, null -> {}
             }
         }
+        item { DiaryCard(m, vm) }
         item { Spacer(Modifier.height(24.dp)) }
     }
 }

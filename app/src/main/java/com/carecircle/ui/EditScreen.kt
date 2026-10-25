@@ -47,6 +47,7 @@ import com.carecircle.R
 import com.carecircle.data.Medicine
 import com.carecircle.domain.Condition
 import com.carecircle.domain.Conditions
+import com.carecircle.domain.Expiry
 import com.carecircle.domain.FoodTiming
 import com.carecircle.domain.Schedule
 import com.carecircle.domain.TimeList
@@ -88,6 +89,7 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
     var perDose by rememberSaveable { mutableStateOf("1") }
     var salt by rememberSaveable { mutableStateOf("") }
     var tag by rememberSaveable { mutableStateOf("") }
+    var expiryText by rememberSaveable { mutableStateOf("") }
     var scanMsg by rememberSaveable { mutableStateOf("") }
     var heard by rememberSaveable { mutableStateOf("") }
     var voiceFilled by rememberSaveable { mutableStateOf("") } // comma-separated field names filled by voice
@@ -97,7 +99,8 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
         val e = existing
         if (e != null && !loaded) {
             name = e.name; dose = e.doseText; times = e.timesCsv; pills = e.pillCount.toString()
-            perDose = e.pillsPerDose.toString(); salt = e.salt; tag = e.conditionTag.orEmpty(); food = e.foodTiming; loaded = true
+            perDose = e.pillsPerDose.toString(); salt = e.salt; tag = e.conditionTag.orEmpty(); food = e.foodTiming
+            expiryText = e.expiry?.let { s -> Expiry.parseTyped(s)?.let { ym -> "%02d/%d".format(ym.monthValue, ym.year) } }.orEmpty(); loaded = true
         }
     }
 
@@ -105,6 +108,7 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
     val scanRead = stringResource(R.string.scan_read, scan?.salt.orEmpty())
     val scanCheck = stringResource(R.string.scan_read_check, scan?.salt.orEmpty())
     LaunchedEffect(scan) {
+        scan?.let { r -> r.expiry?.let { x -> Expiry.parseTyped(x)?.let { ym -> expiryText = "%02d/%d".format(ym.monthValue, ym.year) } } }
         scan?.let { salt = it.salt; scanMsg = if (it.needsCheck) scanCheck else scanRead; vm.pendingScan.value = null }
     }
 
@@ -134,7 +138,8 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
     }
 
     val timesOk = TimeList.isValid(times)
-    val valid = name.isNotBlank() && timesOk && pills.toIntOrNull() != null && perDose.toIntOrNull()?.let { it > 0 } == true
+    val expiryOk = expiryText.isBlank() || Expiry.parseTyped(expiryText) != null
+    val valid = expiryOk && name.isNotBlank() && timesOk && pills.toIntOrNull() != null && perDose.toIntOrNull()?.let { it > 0 } == true
     val filledSet = voiceFilled.split(',').filter { it.isNotEmpty() }.toSet()
 
     Column(
@@ -164,6 +169,7 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
         }
         ConditionPicker(tag, onChange = { tag = it.take(60) })
         AppField(salt, { salt = it }, stringResource(R.string.field_salt))
+        AppField(expiryText, { expiryText = it.take(7) }, stringResource(R.string.field_expiry), isError = expiryText.isNotBlank() && Expiry.parseTyped(expiryText) == null)
         SoftButton(stringResource(R.string.scan_strip), onScan, Modifier.fillMaxWidth(), icon = Icons.Default.CameraAlt)
         if (scanMsg.isNotEmpty()) Muted(scanMsg)
         BigButton(stringResource(R.string.action_save), {
@@ -173,6 +179,7 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
                     name = name.trim(), doseText = dose.trim(), timesCsv = Schedule.formatTimes(Schedule.parseTimes(times)),
                     pillCount = pills.toInt(), pillsPerDose = perDose.toInt(), salt = salt.trim(), foodTiming = food,
                     conditionTag = tag.trim().ifEmpty { null },
+                    expiry = Expiry.parseTyped(expiryText)?.let { Expiry.format(it) },
                 ),
             ) { onDone() }
         }, enabled = valid)

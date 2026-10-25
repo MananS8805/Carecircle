@@ -27,7 +27,7 @@ class BackupTest {
 
     @Test fun roundTripKeepsPeopleMedicinesTimesAndRecentHistory() {
         val parsed = BackupCodec.decode(BackupCodec.encode(built())) as BackupParse.Ok
-        assertEquals(4, parsed.file.schemaVersion)
+        assertEquals(5, parsed.file.schemaVersion)
         assertEquals(listOf("Dad", "Mom"), parsed.file.people.map { it.name })
         assertEquals("919876543210", parsed.file.people[0].caregiverPhone)
         assertEquals(2, parsed.file.medicines.size)
@@ -42,10 +42,25 @@ class BackupTest {
         val tagged = meds.map { it.copy(conditionTag = "Diabetes", createdAt = 5L) }
         val withSkip = doses + DoseEvent(medicineId = 1, scheduledAt = now - day, skipped = true)
         val parsed = BackupCodec.decode(BackupCodec.encode(BackupCodec.build(people, tagged, withSkip, now))) as BackupParse.Ok
-        assertEquals(4, parsed.file.schemaVersion)
+        assertEquals(5, parsed.file.schemaVersion)
         assertEquals("Diabetes", parsed.file.medicines[0].conditionTag)
         assertEquals(5L, parsed.file.medicines[0].createdAt)
         assertTrue(parsed.file.doses.any { it.skipped })
+    }
+
+    @Test fun expiryDoctorNoteAndDiaryRoundTrip() {
+        val m = meds.map { it.copy(expiry = "2028-02", doctorNote = "Take after dinner") }
+        val diary = listOf(SymptomLog(medicineId = 1, loggedAt = now - day, symptom = "nausea", severity = 2, note = "after lunch"))
+        val parsed = BackupCodec.decode(BackupCodec.encode(BackupCodec.build(people, m, doses, now, symptoms = diary))) as BackupParse.Ok
+        assertEquals("2028-02", parsed.file.medicines[0].expiry)
+        assertEquals("Take after dinner", parsed.file.medicines[0].doctorNote)
+        assertEquals("nausea", parsed.file.symptoms.single().symptom)
+        assertEquals(2, parsed.file.symptoms.single().severity)
+    }
+
+    @Test fun diaryEntryForAnUnknownMedicineIsMalformed() {
+        val text = BackupCodec.encode(BackupCodec.build(people, meds, doses, now)).replace("\"symptoms\": []", "\"symptoms\": [{\"medicineId\": 99, \"loggedAt\": 1, \"symptom\": \"rash\"}]")
+        assertEquals(BackupParse.Malformed, BackupCodec.decode(text))
     }
 
     @Test fun olderFilesReadWithNullTags() {
@@ -62,7 +77,7 @@ class BackupTest {
     }
 
     @Test fun newerVersionIsRejected() {
-        val text = BackupCodec.encode(built()).replace("\"schemaVersion\": 4", "\"schemaVersion\": 99")
+        val text = BackupCodec.encode(built()).replace("\"schemaVersion\": 5", "\"schemaVersion\": 99")
         assertEquals(BackupParse.Newer, BackupCodec.decode(text))
     }
 

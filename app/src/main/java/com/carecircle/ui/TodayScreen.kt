@@ -41,6 +41,8 @@ import com.carecircle.R
 import com.carecircle.data.Person
 import com.carecircle.data.Persons
 import com.carecircle.data.Prefs
+import com.carecircle.domain.Expiry
+import com.carecircle.domain.ExpiryStatus
 import com.carecircle.domain.FoodTiming
 import com.carecircle.domain.Messages
 import com.carecircle.ui.theme.BigButton
@@ -148,6 +150,10 @@ private fun DoseCard(d: TodayItem, vm: AppViewModel, owner: Person?, onAlert: ()
                 .filter { it.isNotBlank() }.joinToString("  -  "),
             style = MaterialTheme.typography.bodyMedium, color = Palette.Muted,
         )
+        ExpiryPill(d.med.expiry, Modifier.padding(top = 8.dp), onlyWhenAttention = true)
+        if (d.med.expiry?.let { Expiry.parseTyped(it) }?.let { Expiry.status(it, java.time.LocalDate.now()) } == ExpiryStatus.EXPIRED) {
+            Text(stringResource(R.string.expiry_warning), Modifier.padding(top = 6.dp), style = MaterialTheme.typography.bodyMedium, color = Palette.Bad)
+        }
         FoodTiming.fromKey(d.med.foodTiming).takeIf { it != FoodTiming.NONE }?.let {
             Pill(stringResource(it.labelRes()), Palette.Canvas, Palette.Ink, Modifier.padding(top = 8.dp))
         }

@@ -80,6 +80,7 @@ fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit,
                         Muted(listOf(m.doseText, m.timesCsv.replace(",", "  ")).filter { it.isNotBlank() }.joinToString("  -  "))
                     }
                 }
+                ExpiryPill(m.expiry, Modifier.padding(top = 8.dp), onlyWhenAttention = true)
                 val low = Refill.needsReorder(left)
                 Text(
                     pluralStringResource(R.plurals.pills_left, m.pillCount, m.pillCount, left),

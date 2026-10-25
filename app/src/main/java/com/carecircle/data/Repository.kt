@@ -31,7 +31,7 @@ sealed interface PolicyResult {
 }
 
 sealed interface CardResult {
-    data class Ok(val response: MedicineInfoResponse, val fromCache: Boolean) : CardResult
+    data class Ok(val response: MedicineInfoResponse, val fromCache: Boolean, val fetchedAt: Long = System.currentTimeMillis()) : CardResult
     /** The server found nothing official for these names (HTTP 404/422 or an empty answer). */
     data class NotFound(val names: List<String>) : CardResult
     data object RateLimited : CardResult
@@ -129,6 +129,12 @@ class Repository(ctx: Context) {
 
     suspend fun deletePolicy(id: Long) = policyDao.delete(id)
 
+    // ---- Side-effect diary ----
+    fun symptoms(medicineId: Long) = db.symptoms().observeFor(medicineId)
+    suspend fun logSymptom(e: SymptomLog) = db.symptoms().insert(e)
+    suspend fun deleteSymptom(id: Long) = db.symptoms().delete(id)
+    suspend fun symptomsSince(from: Long) = db.symptoms().since(from)
+
     companion object { const val MAX_INTERACTION_NAMES = 8 }
 
     fun daysLeft(m: Medicine): Int = Refill.daysLeft(m.pillCount, m.pillsPerDose, Schedule.parseTimes(m.timesCsv).size)
@@ -193,6 +199,6 @@ class Repository(ctx: Context) {
     private suspend fun fromCache(key: String): CardResult {
         val cached = cards.get(key) ?: return CardResult.Error
         val decoded = runCatching { ApiFactory.json.decodeFromString<MedicineInfoResponse>(cached.json) }.getOrNull()
-        return if (decoded != null) CardResult.Ok(decoded, fromCache = true) else CardResult.Error
+        return if (decoded != null) CardResult.Ok(decoded, fromCache = true, fetchedAt = cached.fetchedAt) else CardResult.Error
     }
 }

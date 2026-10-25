@@ -2,6 +2,14 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v0.7
+- Medicine card, Android side: the strip scan now also reads the printed expiry month (never the manufacturing date), and Edit has an Expiry field. Expiry shows as a green, amber or red pill on the card, the amber/red ones on the Medicines list, and an expired strip warns on the Today dose card.
+- "Doctor's instructions" note on each medicine, shown above the generic information and kept on the phone.
+- Card freshness: "Information updated on ..." (or "Saved copy from ...") with a Refresh button.
+- Side-effect diary per medicine (quick symptom chips, severity, optional note, a "contact your doctor" hint for severe); the doctor-visit PDF lists the last 30 days.
+- Room migration 5 to 6; backup schema version 5 (reads 1 to 4).
+- Backend (not deployed): Gemini provider switch for the info-card rewrite (`GEMINI_API_KEY`, `GEMINI_MODEL`, `LLM_PROVIDER`). Insurance summaries still use only the Anthropic provider.
+
 ## v0.6.1
 - Settings: "On-device AI (experimental)" card. Checks whether the phone can run Gemini Nano through ML Kit GenAI (AICore), can download the model and run a quick local test. Groundwork for simplifying medicine text with no API key and no network.
 - Fixed a lint error in v0.6 (explicit Int types on `AdherenceResult`) so CI passes. Compiler flag `-Xskip-metadata-version-check` lets Kotlin 2.0.21 read the newer ML Kit GenAI libraries.

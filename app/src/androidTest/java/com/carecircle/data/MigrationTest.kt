@@ -15,6 +15,21 @@ class MigrationTest {
     )
 
     @Test
+    fun migrate5To6AddsExpiryNoteAndDiaryKeepingData() {
+        helper.createDatabase("mig56", 5).apply {
+            execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")
+            execSQL("INSERT INTO medicine (id, name, doseText, timesCsv, pillCount, pillsPerDose, salt, patientName, active, foodTiming, personId, conditionTag, createdAt) VALUES (1, 'Telma', '40 mg', '08:00', 30, 1, 'telmisartan', '', 1, 'NONE', 1, 'Blood pressure', 7)")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate("mig56", 6, true, Migrations.M5_6)
+        db.query("SELECT conditionTag, expiry, doctorNote FROM medicine").use {
+            it.moveToFirst(); assertEquals("Blood pressure", it.getString(0)); assertEquals(true, it.isNull(1)); assertEquals(true, it.isNull(2))
+        }
+        db.execSQL("INSERT INTO symptom_log (medicineId, loggedAt, symptom, severity, note) VALUES (1, 5, 'nausea', 2, '')")
+        db.query("SELECT COUNT(*) FROM symptom_log").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
+    }
+
+    @Test
     fun migrate4To5KeepsMedicinesWithNullTagAndStampsCreatedAt() {
         helper.createDatabase("mig45", 4).apply {
             execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")

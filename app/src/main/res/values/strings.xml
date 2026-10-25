@@ -363,4 +363,34 @@
     <string name="ai_status_error">Could not check. Update Google Play services and try again.</string>
     <string name="ai_test_prompt">Rewrite in one short plain sentence for a family caregiver: Temporarily relieves minor aches and pains due to headache, backache and toothache; reduces fever.</string>
     <string name="ai_test_result">Model reply: %1$s</string>
+    <!-- v0.7: medicine card extras -->
+    <string name="expiry_expired">Expired %1$s</string>
+    <string name="expiry_soon">Expires %1$s</string>
+    <string name="expiry_ok">Expires %1$s</string>
+    <string name="expiry_warning">This strip has expired. Check with your pharmacist before taking it.</string>
+    <string name="field_expiry">Expiry (MM/YYYY)</string>
+    <string name="note_title">Doctor\'s instructions</string>
+    <string name="note_hint">Instructions from your doctor</string>
+    <string name="note_empty">Add what your doctor told you, for example: take after dinner.</string>
+    <string name="note_add">Add instructions</string>
+    <string name="card_updated_on">Information updated on %1$s</string>
+    <string name="card_saved_on">Saved copy from %1$s</string>
+    <string name="card_refresh">Refresh</string>
+    <string name="diary_title">Side-effect diary</string>
+    <string name="diary_intro">Note anything unusual after taking this medicine. It stays on this phone and can go into the doctor PDF.</string>
+    <string name="diary_note">Note (optional)</string>
+    <string name="diary_describe">What did you notice?</string>
+    <string name="diary_add">Add to diary</string>
+    <string name="diary_severe_hint">Severe symptoms: contact your doctor or pharmacist.</string>
+    <string name="sym_nausea">Nausea</string>
+    <string name="sym_dizziness">Dizziness</string>
+    <string name="sym_headache">Headache</string>
+    <string name="sym_rash">Skin rash</string>
+    <string name="sym_sleepy">Sleepiness</string>
+    <string name="sym_stomach">Stomach upset</string>
+    <string name="sym_other">Something else</string>
+    <string name="sev_mild">Mild</string>
+    <string name="sev_moderate">Moderate</string>
+    <string name="sev_severe">Severe</string>
+    <string name="pdf_diary_title">Side effects noted (last 30 days)</string>
 </resources>
