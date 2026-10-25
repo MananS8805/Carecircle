@@ -2,6 +2,8 @@ package com.carecircle.data
 
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "medicine")
@@ -15,6 +17,7 @@ data class Medicine(
     val salt: String = "",         // generic name(s) from strip scan or manual entry
     val patientName: String = "",
     val active: Boolean = true,
+    @ColumnInfo(defaultValue = "NONE") val foodTiming: String = "NONE",
 )
 
 @Entity(tableName = "dose_event", indices = [Index("medicineId", "scheduledAt", unique = true)])
@@ -33,10 +36,20 @@ data class InfoCardEntity(
     val fetchedAt: Long,
 )
 
+/** Last interaction-check result for a set of generic names. [key] is the sorted, joined name list. */
+@Entity(tableName = "interaction_cache")
+data class InteractionCacheEntity(
+    @PrimaryKey val key: String,
+    val json: String,
+    val fetchedAt: Long,
+)
+
 @Dao
 interface MedicineDao {
     @Query("SELECT * FROM medicine WHERE active = 1 ORDER BY name") fun observeAll(): Flow<List<Medicine>>
     @Query("SELECT * FROM medicine WHERE active = 1") suspend fun all(): List<Medicine>
+    @Query("SELECT * FROM medicine") suspend fun allIncludingArchived(): List<Medicine>
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(m: List<Medicine>)
     @Query("SELECT * FROM medicine WHERE id = :id") suspend fun get(id: Long): Medicine?
     @Insert suspend fun insert(m: Medicine): Long
     @Update suspend fun update(m: Medicine)
@@ -53,6 +66,9 @@ interface DoseDao {
     fun observeBetween(from: Long, to: Long): Flow<List<DoseEvent>>
     @Query("UPDATE dose_event SET takenAt = :now WHERE id = :id AND takenAt IS NULL") suspend fun markTaken(id: Long, now: Long): Int
     @Query("UPDATE dose_event SET missedHandled = 1 WHERE id = :id") suspend fun markMissedHandled(id: Long)
+    @Query("SELECT * FROM dose_event WHERE scheduledAt >= :from ORDER BY scheduledAt") suspend fun since(from: Long): List<DoseEvent>
+    @Query("SELECT id FROM dose_event") suspend fun allIds(): List<Long>
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(e: List<DoseEvent>)
 }
 
 @Dao
@@ -61,16 +77,39 @@ interface InfoCardDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun put(e: InfoCardEntity)
 }
 
-@Database(entities = [Medicine::class, DoseEvent::class, InfoCardEntity::class], version = 1, exportSchema = false)
+@Dao
+interface InteractionDao {
+    @Query("SELECT * FROM interaction_cache WHERE `key` = :k") suspend fun get(k: String): InteractionCacheEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun put(e: InteractionCacheEntity)
+}
+
+object Migrations {
+    /** v0.2 -> v0.3: food timing on medicines and the interaction-check cache. */
+    val M1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE medicine ADD COLUMN foodTiming TEXT NOT NULL DEFAULT 'NONE'")
+            db.execSQL("CREATE TABLE IF NOT EXISTS interaction_cache (`key` TEXT NOT NULL, json TEXT NOT NULL, fetchedAt INTEGER NOT NULL, PRIMARY KEY(`key`))")
+        }
+    }
+
+    val ALL = arrayOf(M1_2)
+}
+
+@Database(
+    entities = [Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class],
+    version = 2, exportSchema = true,
+)
 abstract class AppDb : RoomDatabase() {
     abstract fun medicines(): MedicineDao
     abstract fun doses(): DoseDao
     abstract fun cards(): InfoCardDao
+    abstract fun interactions(): InteractionDao
 
     companion object {
         @Volatile private var inst: AppDb? = null
         fun get(ctx: Context): AppDb = inst ?: synchronized(this) {
-            inst ?: Room.databaseBuilder(ctx.applicationContext, AppDb::class.java, "carecircle.db").build().also { inst = it }
+            inst ?: Room.databaseBuilder(ctx.applicationContext, AppDb::class.java, "carecircle.db")
+                .addMigrations(*Migrations.ALL).build().also { inst = it }
         }
     }
 }

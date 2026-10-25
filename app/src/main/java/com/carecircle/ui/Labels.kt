@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.carecircle.R
 import com.carecircle.domain.Condition
+import com.carecircle.domain.FoodTiming
 import com.carecircle.domain.OrganKind
 
 @StringRes
@@ -40,3 +41,13 @@ fun Condition.label(): String = stringResource(labelRes())
 
 @Composable
 fun OrganKind.label(): String = stringResource(labelRes())
+
+@StringRes
+fun FoodTiming.labelRes(): Int = when (this) {
+    FoodTiming.NONE -> R.string.food_none
+    FoodTiming.BEFORE_FOOD -> R.string.food_before
+    FoodTiming.WITH_FOOD -> R.string.food_with
+    FoodTiming.AFTER_FOOD -> R.string.food_after
+    FoodTiming.EMPTY_STOMACH -> R.string.food_empty
+    FoodTiming.BEDTIME -> R.string.food_bedtime
+}

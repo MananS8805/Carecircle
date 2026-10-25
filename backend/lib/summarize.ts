@@ -14,7 +14,7 @@ export function buildPrompt(generic: string, sections: LabelSections, medline?: 
     `DOSAGE: ${sections.dosage ?? ""}`,
     `ADVERSE REACTIONS: ${sections.adverse ?? ""}`,
     `WARNINGS: ${sections.warnings ?? ""}`,
-    `INTERACTIONS: ${sections.interactions ?? ""}`,
+    `INTERACTIONS: ${(sections.interactions ?? "").slice(0, 1800)}`,
     `MEDLINEPLUS: ${medline ?? ""}`,
   ].join("\n");
 }

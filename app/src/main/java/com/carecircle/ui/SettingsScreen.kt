@@ -1,5 +1,11 @@
 package com.carecircle.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.pluralStringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,9 +41,10 @@ import com.carecircle.ui.theme.SoftCard
 
 @Composable
 fun SettingsScreen(vm: AppViewModel) {
-    var caregiver by remember { mutableStateOf(vm.prefs.caregiverPhone) }
-    var pharmacy by remember { mutableStateOf(vm.prefs.pharmacyPhone) }
-    var patient by remember { mutableStateOf(vm.prefs.patientName) }
+    val dataMsg by vm.dataMsg.collectAsStateWithLifecycle()
+    var caregiver by remember(dataMsg) { mutableStateOf(vm.prefs.caregiverPhone) }
+    var pharmacy by remember(dataMsg) { mutableStateOf(vm.prefs.pharmacyPhone) }
+    var patient by remember(dataMsg) { mutableStateOf(vm.prefs.patientName) }
     val status by rememberReminderStatus()
     var showSetup by remember { mutableStateOf(false) }
 
@@ -62,13 +69,15 @@ fun SettingsScreen(vm: AppViewModel) {
             SoftButton(stringResource(R.string.settings_review_setup), { showSetup = true }, Modifier.padding(top = 10.dp))
         }
 
+        DataCard(vm)
+
         SoftCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LogoMark(36.dp)
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
-                    Muted(stringResource(R.string.settings_version, "0.2"))
+                    Muted(stringResource(R.string.settings_version, "0.3"))
                 }
             }
             Text(stringResource(R.string.settings_privacy), Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodySmall)
@@ -76,6 +85,64 @@ fun SettingsScreen(vm: AppViewModel) {
         }
     }
     if (showSetup) OnboardingDialog(status, onDone = { showSetup = false })
+}
+
+/** Export, restore and delete-all. Everything stays on the phone; files go through the system file picker. */
+@Composable
+private fun DataCard(vm: AppViewModel) {
+    val msg by vm.dataMsg.collectAsStateWithLifecycle()
+    val preview by vm.restorePreview.collectAsStateWithLifecycle()
+    var deleteStep by remember { mutableStateOf(0) }
+    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { it?.let(vm::exportTo) }
+    val restore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(vm::readBackup) }
+
+    SoftCard(Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.data_title), style = MaterialTheme.typography.titleLarge)
+        Muted(stringResource(R.string.data_intro))
+        Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SoftButton(stringResource(R.string.data_export), { export.launch("carecircle-backup.json") }, Modifier.fillMaxWidth())
+            SoftButton(stringResource(R.string.data_restore), { restore.launch(arrayOf("*/*")) }, Modifier.fillMaxWidth())
+            SoftButton(stringResource(R.string.data_delete_all), { deleteStep = 1 }, Modifier.fillMaxWidth())
+        }
+        msg?.let {
+            Text(stringResource(it.res), Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodyMedium, color = Palette.Orange)
+        }
+    }
+
+    preview?.let { f ->
+        AlertDialog(
+            onDismissRequest = vm::cancelRestore,
+            title = { Text(stringResource(R.string.data_restore_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.data_restore_confirm_text,
+                        pluralStringResource(R.plurals.medicines_count, f.medicines.size, f.medicines.size),
+                        pluralStringResource(R.plurals.doses_count, f.doses.size, f.doses.size),
+                    ),
+                )
+            },
+            confirmButton = { TextButton(onClick = vm::confirmRestore) { Text(stringResource(R.string.data_restore_replace)) } },
+            dismissButton = { TextButton(onClick = vm::cancelRestore) { Text(stringResource(R.string.action_cancel)) } },
+            containerColor = Palette.Surface,
+        )
+    }
+    if (deleteStep == 1) AlertDialog(
+        onDismissRequest = { deleteStep = 0 },
+        title = { Text(stringResource(R.string.data_delete_title)) },
+        text = { Text(stringResource(R.string.data_delete_text)) },
+        confirmButton = { TextButton(onClick = { deleteStep = 2 }) { Text(stringResource(R.string.action_continue)) } },
+        dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text(stringResource(R.string.action_cancel)) } },
+        containerColor = Palette.Surface,
+    )
+    if (deleteStep == 2) AlertDialog(
+        onDismissRequest = { deleteStep = 0 },
+        title = { Text(stringResource(R.string.data_delete_final_title)) },
+        text = { Text(stringResource(R.string.data_delete_final_text)) },
+        confirmButton = { TextButton(onClick = { deleteStep = 0; vm.deleteAllData() }) { Text(stringResource(R.string.data_delete_final_yes), color = Palette.Bad) } },
+        dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text(stringResource(R.string.action_cancel)) } },
+        containerColor = Palette.Surface,
+    )
 }
 
 @Composable

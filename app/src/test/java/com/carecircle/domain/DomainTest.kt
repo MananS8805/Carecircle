@@ -96,4 +96,31 @@ class DomainTest {
         assertEquals(Condition.ASTHMA, Conditions.fromTag(" asthma "))
         assertNull(Conditions.fromTag("my own tag"))
     }
+
+    @Test fun timeListAddKeepsSortedAndUnique() {
+        assertEquals("08:00,20:00", TimeList.add("20:00", LocalTime.of(8, 0)))
+        assertEquals("08:00,20:00", TimeList.add("08:00,20:00", LocalTime.of(20, 0)))
+    }
+
+    @Test fun timeListRemoveAndMinimumOne() {
+        assertEquals("20:00", TimeList.remove("08:00,20:00", LocalTime.of(8, 0)))
+        assertFalse(TimeList.isValid(TimeList.remove("20:00", LocalTime.of(20, 0))))
+    }
+
+    @Test fun timeListMalformedInput() {
+        assertEquals(emptyList<LocalTime>(), TimeList.parse(""))
+        assertEquals(emptyList<LocalTime>(), TimeList.parse("8am, 25:00, ,abc"))
+        assertEquals("09:05", TimeList.format(TimeList.parse("9:05x, 09:05")))
+        assertFalse(TimeList.isValid(",,"))
+    }
+
+    @Test fun existingCsvOpensAsTwoChips() {
+        assertEquals(2, TimeList.parse("08:00,20:00").size)
+    }
+
+    @Test fun foodTimingParsesLeniently() {
+        assertEquals(FoodTiming.AFTER_FOOD, FoodTiming.fromKey(" after_food "))
+        assertEquals(FoodTiming.NONE, FoodTiming.fromKey("garbage"))
+        assertEquals(FoodTiming.NONE, FoodTiming.fromKey(null))
+    }
 }

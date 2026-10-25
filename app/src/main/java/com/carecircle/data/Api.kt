@@ -29,7 +29,19 @@ data class MedicineCard(
 
 @Serializable data class MedicineInfoResponse(val cards: List<MedicineCard> = emptyList(), val unresolved: List<String> = emptyList())
 
+@Serializable
+data class InteractionPair(val a: String, val b: String, val snippet: String, val source: String, val sourceUrl: String? = null)
+
+@Serializable
+data class InteractionResponse(
+    val pairs: List<InteractionPair> = emptyList(),
+    val unresolved: List<String> = emptyList(),
+    val message: String = "",
+    val disclaimer: String = "",
+)
+
 interface CareApi {
+    @GET("api/interactions") suspend fun interactions(@Query("salts") salts: String): InteractionResponse
     @GET("api/medicine-info") suspend fun medicineInfo(@Query("salt") salt: String): MedicineInfoResponse
 }
 

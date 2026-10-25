@@ -36,7 +36,7 @@ export async function fetchLabel(generic: string, f: F = fetch): Promise<LabelSe
     dosage: clip(first(r.dosage_and_administration)),
     adverse: clip(first(r.adverse_reactions)),
     warnings: clip(first(r.warnings) ?? first(r.warnings_and_cautions)),
-    interactions: clip(first(r.drug_interactions)),
+    interactions: clip(first(r.drug_interactions), 12000),
   };
 }
 

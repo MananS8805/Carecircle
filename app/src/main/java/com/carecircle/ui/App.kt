@@ -42,7 +42,10 @@ fun CareCircleApp(vm: AppViewModel) {
         Box(Modifier.fillMaxSize().padding(bottom = pad.calculateBottomPadding())) {
             NavHost(nav, startDestination = "today") {
                 composable("today") { TodayScreen(vm) }
-                composable("meds") { MedicinesScreen(vm, onAdd = { nav.navigate("edit/0") }, onOpen = { nav.navigate("detail/$it") }) }
+                composable("meds") {
+                    MedicinesScreen(vm, onAdd = { nav.navigate("edit/0") }, onOpen = { nav.navigate("detail/$it") }, onInteractions = { nav.navigate("interactions") })
+                }
+                composable("interactions") { InteractionScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("edit/{id}") { e -> EditScreen(vm, e.arguments?.getString("id")?.toLongOrNull() ?: 0L) { nav.popBackStack() } }
                 composable("detail/{id}") { e ->
                     DetailScreen(

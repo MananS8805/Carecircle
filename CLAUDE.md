@@ -22,9 +22,15 @@ Android app helping families manage medicines for elderly parents (India first).
 - No heavy dependencies without need. Follow existing code style (official Kotlin style, 4 spaces; TS strict, ESM with `.js` import suffixes).
 - India defaults: +91 numbers, INN->USAN name map in `backend/lib/sources.ts` (paracetamol -> acetaminophen etc.).
 
-## Status (v0.2)
+## Status (v0.3)
 Android app compiles and `DomainTest` passes (wrapper 8.9, JDK 17, SDK 35; set `sdk.dir` in local.properties, git-ignored). UI lives in `ui/` (screens) and `ui/theme/` (Theme, Components, OrganArt, logo). All user-facing text is in `res/values/strings.xml`. `domain/Condition.kt` maps medicines to conditions/organs for the organ view.
 Notes: RxNorm interaction API was retired, so interactions come from the label's drug_interactions section. Strip scan uses the system camera (TakePicture) instead of CameraX for simplicity; CameraX live preview is a later upgrade.
 
 ## Roadmap
 Week 2: cloud LLM summaries hardening, interaction check, insurance policy summary card (`/api/policy-summary`). Week 3: Hindi/Gujarati UI, caregiver sync (Firebase), voice entry. Later: "Can I claim this?" with clause citations.
+
+## v0.3 notes
+- Room is at version 2 (exportSchema on, schemas in `app/schemas`). Every schema change needs a real `Migration` in `data/Db.kt` plus a case in `androidTest/.../MigrationTest.kt`. No destructive fallback.
+- `data/Backup.kt`: `BackupCodec` (pure, unit-tested) + `BackupService`. Backup schema version 1; bump `CURRENT_VERSION` and keep reading older ones.
+- Backend `GET /api/interactions` reuses the openFDA label fetch (interaction text clipped at 12000 chars); never log names or snippets.
+- Compose UI text goes in `res/values/strings.xml`. Do not use bash heredocs with apostrophes in tooling here; use the file editor.

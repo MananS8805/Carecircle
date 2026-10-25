@@ -32,8 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.carecircle.R
 import com.carecircle.data.Medicine
+import com.carecircle.domain.FoodTiming
 import com.carecircle.domain.SaltParser
 import com.carecircle.domain.Schedule
+import com.carecircle.domain.TimeList
 import com.carecircle.ui.theme.BigButton
 import com.carecircle.ui.theme.Muted
 import com.carecircle.ui.theme.SoftButton
@@ -60,7 +62,8 @@ fun EditScreen(vm: AppViewModel, id: Long, onDone: () -> Unit) {
     var loaded by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var dose by remember { mutableStateOf("") }
-    var times by remember { mutableStateOf("08:00,20:00") }
+    var food by remember { mutableStateOf(FoodTiming.NONE) }
+    var times by remember { mutableStateOf(if (id == 0L) "08:00" else "") }
     var pills by remember { mutableStateOf("30") }
     var perDose by remember { mutableStateOf("1") }
     var salt by remember { mutableStateOf("") }
@@ -70,7 +73,7 @@ fun EditScreen(vm: AppViewModel, id: Long, onDone: () -> Unit) {
         val e = existing
         if (e != null && !loaded) {
             name = e.name; dose = e.doseText; times = e.timesCsv; pills = e.pillCount.toString()
-            perDose = e.pillsPerDose.toString(); salt = e.salt; patient = e.patientName; loaded = true
+            perDose = e.pillsPerDose.toString(); salt = e.salt; patient = e.patientName; food = FoodTiming.fromKey(e.foodTiming); loaded = true
         }
     }
 
@@ -91,7 +94,7 @@ fun EditScreen(vm: AppViewModel, id: Long, onDone: () -> Unit) {
         }
     }
 
-    val timesOk = Schedule.parseTimes(times).isNotEmpty()
+    val timesOk = TimeList.isValid(times)
     val valid = name.isNotBlank() && timesOk && pills.toIntOrNull() != null && perDose.toIntOrNull()?.let { it > 0 } == true
 
     Column(
@@ -104,7 +107,8 @@ fun EditScreen(vm: AppViewModel, id: Long, onDone: () -> Unit) {
         )
         AppField(name, { name = it }, stringResource(R.string.field_name))
         AppField(dose, { dose = it }, stringResource(R.string.field_dose))
-        AppField(times, { times = it }, stringResource(R.string.field_times), isError = !timesOk)
+        TimesEditor(times, onChange = { times = it })
+        FoodSelector(food, onChange = { food = it })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AppField(pills, { pills = it.filter(Char::isDigit) }, stringResource(R.string.field_pills), Modifier.weight(1f))
             AppField(perDose, { perDose = it.filter(Char::isDigit) }, stringResource(R.string.field_per_dose), Modifier.weight(1f))
@@ -121,7 +125,7 @@ fun EditScreen(vm: AppViewModel, id: Long, onDone: () -> Unit) {
             vm.save(
                 base.copy(
                     name = name.trim(), doseText = dose.trim(), timesCsv = Schedule.formatTimes(Schedule.parseTimes(times)),
-                    pillCount = pills.toInt(), pillsPerDose = perDose.toInt(), salt = salt.trim(), patientName = patient.trim(),
+                    pillCount = pills.toInt(), pillsPerDose = perDose.toInt(), salt = salt.trim(), patientName = patient.trim(), foodTiming = food.key,
                 ),
             ) { onDone() }
         }, enabled = valid)

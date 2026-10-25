@@ -151,4 +151,61 @@
     <string name="settings_review_setup">Review reminder setup</string>
     <string name="settings_version">Version %1$s</string>
     <string name="settings_privacy">Your data stays on this phone. Only a medicine\'s generic name is sent to the CareCircle server to fetch public drug information.</string>
+    <!-- v0.3: times and food hints -->
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_continue">Continue</string>
+    <string name="field_times_title">When do you take it?</string>
+    <string name="times_add">Add time</string>
+    <string name="times_need_one">Add at least one time.</string>
+    <string name="cd_remove_time">Remove %1$s</string>
+    <string name="field_how_to_take">How to take</string>
+    <string name="food_none">No preference</string>
+    <string name="food_before">Before food</string>
+    <string name="food_with">With food</string>
+    <string name="food_after">After food</string>
+    <string name="food_empty">Empty stomach</string>
+    <string name="food_bedtime">At bedtime</string>
+    <string name="notif_dose_text_food">%1$s, %2$s - tap Taken when done</string>
+
+    <!-- v0.3: interaction check -->
+    <string name="inter_button">Interaction check</string>
+    <string name="inter_title">Interaction check</string>
+    <string name="inter_intro">Looks for mentions of one of your medicines in the official label text of another. Only generic names are sent.</string>
+    <string name="inter_loading">Reading official labels...</string>
+    <string name="inter_none">No interaction found in the official label text. This does not mean none exists.</string>
+    <string name="inter_too_few">Add generic names for at least two medicines to check them against each other.</string>
+    <string name="inter_offline">Offline - showing the last saved result.</string>
+    <string name="inter_unresolved">No official label found for: %1$s</string>
+    <string name="inter_error">Could not check interactions and nothing is saved yet. Check your connection.</string>
+    <string name="disclaimer_interactions">Informational only, not medical advice. Ask your doctor or pharmacist.</string>
+
+    <!-- v0.3: your data -->
+    <string name="data_title">Your data</string>
+    <string name="data_intro">Export a backup file, restore it on a new phone, or delete everything. Nothing is sent over the network.</string>
+    <string name="data_export">Export my data</string>
+    <string name="data_restore">Restore from file</string>
+    <string name="data_delete_all">Delete all my data</string>
+    <string name="data_export_done">Backup saved.</string>
+    <string name="data_export_failed">Could not save the backup.</string>
+    <string name="data_restore_done">Restored. Reminders are set again.</string>
+    <string name="data_restore_bad">This file is not a valid CareCircle backup.</string>
+    <string name="data_restore_newer">Created by a newer version of CareCircle. Update the app to restore it.</string>
+    <string name="data_restore_confirm_title">Replace your data?</string>
+    <string name="data_restore_confirm_text">This file has %1$s and %2$s of history. Restoring replaces everything now on this phone.</string>
+    <string name="data_restore_replace">Replace</string>
+    <string name="data_delete_title">Delete all data?</string>
+    <string name="data_delete_text">This removes all medicines, history, saved information, contacts and reminders from this phone.</string>
+    <string name="data_delete_final_title">Are you sure?</string>
+    <string name="data_delete_final_text">This cannot be undone. Export a backup first if you may need it.</string>
+    <string name="data_delete_final_yes">Delete everything</string>
+    <string name="data_deleted">All data deleted.</string>
+    <plurals name="medicines_count">
+        <item quantity="one">%d medicine</item>
+        <item quantity="other">%d medicines</item>
+    </plurals>
+    <plurals name="doses_count">
+        <item quantity="one">%d dose</item>
+        <item quantity="other">%d doses</item>
+    </plurals>
 </resources>

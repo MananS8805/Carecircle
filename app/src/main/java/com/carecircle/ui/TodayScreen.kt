@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.carecircle.R
+import com.carecircle.domain.FoodTiming
 import com.carecircle.domain.Messages
 import com.carecircle.ui.theme.BigButton
 import com.carecircle.ui.theme.BrandRow
@@ -126,6 +127,9 @@ private fun DoseCard(d: TodayItem, vm: AppViewModel, onAlert: () -> Unit) {
                 .filter { it.isNotBlank() }.joinToString("  -  "),
             style = MaterialTheme.typography.bodyMedium, color = Palette.Muted,
         )
+        FoodTiming.fromKey(d.med.foodTiming).takeIf { it != FoodTiming.NONE }?.let {
+            Pill(stringResource(it.labelRes()), Palette.Canvas, Palette.Ink, Modifier.padding(top = 8.dp))
+        }
         if (d.status == DoseStatus.DUE || d.status == DoseStatus.MISSED) {
             BigButton(stringResource(R.string.action_taken), { vm.markTaken(d) }, Modifier.padding(top = 12.dp))
         }

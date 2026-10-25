@@ -2,6 +2,13 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v0.3
+- Time picker (Material 3 clock) with removable time chips instead of typing "08:00,20:00"; existing lists open as chips.
+- "How to take" (before / with / after food, empty stomach, bedtime), shown on the Today card and in the dose notification. Room migration 1 to 2 (no destructive fallback); schemas exported to `app/schemas`.
+- Interaction check: `GET /api/interactions?salts=a,b,c` scans official label interaction text for the other names (incl. paracetamol/acetaminophen synonyms), returns cited sentences or an honest empty state; app caches the last result for offline.
+- Your data: export to JSON through the system file picker, restore with a confirmation (counts, version check), two-step delete-all (tables, alarms, jobs, preferences).
+- Tests: backend 20 (9 new), app BackupTest, time-list and food-timing tests; instrumented MigrationTest.
+
 ## v0.2
 - App compiles and unit tests pass (Gradle wrapper 8.9 committed).
 - New interface: light theme, orange accent, black pill navigation, minimal logo (ring around a heart) and adaptive launcher icon.

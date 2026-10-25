@@ -15,6 +15,8 @@ import com.carecircle.MainActivity
 import com.carecircle.R
 import com.carecircle.data.DoseEvent
 import com.carecircle.data.Medicine
+import com.carecircle.domain.FoodTiming
+import com.carecircle.ui.labelRes
 
 object Notifier {
     const val CH_DOSE = "doses"
@@ -47,7 +49,10 @@ object Notifier {
             ctx, dose.id.toInt(),
             Intent(ctx, SnoozeReceiver::class.java).setAction(SnoozeReceiver.ACTION_SNOOZE).putExtra(EXTRA_DOSE_ID, dose.id), flags,
         )
-        val text = ctx.getString(R.string.notif_dose_text, med.doseText.ifBlank { ctx.getString(R.string.notif_dose_fallback) })
+        val doseLabel = med.doseText.ifBlank { ctx.getString(R.string.notif_dose_fallback) }
+        val food = FoodTiming.fromKey(med.foodTiming)
+        val text = if (food == FoodTiming.NONE) ctx.getString(R.string.notif_dose_text, doseLabel)
+        else ctx.getString(R.string.notif_dose_text_food, doseLabel, ctx.getString(food.labelRes()))
         val n = NotificationCompat.Builder(ctx, CH_DOSE)
             .setSmallIcon(R.drawable.ic_notif).setContentTitle(ctx.getString(R.string.notif_time_for, med.name)).setContentText(text)
             .setColor(0xFFF26A21.toInt())

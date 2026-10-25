@@ -3,6 +3,7 @@ package com.carecircle.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.carecircle.R
 import com.carecircle.data.*
 import com.carecircle.domain.Condition
 import com.carecircle.domain.Conditions
@@ -17,6 +18,9 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
+
+/** A one-line status for the Settings data card: a string resource, shown once. */
+data class DataMsg(@androidx.annotation.StringRes val res: Int)
 
 enum class DoseStatus { UPCOMING, DUE, TAKEN, MISSED }
 
@@ -95,6 +99,61 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearCard() { _card.value = null; _loading.value = false }
+
+    // ---- Interaction check ----
+    private val _interactions = MutableStateFlow<InteractionResult?>(null)
+    val interactions: StateFlow<InteractionResult?> = _interactions
+    private val _interactionsLoading = MutableStateFlow(false)
+    val interactionsLoading: StateFlow<Boolean> = _interactionsLoading
+
+    fun checkInteractions() = viewModelScope.launch {
+        _interactionsLoading.value = true; _interactions.value = null
+        _interactions.value = repo.interactionCheck(medicines.value.map { it.salt })
+        _interactionsLoading.value = false
+    }
+
+    // ---- Export / restore / delete all ----
+    private val backup = BackupService(app)
+    private val _dataMsg = MutableStateFlow<DataMsg?>(null)
+    val dataMsg: StateFlow<DataMsg?> = _dataMsg
+    private val _restorePreview = MutableStateFlow<BackupFile?>(null)
+    val restorePreview: StateFlow<BackupFile?> = _restorePreview
+
+    fun dismissDataMsg() { _dataMsg.value = null }
+    fun cancelRestore() { _restorePreview.value = null }
+
+    fun exportTo(uri: android.net.Uri) = viewModelScope.launch {
+        _dataMsg.value = try {
+            val out = getApplication<Application>().contentResolver.openOutputStream(uri) ?: throw java.io.IOException()
+            backup.export(out)
+            DataMsg(R.string.data_export_done)
+        } catch (e: Exception) { DataMsg(R.string.data_export_failed) }
+    }
+
+    fun readBackup(uri: android.net.Uri) = viewModelScope.launch {
+        val parsed = try {
+            val input = getApplication<Application>().contentResolver.openInputStream(uri) ?: throw java.io.IOException()
+            backup.read(input)
+        } catch (e: Exception) { BackupParse.Malformed }
+        when (parsed) {
+            is BackupParse.Ok -> _restorePreview.value = parsed.file
+            BackupParse.Newer -> _dataMsg.value = DataMsg(R.string.data_restore_newer)
+            BackupParse.Malformed -> _dataMsg.value = DataMsg(R.string.data_restore_bad)
+        }
+    }
+
+    fun confirmRestore() = viewModelScope.launch {
+        val f = _restorePreview.value ?: return@launch
+        _restorePreview.value = null
+        backup.restore(f)
+        _dataMsg.value = DataMsg(R.string.data_restore_done)
+    }
+
+    fun deleteAllData() = viewModelScope.launch {
+        backup.deleteAll()
+        _card.value = null; _interactions.value = null
+        _dataMsg.value = DataMsg(R.string.data_deleted)
+    }
 
     fun nowZoned(): ZonedDateTime = ZonedDateTime.now(zone)
 }

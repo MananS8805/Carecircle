@@ -17,4 +17,6 @@ class Prefs(ctx: Context) {
     var onboardingDone: Boolean
         get() = sp.getBoolean("onboardingDone", false)
         set(v) = sp.edit().putBoolean("onboardingDone", v).apply()
+
+    fun clearAll() = sp.edit().clear().apply()
 }

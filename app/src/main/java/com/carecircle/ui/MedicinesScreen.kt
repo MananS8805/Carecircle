@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,10 +43,11 @@ import com.carecircle.ui.theme.Muted
 import com.carecircle.ui.theme.OrganIcon
 import com.carecircle.ui.theme.Palette
 import com.carecircle.ui.theme.ProgressBar
+import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 @Composable
-fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit) {
+fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit, onInteractions: () -> Unit) {
     val meds by vm.medicines.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
     LazyColumn(
@@ -61,6 +63,7 @@ fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit)
             }
         }
         item { BigButton(stringResource(R.string.meds_add), onAdd, icon = Icons.Default.Add) }
+        item { SoftButton(stringResource(R.string.inter_button), onInteractions, Modifier.fillMaxWidth(), icon = Icons.Default.CompareArrows) }
         if (meds.isEmpty()) item { Muted(stringResource(R.string.meds_empty)) }
         items(meds, key = { it.id }) { m ->
             val left = vm.repo.daysLeft(m)

@@ -55,5 +55,5 @@ Data is local-first (Room + SharedPreferences). Only a medicine's generic name i
 ## Layout
 
 - `app/` Android app. `domain/` pure logic (JVM-testable), `data/` Room + API, `reminder/` alarms, workers, notifications, `ui/` Compose screens, `ui/theme/` design system, logo and organ art.
-- `backend/` Vercel functions: `api/medicine-info.ts`, `api/policy-summary.ts`, `lib/` logic.
+- `backend/` Vercel functions: `api/medicine-info.ts`, `api/interactions.ts`, `api/policy-summary.ts`, `lib/` logic.
 - `docs/` logo and design notes.
