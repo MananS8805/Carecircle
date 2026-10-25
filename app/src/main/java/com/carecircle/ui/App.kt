@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -20,7 +21,7 @@ import com.carecircle.ui.theme.NavItem
 import com.carecircle.ui.theme.Palette
 import com.carecircle.ui.theme.PillNavBar
 
-private val topLevel = setOf("today", "meds", "settings")
+private val topLevel = setOf("today", "meds", "insurance", "settings")
 
 @Composable
 fun CareCircleApp(vm: AppViewModel) {
@@ -29,6 +30,7 @@ fun CareCircleApp(vm: AppViewModel) {
     val tabs = listOf(
         NavItem("today", stringResource(R.string.tab_today), Icons.Default.Alarm),
         NavItem("meds", stringResource(R.string.tab_medicines), Icons.Default.Medication),
+        NavItem("insurance", stringResource(R.string.tab_insurance), Icons.Default.Shield),
         NavItem("settings", stringResource(R.string.tab_settings), Icons.Default.Settings),
     )
     Scaffold(
@@ -46,7 +48,16 @@ fun CareCircleApp(vm: AppViewModel) {
                     MedicinesScreen(vm, onAdd = { nav.navigate("edit/0") }, onOpen = { nav.navigate("detail/$it") }, onInteractions = { nav.navigate("interactions") })
                 }
                 composable("interactions") { InteractionScreen(vm, onBack = { nav.popBackStack() }) }
-                composable("edit/{id}") { e -> EditScreen(vm, e.arguments?.getString("id")?.toLongOrNull() ?: 0L) { nav.popBackStack() } }
+                composable("edit/{id}") { e ->
+                    EditScreen(vm, e.arguments?.getString("id")?.toLongOrNull() ?: 0L, onScan = { nav.navigate("scan") }) { nav.popBackStack() }
+                }
+                composable("scan") {
+                    StripScanScreen(
+                        onResult = { vm.pendingScan.value = it; nav.popBackStack() },
+                        onTypeInstead = { nav.popBackStack() },
+                    )
+                }
+                composable("insurance") { InsuranceScreen(vm) }
                 composable("detail/{id}") { e ->
                     DetailScreen(
                         vm, e.arguments?.getString("id")?.toLongOrNull() ?: 0L,

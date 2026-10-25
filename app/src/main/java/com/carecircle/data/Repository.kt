@@ -2,6 +2,7 @@ package com.carecircle.data
 
 import android.content.Context
 import com.carecircle.domain.Refill
+import com.carecircle.domain.SavedPolicy
 import com.carecircle.domain.Schedule
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.decodeFromString
@@ -14,6 +15,14 @@ sealed interface InteractionResult {
     data object TooFew : InteractionResult
     data object RateLimited : InteractionResult
     data object Error : InteractionResult
+}
+
+sealed interface PolicyResult {
+    data class Ok(val response: PolicyResponse) : PolicyResult
+    data object TooLarge : PolicyResult
+    data object RateLimited : PolicyResult
+    data object Offline : PolicyResult
+    data object Error : PolicyResult
 }
 
 sealed interface CardResult {
@@ -31,6 +40,33 @@ class Repository(ctx: Context) {
     val doses get() = db.doses()
     private val cards = db.cards()
     private val interactionDao = db.interactions()
+
+    private val policyDao = db.policies()
+    val savedPolicies get() = policyDao.observeAll()
+
+    /** Sends OCR text only, only after the consent screen. Nothing is logged or kept by this call. */
+    suspend fun policySummary(pages: List<PolicyPageText>): PolicyResult = try {
+        PolicyResult.Ok(ApiFactory.api.policySummary(PolicyRequest(pages)))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: HttpException) {
+        when (e.code()) {
+            413 -> PolicyResult.TooLarge
+            429 -> PolicyResult.RateLimited
+            else -> PolicyResult.Error
+        }
+    } catch (e: java.io.IOException) {
+        PolicyResult.Offline
+    } catch (e: Exception) {
+        PolicyResult.Error
+    }
+
+    suspend fun savePolicy(r: PolicyResponse, now: Long = System.currentTimeMillis()) {
+        val saved = SavedPolicy(r.summary, r.unverified, r.mode, now)
+        policyDao.insert(PolicySummaryEntity(savedAt = now, json = ApiFactory.json.encodeToString(saved)))
+    }
+
+    suspend fun deletePolicy(id: Long) = policyDao.delete(id)
 
     companion object { const val MAX_INTERACTION_NAMES = 8 }
 

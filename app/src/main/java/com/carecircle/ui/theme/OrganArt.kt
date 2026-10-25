@@ -102,8 +102,8 @@ private val heartBody = path("M50,93 C18,72 8,50 16,32 C24,15 44,14 50,30 C56,14
 private val heartAorta = path("M44,30 C40,14 54,4 68,8 C80,12 80,26 74,34")
 private val heartCava = path("M64,26 C66,16 66,12 66,6")
 private val heartPulm = path("M52,30 C56,20 40,12 28,16")
-private val heartVessel1 = path("M30,38 C34,52 42,66 52,82")
-private val heartVessel2 = path("M66,40 C64,54 58,68 52,82")
+private val heartVessel1 = path("M30,36 C26,52 34,66 46,76")
+private val heartVessel2 = path("M70,36 C74,52 66,66 56,76")
 private val heartShine = path("M24,42 C23,30 32,23 40,25 C33,31 30,40 30,52 Z")
 
 private val pancreasBody = path("M8,60 C20,42 46,46 66,40 C84,34 96,42 92,54 C88,66 70,62 54,66 C38,70 22,80 10,70 C6,66 6,63 8,60 Z")
@@ -156,8 +156,8 @@ private fun DrawScope.heart() {
     line(heartPulm, Color(0xFFB02D1B), 7f)
     line(heartAorta, Color(0xFFC22A18), 9f)
     fill(heartBody, Color(0xFFEA5236), Color(0xFFC8301C), Color(0xFF8E160C), from = Offset(36f, 34f), radius = 80f)
-    line(heartVessel1, Color(0xCC3B5B91), 2.6f)
-    line(heartVessel2, Color(0xCC3B5B91), 2.6f)
+    line(heartVessel1, Color(0x884A5F95), 1.8f)
+    line(heartVessel2, Color(0x884A5F95), 1.8f)
     drawPath(heartShine, Color(0x38FFFFFF))
 }
 

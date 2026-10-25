@@ -1,6 +1,7 @@
 package com.carecircle.reminder
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -38,6 +39,7 @@ object Notifier {
     )
 
     /** Posts (or re-posts after a snooze) the reminder for one dose. The notification id is derived from the dose id. */
+    @SuppressLint("MissingPermission") // canPost() checks POST_NOTIFICATIONS first
     fun postDose(ctx: Context, dose: DoseEvent, med: Medicine) {
         if (!canPost(ctx)) return
         ensureChannels(ctx)
@@ -64,6 +66,7 @@ object Notifier {
     }
 
     /** Tapping opens WhatsApp (or any browser fallback) with a pre-filled message. No backend involved. */
+    @SuppressLint("MissingPermission") // canPost() checks POST_NOTIFICATIONS first
     fun linkAlert(ctx: Context, id: Int, title: String, text: String, url: String) {
         if (!canPost(ctx)) return
         ensureChannels(ctx)

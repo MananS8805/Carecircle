@@ -14,8 +14,8 @@ android {
         applicationId = "com.carecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Deployed Vercel URL of /backend. Override in local.properties: careCircleApi=https://your-app.vercel.app/
         val api = (project.findProperty("careCircleApi") as String?) ?: "https://carecircle-api.example.vercel.app/"
@@ -55,6 +55,12 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     implementation("com.google.mlkit:text-recognition:16.0.1")
+
+    val camerax = "1.4.1"
+    implementation("androidx.camera:camera-core:$camerax")
+    implementation("androidx.camera:camera-camera2:$camerax")
+    implementation("androidx.camera:camera-lifecycle:$camerax")
+    implementation("androidx.camera:camera-view:$camerax")
 
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

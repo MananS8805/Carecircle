@@ -37,7 +37,7 @@ class BackupTest {
     }
 
     @Test fun newerVersionIsRejected() {
-        val text = BackupCodec.encode(BackupCodec.build(meds, doses, settings, now)).replace("\"schemaVersion\": 1", "\"schemaVersion\": 99")
+        val text = BackupCodec.encode(BackupCodec.build(meds, doses, settings, now)).replace("\"schemaVersion\": 2", "\"schemaVersion\": 99")
         assertEquals(BackupParse.Newer, BackupCodec.decode(text))
     }
 
@@ -50,6 +50,22 @@ class BackupTest {
         // dose points at a medicine that is not in the file
         val bad = "{\"app\":\"carecircle\",\"schemaVersion\":1,\"exportedAt\":1,\"medicines\":[],\"doses\":[{\"medicineId\":5,\"scheduledAt\":1}]}"
         assertEquals(BackupParse.Malformed, BackupCodec.decode(bad))
+    }
+
+    @Test fun savedPolicySummariesRoundTrip() {
+        val policies = listOf(PolicySummaryEntity(id = 4, savedAt = now, json = "{\"summary\":{}}"))
+        val text = BackupCodec.encode(BackupCodec.build(meds, doses, settings, now, policies))
+        val parsed = BackupCodec.decode(text) as BackupParse.Ok
+        assertEquals(1, parsed.file.policySummaries.size)
+        assertEquals("{\"summary\":{}}", parsed.file.policySummaries[0].json)
+        assertEquals(2, parsed.file.schemaVersion)
+    }
+
+    @Test fun versionOneFilesStillRead() {
+        val v1 = "{\"app\":\"carecircle\",\"schemaVersion\":1,\"exportedAt\":5,\"medicines\":[{\"id\":1,\"name\":\"Metformin\",\"timesCsv\":\"08:00\"}],\"doses\":[]}"
+        val parsed = BackupCodec.decode(v1) as BackupParse.Ok
+        assertEquals(1, parsed.file.medicines.size)
+        assertEquals(emptyList<BackupPolicy>(), parsed.file.policySummaries)
     }
 
     @Test fun unknownFieldsAreIgnored() {

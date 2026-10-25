@@ -7,7 +7,10 @@ import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
+import com.carecircle.domain.PolicySummary
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
@@ -40,7 +43,19 @@ data class InteractionResponse(
     val disclaimer: String = "",
 )
 
+@Serializable data class PolicyPageText(val page: Int, val text: String)
+@Serializable data class PolicyRequest(val pages: List<PolicyPageText>)
+
+@Serializable
+data class PolicyResponse(
+    val summary: PolicySummary = PolicySummary(),
+    val unverified: List<String> = emptyList(),
+    val mode: String = "",
+    val disclaimer: String = "",
+)
+
 interface CareApi {
+    @POST("api/policy-summary") suspend fun policySummary(@Body req: PolicyRequest): PolicyResponse
     @GET("api/interactions") suspend fun interactions(@Query("salts") salts: String): InteractionResponse
     @GET("api/medicine-info") suspend fun medicineInfo(@Query("salt") salt: String): MedicineInfoResponse
 }
@@ -50,7 +65,7 @@ object ApiFactory {
 
     val api: CareApi by lazy {
         val client = OkHttpClient.Builder()
-            .callTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(60, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val b = chain.request().newBuilder()
                 if (BuildConfig.APP_KEY.isNotEmpty()) b.header("x-app-key", BuildConfig.APP_KEY)

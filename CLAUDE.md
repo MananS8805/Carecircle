@@ -22,7 +22,7 @@ Android app helping families manage medicines for elderly parents (India first).
 - No heavy dependencies without need. Follow existing code style (official Kotlin style, 4 spaces; TS strict, ESM with `.js` import suffixes).
 - India defaults: +91 numbers, INN->USAN name map in `backend/lib/sources.ts` (paracetamol -> acetaminophen etc.).
 
-## Status (v0.3)
+## Status (v0.4)
 Android app compiles and `DomainTest` passes (wrapper 8.9, JDK 17, SDK 35; set `sdk.dir` in local.properties, git-ignored). UI lives in `ui/` (screens) and `ui/theme/` (Theme, Components, OrganArt, logo). All user-facing text is in `res/values/strings.xml`. `domain/Condition.kt` maps medicines to conditions/organs for the organ view.
 Notes: RxNorm interaction API was retired, so interactions come from the label's drug_interactions section. Strip scan uses the system camera (TakePicture) instead of CameraX for simplicity; CameraX live preview is a later upgrade.
 
@@ -34,3 +34,9 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - `data/Backup.kt`: `BackupCodec` (pure, unit-tested) + `BackupService`. Backup schema version 1; bump `CURRENT_VERSION` and keep reading older ones.
 - Backend `GET /api/interactions` reuses the openFDA label fetch (interaction text clipped at 12000 chars); never log names or snippets.
 - Compose UI text goes in `res/values/strings.xml`. Do not use bash heredocs with apostrophes in tooling here; use the file editor.
+
+## v0.4 notes
+- Room version 3 (`policy_summary` table stores summary JSON only). Backup schema version 2.
+- Policy models live in `domain/Policy.kt` (pure, serializable). No claim may be shown without page, clause and quote; always show "Informational only. Verify with your insurer."
+- OCR text (insurance) exists only in `InsuranceState.NeedConsent` memory and is dropped on cancel, decline or send. Never log it.
+- Strip scanner: `ui/StripScanScreen.kt` (CameraX 1.4.1). Result is handed to Edit through `AppViewModel.pendingScan`; Edit form fields use rememberSaveable.

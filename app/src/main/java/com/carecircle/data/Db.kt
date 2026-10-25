@@ -44,6 +44,14 @@ data class InteractionCacheEntity(
     val fetchedAt: Long,
 )
 
+/** A saved policy summary. Only the summary JSON is stored: no source file, no full text. */
+@Entity(tableName = "policy_summary")
+data class PolicySummaryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val savedAt: Long,
+    val json: String,
+)
+
 @Dao
 interface MedicineDao {
     @Query("SELECT * FROM medicine WHERE active = 1 ORDER BY name") fun observeAll(): Flow<List<Medicine>>
@@ -83,6 +91,15 @@ interface InteractionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun put(e: InteractionCacheEntity)
 }
 
+@Dao
+interface PolicyDao {
+    @Query("SELECT * FROM policy_summary ORDER BY savedAt DESC") fun observeAll(): Flow<List<PolicySummaryEntity>>
+    @Query("SELECT * FROM policy_summary ORDER BY savedAt DESC") suspend fun all(): List<PolicySummaryEntity>
+    @Insert suspend fun insert(e: PolicySummaryEntity): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(e: List<PolicySummaryEntity>)
+    @Query("DELETE FROM policy_summary WHERE id = :id") suspend fun delete(id: Long)
+}
+
 object Migrations {
     /** v0.2 -> v0.3: food timing on medicines and the interaction-check cache. */
     val M1_2 = object : Migration(1, 2) {
@@ -92,18 +109,26 @@ object Migrations {
         }
     }
 
-    val ALL = arrayOf(M1_2)
+    /** v0.3 -> v0.4: saved insurance policy summaries. */
+    val M2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS policy_summary (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, savedAt INTEGER NOT NULL, json TEXT NOT NULL)")
+        }
+    }
+
+    val ALL = arrayOf(M1_2, M2_3)
 }
 
 @Database(
-    entities = [Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class],
-    version = 2, exportSchema = true,
+    entities = [Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class],
+    version = 3, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun medicines(): MedicineDao
     abstract fun doses(): DoseDao
     abstract fun cards(): InfoCardDao
     abstract fun interactions(): InteractionDao
+    abstract fun policies(): PolicyDao
 
     companion object {
         @Volatile private var inst: AppDb? = null

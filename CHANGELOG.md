@@ -2,6 +2,11 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v0.4
+- Insurance tab: pick PDFs or photos (PdfRenderer + on-device ML Kit), consent screen every time (what is sent, to whom, not stored), cited summary (page, clause, expandable quote), "could not verify" list, save or delete summaries on the phone. Room migration 2 to 3; backup schema version 2 (still reads version 1).
+- Backend `POST /api/policy-summary`: quote verification, 413 limits, extractive fallback, 5 requests/min/IP.
+- Strip scanner: CameraX live preview with framing guide, torch, low-confidence retry, gallery fallback, camera permission rationale; frames stay in memory.
+
 ## v0.3
 - Time picker (Material 3 clock) with removable time chips instead of typing "08:00,20:00"; existing lists open as chips.
 - "How to take" (before / with / after food, empty stomach, bedtime), shown on the Today card and in the dose notification. Room migration 1 to 2 (no destructive fallback); schemas exported to `app/schemas`.

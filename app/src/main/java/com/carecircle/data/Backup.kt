@@ -33,6 +33,10 @@ data class BackupMedicine(
 @Serializable
 data class BackupDose(val medicineId: Long, val scheduledAt: Long, val takenAt: Long? = null, val missedHandled: Boolean = false)
 
+/** A saved policy summary (the summary JSON only). Added in backup version 2. */
+@Serializable
+data class BackupPolicy(val savedAt: Long, val json: String)
+
 @Serializable
 data class BackupSettings(val caregiverPhone: String = "", val pharmacyPhone: String = "", val patientName: String = "")
 
@@ -45,6 +49,7 @@ data class BackupFile(
     val settings: BackupSettings = BackupSettings(),
     val medicines: List<BackupMedicine> = emptyList(),
     val doses: List<BackupDose> = emptyList(),
+    val policySummaries: List<BackupPolicy> = emptyList(),
 )
 
 sealed interface BackupParse {
@@ -57,7 +62,7 @@ sealed interface BackupParse {
 /** Pure JSON encode / decode / validation, so it can be unit-tested on the JVM. */
 object BackupCodec {
     const val APP_ID = "carecircle"
-    const val CURRENT_VERSION = 1
+    const val CURRENT_VERSION = 2
     const val HISTORY_DAYS = 90
     const val MAX_BYTES = 10 * 1024 * 1024
 
@@ -65,7 +70,10 @@ object BackupCodec {
 
     fun encode(file: BackupFile): String = json.encodeToString(BackupFile.serializer(), file)
 
-    fun build(meds: List<Medicine>, doses: List<DoseEvent>, settings: BackupSettings, now: Long): BackupFile {
+    fun build(
+        meds: List<Medicine>, doses: List<DoseEvent>, settings: BackupSettings, now: Long,
+        policies: List<PolicySummaryEntity> = emptyList(),
+    ): BackupFile {
         val from = now - HISTORY_DAYS * 24L * 3600_000L
         val ids = meds.map { it.id }.toSet()
         return BackupFile(
@@ -75,6 +83,7 @@ object BackupCodec {
             },
             doses = doses.filter { it.scheduledAt >= from && it.medicineId in ids }
                 .map { BackupDose(it.medicineId, it.scheduledAt, it.takenAt, it.missedHandled) },
+            policySummaries = policies.map { BackupPolicy(it.savedAt, it.json) },
         )
     }
 
@@ -106,14 +115,24 @@ class BackupService(private val ctx: Context) {
         val file = BackupCodec.build(
             db.medicines().allIncludingArchived(), db.doses().since(now - BackupCodec.HISTORY_DAYS * 24L * 3600_000L),
             BackupSettings(prefs.caregiverPhone, prefs.pharmacyPhone, prefs.patientName), now,
+            db.policies().all(),
         )
         out.use { it.write(BackupCodec.encode(file).toByteArray(Charsets.UTF_8)) }
     }
 
     suspend fun read(input: InputStream): BackupParse = withContext(Dispatchers.IO) {
-        val bytes = input.use { it.readNBytes(BackupCodec.MAX_BYTES + 1) }
-        if (bytes.size > BackupCodec.MAX_BYTES) BackupParse.Malformed
-        else BackupCodec.decode(bytes.toString(Charsets.UTF_8))
+        val buf = java.io.ByteArrayOutputStream()
+        val chunk = ByteArray(8192)
+        var tooBig = false
+        input.use {
+            while (true) {
+                val n = it.read(chunk)
+                if (n < 0) break
+                if (buf.size() + n > BackupCodec.MAX_BYTES) { tooBig = true; break }
+                buf.write(chunk, 0, n)
+            }
+        }
+        if (tooBig) BackupParse.Malformed else BackupCodec.decode(buf.toString(Charsets.UTF_8.name()))
     }
 
     /** Replaces everything (after the user confirmed). Alarms are re-armed for the restored medicines. */
@@ -126,6 +145,7 @@ class BackupService(private val ctx: Context) {
             },
         )
         db.doses().insertAll(file.doses.map { DoseEvent(medicineId = it.medicineId, scheduledAt = it.scheduledAt, takenAt = it.takenAt, missedHandled = it.missedHandled) })
+        db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json) })
         prefs.caregiverPhone = file.settings.caregiverPhone
         prefs.pharmacyPhone = file.settings.pharmacyPhone
         prefs.patientName = file.settings.patientName

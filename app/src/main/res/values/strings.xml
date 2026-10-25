@@ -208,4 +208,83 @@
         <item quantity="one">%d dose</item>
         <item quantity="other">%d doses</item>
     </plurals>
+
+    <!-- v0.4: insurance -->
+    <string name="tab_insurance">Insurance</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_done">Done</string>
+    <string name="disclaimer_insurance">Informational only. Verify with your insurer.</string>
+    <string name="ins_intro">Add your policy document and get a short summary where every point shows the page and clause it came from. The text is read on this phone first.</string>
+    <string name="ins_add_policy">Add policy (PDF or photos)</string>
+    <string name="ins_photograph">Photograph pages</string>
+    <plurals name="ins_photos_ready">
+        <item quantity="one">%d photo ready</item>
+        <item quantity="other">%d photos ready</item>
+    </plurals>
+    <string name="ins_read_photos">Read photos</string>
+    <string name="ins_clear_photos">Clear</string>
+    <string name="ins_saved_title">Saved summaries</string>
+    <string name="ins_saved_empty">Nothing saved yet. A saved summary stays on this phone only.</string>
+    <string name="ins_saved_on">Saved on %1$s</string>
+    <string name="ins_reading_start">Getting ready...</string>
+    <string name="ins_reading_progress">Reading page %1$d of %2$d</string>
+    <string name="ins_reading_note">Reading happens on this phone. Nothing is sent yet.</string>
+    <string name="ins_err_password">This PDF is password protected. Remove the password and try again.</string>
+    <string name="ins_err_unreadable">This file could not be opened. Try another file or photos.</string>
+    <string name="ins_err_little_text">Could not read this document, try clearer photos.</string>
+    <string name="ins_try_again">Try again</string>
+    <string name="ins_err_large">The document is too large. Try fewer pages.</string>
+    <string name="ins_err_offline">No internet connection. Connect and try again.</string>
+    <string name="ins_err_other">Something went wrong. Try again in a moment.</string>
+    <string name="ins_sending">Summarising...</string>
+    <plurals name="ins_pages_read">
+        <item quantity="one">%d page read on this phone.</item>
+        <item quantity="other">%d pages read on this phone.</item>
+    </plurals>
+    <string name="ins_first_pages_note">First 40 pages used.</string>
+    <string name="consent_title">Before we summarise</string>
+    <string name="consent_what_title">What is sent</string>
+    <string name="consent_what">Only the text extracted from your document. Not the original file and not any images.</string>
+    <string name="consent_who_title">To whom</string>
+    <string name="consent_who">The CareCircle server and its AI provider, to write the summary.</string>
+    <string name="consent_stored_title">Is it kept?</string>
+    <string name="consent_stored">No. The text is not stored by the server and is not logged.</string>
+    <string name="consent_agree">I agree and summarise</string>
+    <string name="ins_notice_pill">Verify with your insurer</string>
+    <string name="ins_nothing_found">No clear facts could be verified in this document.</string>
+    <string name="ins_summary_title">Policy summary</string>
+    <string name="ins_unverified_title">Could not verify - check your policy</string>
+    <string name="ins_save">Save summary on this phone</string>
+    <string name="ins_saved_note">Saved on this phone.</string>
+    <string name="ins_show_source">Show source text</string>
+    <string name="ins_hide_source">Hide source text</string>
+    <string name="cite_page">Page %1$d</string>
+    <string name="cite_page_clause">Page %1$d, clause %2$s</string>
+    <string name="ins_f_sum_insured">Sum insured</string>
+    <string name="ins_f_room_rent">Room rent limit</string>
+    <string name="ins_f_copay">Co-payment</string>
+    <string name="ins_f_wait_initial">Initial waiting period</string>
+    <string name="ins_f_wait_pre">Pre-existing disease waiting period</string>
+    <string name="ins_f_wait_specific">Waiting period</string>
+    <string name="ins_f_inclusions">Covered</string>
+    <string name="ins_f_exclusions">Not covered</string>
+    <string name="ins_f_day_care">Day-care treatments</string>
+    <string name="ins_f_pre_hosp">Before hospital stay</string>
+    <string name="ins_f_post_hosp">After hospital stay</string>
+    <string name="ins_f_helpline">Claim helpline</string>
+    <string name="ins_f_tpa">TPA</string>
+
+    <!-- v0.4: strip scanner -->
+    <string name="scan_read_check">Read: %1$s - the print was hard to read, please check it carefully.</string>
+    <string name="scan_cam_title">Camera for the strip scan</string>
+    <string name="scan_cam_why">CareCircle uses the camera only to read the printed medicine name. The picture is read on this phone and never saved or sent.</string>
+    <string name="scan_cam_allow">Allow camera</string>
+    <string name="scan_cam_denied">Camera access was not allowed. You can still pick a photo or type the name.</string>
+    <string name="scan_gallery">Pick a photo instead</string>
+    <string name="scan_type_instead">Type it instead</string>
+    <string name="scan_guide">Place the printed composition inside the frame</string>
+    <string name="scan_capture">Capture</string>
+    <string name="scan_reading">Reading...</string>
+    <string name="scan_fail">Could not read the composition. Move closer, avoid glare, and try again.</string>
+    <string name="cd_torch">Torch</string>
 </resources>

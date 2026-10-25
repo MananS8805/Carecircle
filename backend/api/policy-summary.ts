@@ -1,7 +1,6 @@
-// Week 2: insurance policy summary. Accepts OCR text ONLY after explicit in-app consent; never store the document.
-export function POST(): Response {
-  return new Response(JSON.stringify({ error: "not_implemented", planned: "week-2" }), {
-    status: 501,
-    headers: { "content-type": "application/json" },
-  });
+import { handlePolicySummary } from "../lib/policySummary.js";
+
+// Accepts OCR text ONLY after explicit in-app consent. The request and the result are never stored or logged.
+export function POST(request: Request): Promise<Response> {
+  return handlePolicySummary(request);
 }

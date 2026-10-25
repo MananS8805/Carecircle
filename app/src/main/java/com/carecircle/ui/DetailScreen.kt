@@ -24,7 +24,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -51,7 +53,8 @@ import com.carecircle.ui.theme.SoftCard
 
 @Composable
 fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () -> Unit) {
-    val med by produceState<Medicine?>(null, id) { value = vm.repo.medicines.get(id) }
+    var med by remember { mutableStateOf<Medicine?>(null) }
+    LaunchedEffect(id) { med = vm.repo.medicines.get(id) }
     val card by vm.card.collectAsStateWithLifecycle()
     val loading by vm.loading.collectAsStateWithLifecycle()
     val ctx = LocalContext.current

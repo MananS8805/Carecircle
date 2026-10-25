@@ -48,9 +48,15 @@ npx vercel --prod   # deploy
 ```
 Environment variables (Vercel project settings): `ANTHROPIC_API_KEY` (optional; without it cards use extractive text from the label, never invented text), `LLM_MODEL` (default `claude-haiku-4-5`), `APP_KEY` (optional shared secret sent by the app as `x-app-key`). The LLM key lives only on the server. Add a Vercel Firewall rate-limit rule for `/api/*` for real abuse protection (the in-code limiter is per instance).
 
+## API
+
+- `GET /api/medicine-info?salt=...` plain-English card from official sources (RxNorm, openFDA label, MedlinePlus).
+- `GET /api/interactions?salts=a,b,c` (max 8 names): label sentences that mention another of your medicines, each with a source link; honest empty state otherwise.
+- `POST /api/policy-summary` body `{pages:[{page,text}]}` (max 40 pages, 200,000 characters, else 413). Returns `{summary, unverified, mode, disclaimer}`. Every item carries page, clause and a quote that was checked to appear on that page; anything that cannot be verified is dropped and listed in `unverified`. Without an LLM key `mode` is `extractive` (regex). Limit: 5 requests per minute per IP. The request and result are never stored or logged. Only call it after explicit consent in the app.
+
 ## Privacy
 
-Data is local-first (Room + SharedPreferences). Only a medicine's generic name is sent to the backend. Strip photos never leave the phone. WhatsApp and SMS messages are composed by you and sent by you.
+Data is local-first (Room + SharedPreferences). Only a medicine's generic name is sent to the backend, and insurance text only after an explicit consent screen (never stored by the server). Strip photos never leave the phone. WhatsApp and SMS messages are composed by you and sent by you.
 
 ## Layout
 

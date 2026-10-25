@@ -118,6 +118,27 @@ class DomainTest {
         assertEquals(2, TimeList.parse("08:00,20:00").size)
     }
 
+    @Test fun saltParserNoisyOcr() {
+        assertEquals(listOf("paracetamol"), SaltParser.parse("Paracetamol IP 500 mg Rx"))
+        assertEquals(listOf("azithromycin"), SaltParser.parse("Each film coated tablet contains: Azithromycin IP 500mg"))
+        assertEquals(emptyList<String>(), SaltParser.parse("MRP Rs. 30.00 Mfd 03/2026 Exp 02/2028"))
+    }
+
+    @Test fun scanQualityVerdicts() {
+        assertEquals(ScanQuality.Verdict.RETRY, ScanQuality.assess(emptyList(), 0.9f))
+        assertEquals(ScanQuality.Verdict.CHECK, ScanQuality.assess(listOf("paracetamol"), 0.2f))
+        assertEquals(ScanQuality.Verdict.GOOD, ScanQuality.assess(listOf("paracetamol"), null))
+        assertEquals(ScanQuality.Verdict.GOOD, ScanQuality.assess(listOf("paracetamol"), 0.9f))
+    }
+
+    @Test fun policyLimits() {
+        assertFalse(PolicyLimits.hasEnoughText(listOf("short", "text")))
+        assertTrue(PolicyLimits.hasEnoughText(listOf("a".repeat(150), " ".repeat(10) + "b".repeat(60))))
+        assertTrue(PolicyLimits.isTruncated(41)); assertFalse(PolicyLimits.isTruncated(40))
+        assertEquals(1800f / 842f, PolicyLimits.renderScale(595, 842), 0.001f)
+        assertEquals(3f, PolicyLimits.renderScale(100, 100), 0.001f)
+    }
+
     @Test fun foodTimingParsesLeniently() {
         assertEquals(FoodTiming.AFTER_FOOD, FoodTiming.fromKey(" after_food "))
         assertEquals(FoodTiming.NONE, FoodTiming.fromKey("garbage"))

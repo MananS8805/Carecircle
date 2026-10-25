@@ -8,6 +8,8 @@ import com.carecircle.data.*
 import com.carecircle.domain.Condition
 import com.carecircle.domain.Conditions
 import com.carecircle.domain.MissedDose
+import com.carecircle.domain.PolicyLimits
+import com.carecircle.domain.SavedPolicy
 import com.carecircle.domain.OrganKind
 import com.carecircle.domain.Schedule
 import com.carecircle.reminder.DoseActions
@@ -18,6 +20,22 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
+
+enum class ReadFailure { PASSWORD, UNREADABLE, TOO_LITTLE_TEXT }
+enum class SendFailure { TOO_LARGE, RATE_LIMITED, OFFLINE, OTHER }
+
+/** Insurance flow. The OCR text lives only inside [NeedConsent] and is dropped on cancel, decline or send. */
+sealed interface InsuranceState {
+    data object Idle : InsuranceState
+    data class Reading(val done: Int, val total: Int) : InsuranceState
+    data class ReadFailed(val kind: ReadFailure) : InsuranceState
+    data class NeedConsent(val pages: List<PolicyPageText>, val truncated: Boolean) : InsuranceState
+    data object Sending : InsuranceState
+    data class Failed(val kind: SendFailure) : InsuranceState
+    data class Result(val response: PolicyResponse, val truncated: Boolean, val saved: Boolean, val savedId: Long? = null) : InsuranceState
+}
+
+data class SavedPolicyItem(val id: Long, val policy: SavedPolicy)
 
 /** A one-line status for the Settings data card: a string resource, shown once. */
 data class DataMsg(@androidx.annotation.StringRes val res: Int)
@@ -112,6 +130,81 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _interactionsLoading.value = false
     }
 
+    /** Result of the strip scanner, picked up once by the Edit screen. */
+    val pendingScan = MutableStateFlow<ScanResult?>(null)
+
+    // ---- Insurance policy summary ----
+    private val _insurance = MutableStateFlow<InsuranceState>(InsuranceState.Idle)
+    val insurance: StateFlow<InsuranceState> = _insurance
+    private var readJob: kotlinx.coroutines.Job? = null
+
+    val savedPolicies: StateFlow<List<SavedPolicyItem>> = repo.savedPolicies.map { list ->
+        list.mapNotNull { e ->
+            runCatching { ApiFactory.json.decodeFromString<SavedPolicy>(e.json) }.getOrNull()?.let { SavedPolicyItem(e.id, it) }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun readDocuments(uris: List<android.net.Uri>) {
+        if (uris.isEmpty()) return
+        readJob?.cancel()
+        _insurance.value = InsuranceState.Reading(0, 0)
+        readJob = viewModelScope.launch {
+            val ctx = getApplication<Application>()
+            try {
+                val out = PolicyOcr.read(ctx, uris) { d, t -> _insurance.value = InsuranceState.Reading(d, t) }
+                _insurance.value =
+                    if (!PolicyLimits.hasEnoughText(out.pages.map { it.text })) InsuranceState.ReadFailed(ReadFailure.TOO_LITTLE_TEXT)
+                    else InsuranceState.NeedConsent(out.pages, out.truncated)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                _insurance.value = InsuranceState.Idle
+                throw e
+            } catch (e: PolicyOcr.PasswordProtectedException) {
+                _insurance.value = InsuranceState.ReadFailed(ReadFailure.PASSWORD)
+            } catch (e: Exception) {
+                _insurance.value = InsuranceState.ReadFailed(ReadFailure.UNREADABLE)
+            } finally {
+                ctx.cacheDir.listFiles { f -> f.name.startsWith("policy-") }?.forEach { it.delete() }
+            }
+        }
+    }
+
+    fun cancelReading() { readJob?.cancel(); _insurance.value = InsuranceState.Idle }
+
+    /** Called only from the consent screen. Nothing is sent before this. */
+    fun consentAndSend() {
+        val s = _insurance.value as? InsuranceState.NeedConsent ?: return
+        _insurance.value = InsuranceState.Sending
+        viewModelScope.launch {
+            _insurance.value = when (val r = repo.policySummary(s.pages)) {
+                is PolicyResult.Ok -> InsuranceState.Result(r.response, s.truncated, saved = false)
+                PolicyResult.TooLarge -> InsuranceState.Failed(SendFailure.TOO_LARGE)
+                PolicyResult.RateLimited -> InsuranceState.Failed(SendFailure.RATE_LIMITED)
+                PolicyResult.Offline -> InsuranceState.Failed(SendFailure.OFFLINE)
+                PolicyResult.Error -> InsuranceState.Failed(SendFailure.OTHER)
+            }
+        }
+    }
+
+    fun resetInsurance() { readJob?.cancel(); _insurance.value = InsuranceState.Idle }
+
+    fun saveCurrentPolicy() = viewModelScope.launch {
+        val r = _insurance.value as? InsuranceState.Result ?: return@launch
+        if (r.saved) return@launch
+        repo.savePolicy(r.response)
+        _insurance.value = r.copy(saved = true)
+    }
+
+    fun viewSaved(item: SavedPolicyItem) {
+        _insurance.value = InsuranceState.Result(
+            PolicyResponse(item.policy.summary, item.policy.unverified, item.policy.mode), truncated = false, saved = true, savedId = item.id,
+        )
+    }
+
+    fun deleteSaved(id: Long) = viewModelScope.launch {
+        repo.deletePolicy(id)
+        if ((_insurance.value as? InsuranceState.Result)?.savedId == id) _insurance.value = InsuranceState.Idle
+    }
+
     // ---- Export / restore / delete all ----
     private val backup = BackupService(app)
     private val _dataMsg = MutableStateFlow<DataMsg?>(null)
@@ -151,7 +244,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteAllData() = viewModelScope.launch {
         backup.deleteAll()
-        _card.value = null; _interactions.value = null
+        _card.value = null; _interactions.value = null; _insurance.value = InsuranceState.Idle
         _dataMsg.value = DataMsg(R.string.data_deleted)
     }
 
