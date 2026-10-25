@@ -183,7 +183,42 @@ export function extractiveSummary(pages: Page[]): unknown {
       if (illness) raw.waitingSpecific.push({ illness, period: pm[0], page: p.page, clause: clauseOf(p.text, s), quote: s.slice(0, 300) });
     }
   }
+  raw.exclusions = listSection(pages, EXCLUSION_HEAD, [INCLUSION_HEAD]);
+  raw.inclusions = listSection(pages, INCLUSION_HEAD, [EXCLUSION_HEAD]);
   return raw;
+}
+
+// ---- covered / not covered lists (deterministic) ------------------------------------------------------------
+
+const EXCLUSION_HEAD = /^\s*(?:\d+(?:\.\d+)*\.?\s*)?(?:permanent\s+)?(?:list\s+of\s+)?(?:general\s+)?(?:exclusions?|what\s+is\s+not\s+covered|not\s+covered|we\s+will\s+not\s+pay|waiting\s+period\s+exclusions?)\b/i;
+const INCLUSION_HEAD = /^\s*(?:\d+(?:\.\d+)*\.?\s*)?(?:inclusions?|what\s+is\s+covered|covered\s+expenses|scope\s+of\s+cover(?:age)?|we\s+will\s+pay|benefits\s+covered|coverage)\b/i;
+const BULLET = /^\s*((?:[-\u2022*\u2023]|\(?\d{1,2}(?:\.\d{1,2})+\)?|\(?\d{1,2}[.)]|\(?[a-z]{1,3}[.)]|\(?[ivx]{1,4}\))\s+)(.{8,})$/i;
+
+/**
+ * Takes the bullet or numbered lines that follow an "Exclusions" or "Inclusions" heading, up to the next heading. Each
+ * item is the line itself, so its quote is verified against the page like every other item. Only the first line of a wrapped
+ * item is read, which keeps the quote exact.
+ */
+function listSection(pages: Page[], head: RegExp, other: RegExp[]): { value: string; page: number; clause: string | null; quote: string }[] {
+  const out: { value: string; page: number; clause: string | null; quote: string }[] = [];
+  let active = false;
+  for (const p of pages) {
+    for (const line of p.text.split(/\r?\n/)) {
+      const t = line.trim();
+      if (!t) continue;
+      const isHeading = !BULLET.test(t) && t.length < 60 && !/[.;,:]$/.test(t) && /^[A-Z0-9]/.test(t) && t.split(/\s+/).length <= 7;
+      if (isHeading && head.test(t)) { active = true; continue; }
+      if (isHeading && other.some((r) => r.test(t))) { active = false; continue; }
+      if (isHeading) { active = false; continue; } // any other short title ends the list
+      if (!active) continue;
+      const m = BULLET.exec(line);
+      if (!m) continue;
+      const marker = m[1]!.trim().replace(/^\(/, "").replace(/[).]$/, "");
+      out.push({ value: m[2]!.trim().slice(0, 200), page: p.page, clause: /^\d/.test(marker) ? marker : marker ? `(${marker})` : null, quote: t.slice(0, 300) });
+      if (out.length >= 40) return out;
+    }
+  }
+  return out;
 }
 
 // ---- handler ------------------------------------------------------------------------------------------------

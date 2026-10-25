@@ -61,6 +61,55 @@ describe("quote verification", () => {
   });
 });
 
+const listPages: Page[] = [
+  {
+    page: 1,
+    text: [
+      "5. WHAT IS COVERED",
+      "Inclusions",
+      "5.1 In-patient hospitalisation for at least 24 hours",
+      "5.2 Day care procedures such as cataract surgery",
+      "- Ambulance charges up to Rs. 2,000 per claim",
+    ].join("\n"),
+  },
+  {
+    page: 2,
+    text: [
+      "Exclusions",
+      "7.1 Cosmetic or plastic surgery unless needed after an accident",
+      "7.2 Dental treatment, unless caused by an accident",
+      "(a) Infertility and assisted conception treatment",
+      "Claim Procedure",
+      "8.1 Intimate the insurer within 24 hours of hospitalisation",
+    ].join("\n"),
+  },
+];
+
+describe("covered and not covered lists (extractive)", () => {
+  it("reads inclusion and exclusion bullets with page, clause and an exact quote", async () => {
+    const b: any = await (await handlePolicySummary(post({ pages: listPages }), env(), vi.fn() as unknown as typeof fetch)).json();
+    expect(b.mode).toBe("extractive");
+    expect(b.summary.inclusions.map((i: any) => i.page)).toEqual([1, 1, 1]);
+    expect(b.summary.inclusions[0].clause).toBe("5.1");
+    expect(b.summary.inclusions[0].value).toMatch(/In-patient hospitalisation/);
+    expect(b.summary.exclusions).toHaveLength(3);
+    expect(b.summary.exclusions[0]).toMatchObject({ page: 2, clause: "7.1" });
+    expect(b.summary.exclusions[2].clause).toBe("(a)");
+    expect(b.unverified).toEqual([]);
+  });
+
+  it("stops at the next heading, so claim-procedure lines are not exclusions", async () => {
+    const b: any = await (await handlePolicySummary(post({ pages: listPages }), env(), vi.fn() as unknown as typeof fetch)).json();
+    expect(b.summary.exclusions.some((e: any) => /Intimate the insurer/.test(e.value))).toBe(false);
+  });
+
+  it("returns empty lists when the text has no such sections", async () => {
+    const b: any = await (await handlePolicySummary(post({ pages }), env(), vi.fn() as unknown as typeof fetch)).json();
+    expect(b.summary.exclusions).toEqual([]);
+    expect(b.summary.inclusions).toEqual([]);
+  });
+});
+
 describe("handler", () => {
   it("extractive fallback (no LLM key) finds the headline items with pages", async () => {
     const res = await handlePolicySummary(post({ pages }), env(), vi.fn() as unknown as typeof fetch);
