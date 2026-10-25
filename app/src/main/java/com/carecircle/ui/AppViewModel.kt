@@ -160,7 +160,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val p = scopePerson.value ?: return@launch
         val ctx = getApplication<Application>()
         val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            PdfExport.create(ctx, p.name, medicines.value, repo.adherence(p.id, 30), repo.symptomsSince(System.currentTimeMillis() - 30L * 24 * 3600_000L))
+            PdfExport.create(ctx, p.name, medicines.value, repo.adherence(p.id, 30), repo.symptomsSince(System.currentTimeMillis() - 30L * 24 * 3600_000L), repo.vitalsSince(p.id, System.currentTimeMillis() - 30L * 24 * 3600_000L))
         }
         PdfExport.share(ctx, file)
     }
@@ -203,6 +203,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val meds = repo.medicines.all()
         return meds.size to (meds.map { it.createdAt }.filter { it > 0 }.minOrNull() ?: 0L)
     }
+
+    // ---- Vitals and appointments (for the selected person) ----
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun vitals(kind: String): Flow<List<VitalLog>> = scopePerson.flatMapLatest { p -> if (p == null) flowOf(emptyList()) else repo.vitals(p.id, kind) }
+
+    fun logVital(kind: String, v1: Double, v2: Double?, note: String) = viewModelScope.launch {
+        val p = scopePerson.value ?: return@launch
+        repo.logVital(VitalLog(personId = p.id, kind = kind, v1 = v1, v2 = v2, measuredAt = System.currentTimeMillis(), note = note.trim().take(120)))
+    }
+
+    fun deleteVital(id: Long) = viewModelScope.launch { repo.deleteVital(id) }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val appointments: StateFlow<List<Appointment>> = scopePerson.flatMapLatest { p -> if (p == null) flowOf(emptyList()) else repo.appointments(p.id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun saveAppointment(title: String, doctor: String, startsAt: Long, notes: String, remindBefore: Int) = viewModelScope.launch {
+        val p = scopePerson.value ?: return@launch
+        repo.saveAppointment(Appointment(personId = p.id, title = title.trim().take(80), doctor = doctor.trim().take(80), startsAt = startsAt, notes = notes.trim().take(300), remindBefore = remindBefore))
+    }
+
+    fun deleteAppointment(id: Long) = viewModelScope.launch { repo.deleteAppointment(id) }
 
     // ---- Allergies and safety flags ----
     fun allergiesFor(personId: Long) = repo.allergies(personId)

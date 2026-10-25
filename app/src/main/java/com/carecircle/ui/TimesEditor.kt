@@ -82,7 +82,7 @@ fun TimesEditor(csv: String, onChange: (String) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimePickerDialog(initial: LocalTime, onConfirm: (LocalTime) -> Unit, onDismiss: () -> Unit) {
+fun TimePickerDialog(initial: LocalTime, onConfirm: (LocalTime) -> Unit, onDismiss: () -> Unit) {
     val state = rememberTimePickerState(initial.hour, initial.minute, is24Hour = false)
     AlertDialog(
         onDismissRequest = onDismiss,

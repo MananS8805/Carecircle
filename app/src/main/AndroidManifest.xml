@@ -38,6 +38,7 @@
         <receiver android:name=".reminder.TakenActionReceiver" android:exported="false" />
         <receiver android:name=".reminder.SnoozeReceiver" android:exported="false" />
         <receiver android:name=".reminder.DailySummaryReceiver" android:exported="false" />
+        <receiver android:name=".reminder.AppointmentReceiver" android:exported="false" />
         <receiver android:name=".reminder.DoseWidget" android:exported="false">
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/dose_widget_info" />

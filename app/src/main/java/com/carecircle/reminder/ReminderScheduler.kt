@@ -56,6 +56,7 @@ object ReminderScheduler {
     suspend fun scheduleAll(ctx: Context) {
         Notifier.ensureChannels(ctx)
         scheduleDailySummary(ctx)
+        scheduleAppointments(ctx)
         AppDb.get(ctx).medicines().all().forEach { scheduleFor(ctx, it.id) }
     }
 
@@ -78,6 +79,23 @@ object ReminderScheduler {
     fun cancelRepeats(ctx: Context, doseId: Long) {
         val am = ctx.getSystemService(AlarmManager::class.java)
         for (level in 1..Escalation.REPEAT_AFTER_MINUTES.size) am.cancel(repeatPi(ctx, doseId, level))
+    }
+
+    private fun apptPi(ctx: Context, id: Long) = PendingIntent.getBroadcast(
+        ctx, 8_000_000 + id.toInt(),
+        Intent(ctx, AppointmentReceiver::class.java).putExtra(Notifier.EXTRA_APPT_ID, id),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    fun scheduleAppointment(ctx: Context, a: com.carecircle.data.Appointment, now: Long = System.currentTimeMillis()) {
+        val lite = com.carecircle.domain.ApptLite(a.id, a.startsAt, a.remindBefore)
+        if (com.carecircle.domain.Appointments.shouldArm(lite, now)) arm(ctx.getSystemService(AlarmManager::class.java), com.carecircle.domain.Appointments.remindAt(lite), apptPi(ctx, a.id))
+    }
+
+    fun cancelAppointment(ctx: Context, id: Long) { ctx.getSystemService(AlarmManager::class.java).cancel(apptPi(ctx, id)) }
+
+    suspend fun scheduleAppointments(ctx: Context) {
+        AppDb.get(ctx).appointments().all().forEach { scheduleAppointment(ctx, it) }
     }
 
     /** The evening summary notification, once a day at 9 pm. */

@@ -119,5 +119,6 @@ object Notifier {
     const val EXTRA_DOSE_ID = "doseId"
     const val EXTRA_MED_ID = "medId"
     const val EXTRA_LEVEL = "level"
+    const val EXTRA_APPT_ID = "apptId"
     const val EXTRA_AT = "scheduledAt"
 }

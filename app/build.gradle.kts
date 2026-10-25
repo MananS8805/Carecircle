@@ -16,8 +16,8 @@ android {
         applicationId = "com.carecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "1.2.0"
+        versionCode = 13
+        versionName = "1.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Deployed Vercel URL of /backend. Override in local.properties: careCircleApi=https://your-app.vercel.app/
         val api = (project.findProperty("careCircleApi") as String?) ?: "https://carecircle-api.example.vercel.app/"

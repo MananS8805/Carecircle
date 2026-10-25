@@ -132,6 +132,26 @@ class DailySummaryReceiver : BroadcastReceiver() {
     }
 }
 
+/** Fires before a doctor appointment: a notification with the title, doctor and time. */
+class AppointmentReceiver : BroadcastReceiver() {
+    override fun onReceive(ctx: Context, intent: Intent) {
+        val id = intent.getLongExtra(Notifier.EXTRA_APPT_ID, -1)
+        if (id < 0) return
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val db = AppDb.get(ctx)
+                val a = db.appointments().get(id) ?: return@launch
+                val lc = AppLocale.wrap(ctx)
+                val who = db.people().get(a.personId)?.name?.takeIf { db.people().count() > 1 }
+                val title = lc.getString(R.string.appt_notif_title, a.title)
+                val text = listOf(who, a.doctor.takeIf { it.isNotBlank() }, Fmt.time(a.startsAt, AppLocale.locale(ctx))).filterNotNull().joinToString("  -  ")
+                Notifier.plainAlert(ctx, 6_000_000 + id.toInt(), title, text)
+            } finally { pending.finish() }
+        }
+    }
+}
+
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         val pending = goAsync()

@@ -15,6 +15,19 @@ class MigrationTest {
     )
 
     @Test
+    fun migrate9To10AddsVitalsAndAppointments() {
+        helper.createDatabase("mig910", 9).apply {
+            execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate("mig910", 10, true, Migrations.M9_10)
+        db.execSQL("INSERT INTO vital_log (personId, kind, v1, v2, measuredAt, note) VALUES (1, 'bp', 120.0, 80.0, 5, '')")
+        db.execSQL("INSERT INTO appointment (personId, title, doctor, startsAt, notes, remindBefore) VALUES (1, 'Check', 'Dr A', 9, '', 60)")
+        db.query("SELECT COUNT(*) FROM vital_log").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
+        db.query("SELECT COUNT(*) FROM appointment").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
+    }
+
+    @Test
     fun migrate8To9AddsSecondCaregiverKeepingPeople() {
         helper.createDatabase("mig89", 8).apply {
             execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Dad', '919876543210', '', 0)")

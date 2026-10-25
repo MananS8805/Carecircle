@@ -527,4 +527,37 @@
     <string name="alert_second">Alert second caregiver on WhatsApp</string>
     <string name="notif_missed2_title">Still missed: %1$s (%2$s)</string>
     <string name="notif_missed2_text">The first caregiver was told 15 minutes ago. Tap to alert the second caregiver.</string>
+    <!-- v1.3: vitals and appointments -->
+    <string name="vitals_title">Health readings</string>
+    <string name="vital_bp">Blood pressure</string>
+    <string name="vital_sugar">Blood sugar</string>
+    <string name="vital_pulse">Pulse</string>
+    <string name="vital_weight">Weight</string>
+    <string name="vital_temp">Temperature</string>
+    <string name="vitals_add">Add %1$s reading</string>
+    <string name="vitals_top">Top (systolic)</string>
+    <string name="vitals_bottom">Bottom (diastolic)</string>
+    <string name="vitals_save">Save reading</string>
+    <string name="vitals_check_value">That value does not look right. Check it and try again.</string>
+    <string name="vitals_trend">Trend</string>
+    <string name="vitals_stats">Latest %1$s, average %2$s over %3$d readings (%4$s)</string>
+    <string name="vitals_disclaimer">Informational only, not medical advice. Share these readings with your doctor.</string>
+    <string name="vitals_empty">No readings yet.</string>
+    <string name="pdf_vitals_title">Readings (last 30 days)</string>
+    <string name="pdf_vital_line">%1$s: latest %2$s, average %3$s (%4$d readings, %5$s)</string>
+    <string name="appt_title">Appointments</string>
+    <string name="appt_add">Add appointment</string>
+    <string name="appt_field_title">What is it for? (e.g. Diabetes check)</string>
+    <string name="appt_field_doctor">Doctor or clinic (optional)</string>
+    <string name="appt_field_notes">Notes (optional)</string>
+    <string name="appt_pick_date">Pick date</string>
+    <string name="appt_pick_time">Pick time</string>
+    <string name="appt_remind">Remind me</string>
+    <string name="appt_remind_1h">1 hour before</string>
+    <string name="appt_remind_3h">3 hours before</string>
+    <string name="appt_remind_1d">1 day before</string>
+    <string name="appt_upcoming">Upcoming</string>
+    <string name="appt_past">Past</string>
+    <string name="appt_empty">No appointments yet.</string>
+    <string name="appt_notif_title">Appointment: %1$s</string>
 </resources>

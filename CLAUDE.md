@@ -83,3 +83,7 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - `domain/ReminderHealth.kt` (pure) is filled by `ui/HealthScreen.readHealth`. `Prefs.lastReminderAt` is stamped in `DoseAlarmReceiver`.
 - `reminder/DoseWidget` is a plain AppWidgetProvider (RemoteViews, no extra dependency); call `DoseWidget.refreshAll(ctx)` after anything that changes a dose.
 - The second-caregiver alert is a `MissedDoseWorker` run with `EXTRA_LEVEL = 2` at +45 minutes.
+
+## v1.3 notes
+- `domain/Vitals.kt` and `domain/Appointments.kt` are pure and tested. Vitals are never interpreted (no normal/abnormal wording); keep it that way unless a clinician reviews the wording.
+- Appointment reminders use request code `8_000_000 + id`; `ReminderScheduler.scheduleAppointments` runs from `scheduleAll` (boot) and after a restore.

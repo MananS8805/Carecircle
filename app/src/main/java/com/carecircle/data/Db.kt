@@ -164,6 +164,51 @@ data class Allergy(
     val name: String,
 )
 
+/** A reading the person measured (blood pressure, sugar, pulse, weight, temperature). [v2] is the diastolic value for blood pressure. */
+@Entity(tableName = "vital_log", indices = [Index("personId")])
+data class VitalLog(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val personId: Long,
+    val kind: String,
+    val v1: Double,
+    val v2: Double? = null,
+    val measuredAt: Long,
+    val note: String = "",
+)
+
+@Entity(tableName = "appointment", indices = [Index("personId")])
+data class Appointment(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val personId: Long,
+    val title: String,
+    val doctor: String = "",
+    val startsAt: Long,
+    val notes: String = "",
+    val remindBefore: Int = 60, // minutes
+)
+
+@Dao
+interface VitalDao {
+    @Query("SELECT * FROM vital_log WHERE personId = :personId AND kind = :kind ORDER BY measuredAt DESC") fun observe(personId: Long, kind: String): Flow<List<VitalLog>>
+    @Query("SELECT * FROM vital_log WHERE personId = :personId AND measuredAt >= :from ORDER BY measuredAt") suspend fun since(personId: Long, from: Long): List<VitalLog>
+    @Query("SELECT * FROM vital_log") suspend fun all(): List<VitalLog>
+    @Insert suspend fun insert(v: VitalLog): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(v: List<VitalLog>)
+    @Query("DELETE FROM vital_log WHERE id = :id") suspend fun delete(id: Long)
+    @Query("DELETE FROM vital_log WHERE personId = :personId") suspend fun deleteForPerson(personId: Long)
+}
+
+@Dao
+interface AppointmentDao {
+    @Query("SELECT * FROM appointment WHERE personId = :personId ORDER BY startsAt") fun observe(personId: Long): Flow<List<Appointment>>
+    @Query("SELECT * FROM appointment") suspend fun all(): List<Appointment>
+    @Query("SELECT * FROM appointment WHERE id = :id") suspend fun get(id: Long): Appointment?
+    @Insert suspend fun insert(a: Appointment): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(a: List<Appointment>)
+    @Query("DELETE FROM appointment WHERE id = :id") suspend fun delete(id: Long)
+    @Query("DELETE FROM appointment WHERE personId = :personId") suspend fun deleteForPerson(personId: Long)
+}
+
 @Dao
 interface AllergyDao {
     @Query("SELECT * FROM allergy WHERE personId = :personId ORDER BY name") fun observeFor(personId: Long): Flow<List<Allergy>>
@@ -296,7 +341,17 @@ object Migrations {
         }
     }
 
-    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7, M7_8, M8_9)
+    /** v1.2 -> v1.3: vitals log and appointments. */
+    val M9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS vital_log (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, personId INTEGER NOT NULL, kind TEXT NOT NULL, v1 REAL NOT NULL, v2 REAL, measuredAt INTEGER NOT NULL, note TEXT NOT NULL)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_vital_log_personId ON vital_log (personId)")
+            db.execSQL("CREATE TABLE IF NOT EXISTS appointment (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, personId INTEGER NOT NULL, title TEXT NOT NULL, doctor TEXT NOT NULL, startsAt INTEGER NOT NULL, notes TEXT NOT NULL, remindBefore INTEGER NOT NULL)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_appointment_personId ON appointment (personId)")
+        }
+    }
+
+    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7, M7_8, M8_9, M9_10)
 }
 
 object Persons {
@@ -306,8 +361,8 @@ object Persons {
 }
 
 @Database(
-    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class, SyncLink::class, Following::class, Allergy::class],
-    version = 9, exportSchema = true,
+    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class, SyncLink::class, Following::class, Allergy::class, VitalLog::class, Appointment::class],
+    version = 10, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun people(): PersonDao
@@ -319,6 +374,8 @@ abstract class AppDb : RoomDatabase() {
     abstract fun symptoms(): SymptomDao
     abstract fun sync(): SyncDao
     abstract fun allergies(): AllergyDao
+    abstract fun vitals(): VitalDao
+    abstract fun appointments(): AppointmentDao
 
     companion object {
         @Volatile private var inst: AppDb? = null

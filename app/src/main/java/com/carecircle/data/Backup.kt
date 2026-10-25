@@ -37,6 +37,13 @@ data class BackupMedicine(
     val doctorNote: String? = null,
 )
 
+/** A measured reading and an appointment. Added in backup version 8. */
+@Serializable
+data class BackupVital(val personId: Long, val kind: String, val v1: Double, val v2: Double? = null, val measuredAt: Long, val note: String = "")
+
+@Serializable
+data class BackupAppointment(val personId: Long, val title: String, val doctor: String = "", val startsAt: Long, val notes: String = "", val remindBefore: Int = 60)
+
 /** An allergy of a person. Added in backup version 6. */
 @Serializable
 data class BackupAllergy(val personId: Long, val name: String)
@@ -73,6 +80,8 @@ data class BackupFile(
     val policySummaries: List<BackupPolicy> = emptyList(),
     val symptoms: List<BackupSymptom> = emptyList(),
     val allergies: List<BackupAllergy> = emptyList(),
+    val vitals: List<BackupVital> = emptyList(),
+    val appointments: List<BackupAppointment> = emptyList(),
 )
 
 sealed interface BackupParse {
@@ -85,7 +94,7 @@ sealed interface BackupParse {
 /** Pure JSON encode / decode / validation, so it can be unit-tested on the JVM. */
 object BackupCodec {
     const val APP_ID = "carecircle"
-    const val CURRENT_VERSION = 7
+    const val CURRENT_VERSION = 8
     const val HISTORY_DAYS = 90
     const val MAX_BYTES = 10 * 1024 * 1024
 
@@ -98,6 +107,8 @@ object BackupCodec {
         policies: List<PolicySummaryEntity> = emptyList(),
         symptoms: List<SymptomLog> = emptyList(),
         allergies: List<Allergy> = emptyList(),
+        vitals: List<VitalLog> = emptyList(),
+        appointments: List<Appointment> = emptyList(),
     ): BackupFile {
         val from = now - HISTORY_DAYS * 24L * 3600_000L
         val ids = meds.map { it.id }.toSet()
@@ -112,6 +123,8 @@ object BackupCodec {
             policySummaries = policies.map { BackupPolicy(it.savedAt, it.json, it.personId) },
             symptoms = symptoms.filter { it.medicineId in ids }.map { BackupSymptom(it.medicineId, it.loggedAt, it.symptom, it.severity, it.note) },
             allergies = allergies.filter { it.name.isNotBlank() }.map { BackupAllergy(it.personId, it.name.take(60)) },
+            vitals = vitals.map { BackupVital(it.personId, it.kind, it.v1, it.v2, it.measuredAt, it.note) },
+            appointments = appointments.map { BackupAppointment(it.personId, it.title, it.doctor, it.startsAt, it.notes, it.remindBefore) },
         )
     }
 
@@ -127,6 +140,8 @@ object BackupCodec {
                 medicines = f.medicines.map { if (it.personId in known) it else it.copy(personId = first) },
                 policySummaries = f.policySummaries.map { if (it.personId in known) it else it.copy(personId = first) },
                 allergies = f.allergies.map { if (it.personId in known) it else it.copy(personId = first) },
+                vitals = f.vitals.map { if (it.personId in known) it else it.copy(personId = first) },
+                appointments = f.appointments.map { if (it.personId in known) it else it.copy(personId = first) },
             )
         }
         val s = f.settings
@@ -136,6 +151,8 @@ object BackupCodec {
             medicines = f.medicines.map { it.copy(personId = me.id) },
             policySummaries = f.policySummaries.map { it.copy(personId = me.id) },
             allergies = f.allergies.map { it.copy(personId = me.id) },
+            vitals = f.vitals.map { it.copy(personId = me.id) },
+            appointments = f.appointments.map { it.copy(personId = me.id) },
         )
     }
 
@@ -171,6 +188,7 @@ class BackupService(private val ctx: Context) {
         val file = BackupCodec.build(
             db.people().all(), db.medicines().allIncludingArchived(), db.doses().since(now - BackupCodec.HISTORY_DAYS * 24L * 3600_000L), now,
             db.policies().all(), db.symptoms().all(), db.allergies().all(),
+            db.vitals().all(), db.appointments().all(),
         )
         out.use { it.write(BackupCodec.encode(file).toByteArray(Charsets.UTF_8)) }
     }
@@ -207,11 +225,14 @@ class BackupService(private val ctx: Context) {
             },
         )
         db.doses().insertAll(file.doses.map { DoseEvent(medicineId = it.medicineId, scheduledAt = it.scheduledAt, takenAt = it.takenAt, missedHandled = it.missedHandled, skipped = it.skipped) })
+        db.vitals().insertAll(file.vitals.map { VitalLog(personId = it.personId, kind = it.kind, v1 = it.v1, v2 = it.v2, measuredAt = it.measuredAt, note = it.note) })
+        db.appointments().insertAll(file.appointments.map { Appointment(personId = it.personId, title = it.title, doctor = it.doctor, startsAt = it.startsAt, notes = it.notes, remindBefore = it.remindBefore) })
         db.allergies().insertAll(file.allergies.map { Allergy(personId = it.personId, name = it.name) })
         db.symptoms().insertAll(file.symptoms.map { SymptomLog(medicineId = it.medicineId, loggedAt = it.loggedAt, symptom = it.symptom, severity = it.severity, note = it.note) })
         db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json, personId = it.personId) })
         prefs.selectedPersonId = Prefs.UNSET
         ReminderScheduler.scheduleAll(ctx)
+        ReminderScheduler.scheduleAppointments(ctx)
     }
 
     suspend fun deleteAll() = withContext(Dispatchers.IO) {
@@ -227,6 +248,7 @@ class BackupService(private val ctx: Context) {
 
     private suspend fun cancelEverything() {
         db.medicines().allIncludingArchived().forEach { ReminderScheduler.cancel(ctx, it.id) }
+        db.appointments().all().forEach { ReminderScheduler.cancelAppointment(ctx, it.id) }
         db.doses().allIds().forEach { ReminderScheduler.cancelSnooze(ctx, it); ReminderScheduler.cancelRepeats(ctx, it) }
         WorkManager.getInstance(ctx).cancelAllWork()
         NotificationManagerCompat.from(ctx).cancelAll()

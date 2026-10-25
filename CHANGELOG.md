@@ -2,6 +2,11 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v1.3
+- Health readings: log blood pressure, blood sugar, pulse, weight and temperature per person, with a line chart of the last 30 readings, latest and average values, and the list with delete. Implausible values (a swapped blood pressure, Fahrenheit typed as Celsius) are rejected; the app never calls a reading normal or abnormal. The doctor-visit PDF gains a "Readings (last 30 days)" section.
+- Appointments: title, doctor, date and time, notes, and a reminder 1 hour, 3 hours or 1 day before; upcoming and past lists; alarms are re-armed after reboot and restore.
+- Both open from the new icons on the Today header. Room migration 9 to 10; backup schema version 8.
+
 ## v1.2
 - Reminders health check (Settings): one screen that answers "will my reminders fire?" with checks for notifications, reminder categories, exact alarms, battery, Do Not Disturb, scheduled medicines and when the last reminder was posted, a fix button for each, and a test reminder.
 - Home-screen widget: the dose that needs attention (or the next one) with a one-tap Taken button; refreshed whenever a dose changes.

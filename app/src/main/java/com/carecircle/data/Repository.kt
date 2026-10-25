@@ -78,6 +78,7 @@ class Repository(ctx: Context) {
     suspend fun adherence(personId: Long, days: Int, now: Long = System.currentTimeMillis(), zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): AdherenceResult {
         val (from, to) = Adherence.range(java.time.LocalDate.now(zone), days)
         db.sync().linksFor(personId).forEach { CareSync.unlinkOwner(appCtx, it.linkId) }
+        db.appointments().all().filter { it.personId == personId }.forEach { com.carecircle.reminder.ReminderScheduler.cancelAppointment(appCtx, it.id) }
         val meds = db.medicines().forPersonIncludingArchived(personId)
         val ids = meds.map { it.id }.toSet()
         val events = db.doses().since(from.atStartOfDay(zone).toInstant().toEpochMilli()).filter { it.medicineId in ids }
@@ -122,6 +123,8 @@ class Repository(ctx: Context) {
         db.withTransaction {
             db.symptoms().deleteForPerson(personId)
             db.allergies().deleteForPerson(personId)
+            db.vitals().deleteForPerson(personId)
+            db.appointments().deleteForPerson(personId)
             db.doses().deleteForPerson(personId)
             db.policies().deleteForPerson(personId)
             db.medicines().deleteForPerson(personId)
@@ -131,6 +134,24 @@ class Repository(ctx: Context) {
     }
 
     suspend fun deletePolicy(id: Long) = policyDao.delete(id)
+
+    // ---- Vitals ----
+    fun vitals(personId: Long, kind: String) = db.vitals().observe(personId, kind)
+    suspend fun logVital(v: VitalLog) = db.vitals().insert(v)
+    suspend fun deleteVital(id: Long) = db.vitals().delete(id)
+    suspend fun vitalsSince(personId: Long, from: Long) = db.vitals().since(personId, from)
+
+    // ---- Appointments ----
+    fun appointments(personId: Long) = db.appointments().observe(personId)
+    suspend fun saveAppointment(a: Appointment): Long {
+        val id = db.appointments().insert(a)
+        com.carecircle.reminder.ReminderScheduler.scheduleAppointment(appCtx, a.copy(id = id))
+        return id
+    }
+    suspend fun deleteAppointment(id: Long) {
+        com.carecircle.reminder.ReminderScheduler.cancelAppointment(appCtx, id)
+        db.appointments().delete(id)
+    }
 
     // ---- Allergies ----
     fun allergies(personId: Long) = db.allergies().observeFor(personId)

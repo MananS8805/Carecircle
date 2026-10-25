@@ -43,7 +43,9 @@ fun CareCircleApp(vm: AppViewModel) {
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(bottom = pad.calculateBottomPadding())) {
             NavHost(nav, startDestination = "today") {
-                composable("today") { TodayScreen(vm, onHistory = { nav.navigate("history") }) }
+                composable("today") { TodayScreen(vm, onHistory = { nav.navigate("history") }, onVitals = { nav.navigate("vitals") }, onAppointments = { nav.navigate("appointments") }) }
+                composable("vitals") { VitalsScreen(vm, onBack = { nav.popBackStack() }) }
+                composable("appointments") { AppointmentsScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("history") { HistoryScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("meds") {
                     MedicinesScreen(vm, onAdd = { nav.navigate("edit/0") }, onOpen = { nav.navigate("detail/$it") }, onInteractions = { nav.navigate("interactions") })

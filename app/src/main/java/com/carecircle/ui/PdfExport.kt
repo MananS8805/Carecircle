@@ -19,7 +19,7 @@ import java.util.Date
  * Generated and shared on the phone only, in the app language.
  */
 object PdfExport {
-    fun create(base: Context, person: String, meds: List<Medicine>, adherence: AdherenceResult? = null, symptoms: List<SymptomLog> = emptyList()): File {
+    fun create(base: Context, person: String, meds: List<Medicine>, adherence: AdherenceResult? = null, symptoms: List<SymptomLog> = emptyList(), vitals: List<com.carecircle.data.VitalLog> = emptyList()): File {
         val ctx = AppLocale.wrap(base)
         val locale = AppLocale.locale(base)
         val doc = PdfDocument()
@@ -79,6 +79,21 @@ object PdfExport {
                 page.canvas.drawText(
                     listOf(m.name, m.doseText).filter { it.isNotBlank() }.joinToString(" ").take(40) + "  -  " +
                         ctx.getString(R.string.pdf_med_counts, m.taken, m.missed, m.skipped),
+                    40f, y, body,
+                ); y += 16f
+            }
+        }
+        val byKind = vitals.groupBy { it.kind }
+        if (byKind.isNotEmpty()) {
+            y += 18f; newPageIfNeeded(60f)
+            page.canvas.drawText(ctx.getString(R.string.pdf_vitals_title), 40f, y, title); y += 22f
+            for (k in com.carecircle.domain.VitalKind.entries) {
+                val list = byKind[k.key]?.sortedBy { it.measuredAt } ?: continue
+                val st = com.carecircle.domain.Vitals.stats(list.map { it.v1 to it.v2 }) ?: continue
+                newPageIfNeeded()
+                val name = ctx.getString(when (k) { com.carecircle.domain.VitalKind.BP -> R.string.vital_bp; com.carecircle.domain.VitalKind.SUGAR -> R.string.vital_sugar; com.carecircle.domain.VitalKind.PULSE -> R.string.vital_pulse; com.carecircle.domain.VitalKind.WEIGHT -> R.string.vital_weight; com.carecircle.domain.VitalKind.TEMP -> R.string.vital_temp })
+                page.canvas.drawText(
+                    ctx.getString(R.string.pdf_vital_line, name, com.carecircle.domain.Vitals.format(k, st.latest1, st.latest2), com.carecircle.domain.Vitals.format(k, st.avg1, st.avg2), st.count, k.unit),
                     40f, y, body,
                 ); y += 16f
             }

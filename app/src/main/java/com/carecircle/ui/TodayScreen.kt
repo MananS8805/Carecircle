@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
@@ -54,7 +56,7 @@ import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 @Composable
-fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit) {
+fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit, onVitals: () -> Unit, onAppointments: () -> Unit) {
     val doses by vm.today.collectAsStateWithLifecycle()
     val groups by vm.bodyMap.collectAsStateWithLifecycle()
     val status by rememberReminderStatus()
@@ -76,6 +78,8 @@ fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit) {
     ) {
         item {
             BrandRow {
+                IconButton(onClick = onAppointments) { Icon(Icons.Default.Event, stringResource(R.string.appt_title)) }
+                IconButton(onClick = onVitals) { Icon(Icons.Default.MonitorHeart, stringResource(R.string.vitals_title)) }
                 IconButton(onClick = onHistory) { Icon(Icons.Default.History, stringResource(R.string.cd_history)) }
             }
         }
