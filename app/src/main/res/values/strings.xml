@@ -560,4 +560,7 @@
     <string name="appt_past">Past</string>
     <string name="appt_empty">No appointments yet.</string>
     <string name="appt_notif_title">Appointment: %1$s</string>
+    <string name="family_sync_now">Send update to family now</string>
+    <string name="family_sync_ok">Updated. The family can see the doses for today.</string>
+    <string name="family_sync_fail">Could not reach the family copy. Check the internet and try again.</string>
 </resources>

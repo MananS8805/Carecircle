@@ -10,17 +10,24 @@ import com.carecircle.AppLocale
 import com.carecircle.domain.Messages
 import com.carecircle.domain.Refill
 import com.carecircle.domain.Schedule
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 object DoseActions {
     /** Tells the family (when sync is on) what happened to this dose. Never throws. */
     private suspend fun publish(ctx: Context, type: SyncType, dose: com.carecircle.data.DoseEvent, med: com.carecircle.data.Medicine) {
         val person = AppDb.get(ctx).people().get(med.personId) ?: return
-        CareSync.publish(
-            ctx, med.personId,
-            SyncEvent(type, person.name, Messages.medicineLabel(med.name, med.doseText), dose.scheduledAt, System.currentTimeMillis()),
-            dose.id,
-        )
-        CareSync.publishStatus(ctx, med.personId)
+        // In parallel: a receiver only has about ten seconds, and the family should not wait for two round trips in a row.
+        coroutineScope {
+            launch {
+                CareSync.publish(
+                    ctx, med.personId,
+                    SyncEvent(type, person.name, Messages.medicineLabel(med.name, med.doseText), dose.scheduledAt, System.currentTimeMillis()),
+                    dose.id,
+                )
+            }
+            launch { CareSync.publishStatus(ctx, med.personId) }
+        }
     }
 
     suspend fun publishMissed(ctx: Context, dose: com.carecircle.data.DoseEvent, med: com.carecircle.data.Medicine) = publish(ctx, SyncType.MISSED, dose, med)

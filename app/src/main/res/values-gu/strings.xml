@@ -535,4 +535,7 @@
     <string name="appt_past">વીતી ગયેલી</string>
     <string name="appt_empty">હજી કોઈ એપોઇન્ટમેન્ટ નથી.</string>
     <string name="appt_notif_title">એપોઇન્ટમેન્ટ: %1$s</string>
+    <string name="family_sync_now">પરિવારને હમણાં અપડેટ મોકલો</string>
+    <string name="family_sync_ok">અપડેટ થયું. પરિવાર આજના ડોઝ જોઈ શકે છે.</string>
+    <string name="family_sync_fail">પરિવારની નકલ સુધી પહોંચી શક્યા નહીં. ઇન્ટરનેટ તપાસો અને ફરી પ્રયાસ કરો.</string>
 </resources>

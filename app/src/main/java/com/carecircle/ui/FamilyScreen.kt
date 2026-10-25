@@ -74,6 +74,13 @@ fun FamilyScreen(vm: AppViewModel, onBack: () -> Unit) {
         }
 
         item { Text(stringResource(R.string.family_share_title), style = MaterialTheme.typography.titleLarge) }
+        if (links.isNotEmpty()) item {
+            val sent by vm.syncNow.collectAsStateWithLifecycle()
+            SoftCard(Modifier.fillMaxWidth()) {
+                SoftButton(stringResource(R.string.family_sync_now), { vm.syncNow() })
+                sent?.let { Text(stringResource(if (it) R.string.family_sync_ok else R.string.family_sync_fail), Modifier.padding(top = 8.dp), color = if (it) Palette.Good else Palette.Bad) }
+            }
+        }
         items(people, key = { "p-${it.id}" }) { p ->
             SoftCard(Modifier.fillMaxWidth()) {
                 Text(displayName(p, people), style = MaterialTheme.typography.titleMedium)

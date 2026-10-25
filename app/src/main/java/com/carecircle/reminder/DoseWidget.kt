@@ -31,6 +31,9 @@ class DoseWidget : AppWidgetProvider() {
     }
 
     companion object {
+        /** The Taken button also appears this long before a dose, for someone who takes it a little early. */
+        private const val EARLY_MS = 30 * 60_000L
+
         /** Called after any dose changes so the widget never shows a stale Taken button. */
         fun refreshAll(ctx: Context) {
             val mgr = AppWidgetManager.getInstance(ctx)
@@ -66,7 +69,7 @@ class DoseWidget : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_label, ctx.getString(if (due) R.string.status_due else R.string.hero_next_dose).uppercase())
                 views.setTextViewText(R.id.widget_title, open.name)
                 views.setTextViewText(R.id.widget_sub, listOf(Fmt.time(open.at, AppLocale.locale(base)), open.dose).filter { it.isNotBlank() }.joinToString("  -  "))
-                if (due) {
+                if (due || open.at - now <= EARLY_MS) {
                     db.doses().insert(DoseEvent(medicineId = open.medId, scheduledAt = open.at)) // the unique index ignores a repeat
                     val ev = db.doses().find(open.medId, open.at)
                     if (ev != null) {

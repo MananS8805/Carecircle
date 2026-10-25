@@ -5,6 +5,10 @@ Each version is a git tag. Informational only, not medical advice.
 ## Backend (not deployed)
 - `/api/policy-summary` without an LLM key now also reads the **Covered** and **Not covered** lists: the bullet or numbered lines under an Inclusions or Exclusions heading, up to the next heading, each with page, clause and an exact verified quote. Deploy with `npx vercel --prod` when ready.
 
+## v1.3.1
+- Widget Taken button also appears 30 minutes before a dose. Taken now updates the family's event and today-ring in parallel (a receiver only has ~10 s), and old-event cleanup moved out of that path.
+- Family sync screen: "Send update to family now" shows whether the family copy was reached.
+
 ## v1.3
 - Health readings: log blood pressure, blood sugar, pulse, weight and temperature per person, with a line chart of the last 30 readings, latest and average values, and the list with delete. Implausible values (a swapped blood pressure, Fahrenheit typed as Celsius) are rejected; the app never calls a reading normal or abnormal. The doctor-visit PDF gains a "Readings (last 30 days)" section.
 - Appointments: title, doctor, date and time, notes, and a reminder 1 hour, 3 hours or 1 day before; upcoming and past lists; alarms are re-armed after reboot and restore.

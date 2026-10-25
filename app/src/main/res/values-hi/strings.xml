@@ -535,4 +535,7 @@
     <string name="appt_past">बीता हुआ</string>
     <string name="appt_empty">अभी कोई अपॉइंटमेंट नहीं।</string>
     <string name="appt_notif_title">अपॉइंटमेंट: %1$s</string>
+    <string name="family_sync_now">परिवार को अभी अपडेट भेजें</string>
+    <string name="family_sync_ok">अपडेट हो गया। परिवार आज की खुराकें देख सकता है।</string>
+    <string name="family_sync_fail">परिवार की कॉपी तक नहीं पहुँच सके। इंटरनेट जाँचें और फिर कोशिश करें।</string>
 </resources>

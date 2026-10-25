@@ -395,7 +395,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Brings the family ring for today up to date when the app opens. */
     fun refreshStatuses() = viewModelScope.launch {
-        repo.sync.links().map { it.personId }.distinct().forEach { CareSync.publishStatus(getApplication(), it) }
+        repo.sync.links().map { it.personId }.distinct().forEach { CareSync.publishStatus(getApplication(), it, tidy = true) }
+    }
+
+    private val _syncNow = kotlinx.coroutines.flow.MutableStateFlow<Boolean?>(null)
+    /** null = not tried, true = the family's copy was updated, false = it could not be reached. */
+    val syncNow: kotlinx.coroutines.flow.StateFlow<Boolean?> = _syncNow
+
+    fun syncNow() = viewModelScope.launch {
+        _syncNow.value = null
+        val ids = repo.sync.links().map { it.personId }.distinct()
+        _syncNow.value = ids.isNotEmpty() && ids.map { CareSync.publishStatus(getApplication(), it) }.all { it }
     }
 
     fun unlink(linkId: String) = viewModelScope.launch { CareSync.unlinkOwner(getApplication(), linkId); refreshLinkStates() }

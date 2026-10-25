@@ -147,7 +147,6 @@ object CareSync {
             for (l in links) {
                 val events = db.collection(PAIRINGS).document(l.linkId).collection(EVENTS)
                 withTimeoutOrNull(6_000) { events.document(event.id(doseId)).set(body).awaitTask() }
-                prune(events)
             }
         } catch (e: CancellationException) {
             throw e
@@ -160,12 +159,12 @@ object CareSync {
      * Refreshes the "today" summary the family sees: doses taken / scheduled / missed and the next dose. Called after every
      * dose event and when the app opens. Same privacy as events: counts, a time and a medicine name.
      */
-    suspend fun publishStatus(ctx: Context, personId: Long) {
-        if (!isConfigured(ctx)) return
+    suspend fun publishStatus(ctx: Context, personId: Long, tidy: Boolean = false): Boolean {
+        if (!isConfigured(ctx)) return false
         try {
             val links = AppDb.get(ctx).sync().linksFor(personId)
-            if (links.isEmpty()) return
-            uid() ?: return
+            if (links.isEmpty()) return false
+            uid() ?: return false
             val r = Repository(ctx).adherence(personId, 1)
             val now = System.currentTimeMillis()
             val next = r.lines.filter { it.scheduledAt > now && it.outcome == com.carecircle.domain.DoseOutcome.PENDING }.minByOrNull { it.scheduledAt }
@@ -174,13 +173,20 @@ object CareSync {
                 "total" to (r.taken + r.missed + r.skipped + r.pending), "missed" to r.missed, "skipped" to r.skipped,
                 "nextAt" to (next?.scheduledAt ?: 0L), "nextMedicine" to (next?.name.orEmpty().take(80)), "updatedAt" to now,
             )
-            for (l in links) withTimeoutOrNull(6_000) {
-                db.collection(PAIRINGS).document(l.linkId).collection(STATUS).document("current").set(body).awaitTask()
+            var ok = true
+            for (l in links) {
+                val sent = withTimeoutOrNull(6_000) {
+                    db.collection(PAIRINGS).document(l.linkId).collection(STATUS).document("current").set(body).awaitTask()
+                    true
+                }
+                if (sent != true) ok = false
+                if (tidy) prune(db.collection(PAIRINGS).document(l.linkId).collection(EVENTS))
             }
+            return ok
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            // Never break reminders because sync failed.
+            return false // Never break reminders because sync failed.
         }
     }
 
