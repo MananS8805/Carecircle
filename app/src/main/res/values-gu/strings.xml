@@ -375,4 +375,10 @@
     <string name="sev_moderate">મધ્યમ</string>
     <string name="sev_severe">ગંભીર</string>
     <string name="pdf_diary_title">નોંધાયેલ આડઅસરો (છેલ્લા 30 દિવસ)</string>
+    <string name="channel_urgent">અંતિમ ડોઝ યાદ</string>
+    <string name="notif_family_soon">જો આ ચિહ્નિત નહીં થાય તો %1$d મિનિટમાં તમારા પરિવારને જણાવાશે.</string>
+    <string name="notif_daily_title">%1$s નો આજનો સારાંશ મોકલવો?</string>
+    <string name="notif_daily_text">આજે %2$d માંથી %1$d ડોઝ લીધા. સંભાળ રાખનારને સંદેશ મોકલવા ટૅપ કરો.</string>
+    <string name="msg_daily">%1$s, આજે: %3$d માંથી %2$d ડોઝ લીધા.</string>
+    <string name="msg_daily_not_taken">લીધા નથી: %1$s.</string>
 </resources>

@@ -62,3 +62,7 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - Room version 6: `medicine.expiry` ("2028-02"), `medicine.doctorNote`, `symptom_log` table. Backup schema version 5.
 - `domain/Expiry.kt` reads the printed EXP month only; a strip is valid through the last day of that month.
 - Backend `LLM_PROVIDER` / `GEMINI_API_KEY` / `GEMINI_MODEL` pick the info-card rewriter; keys live only in Vercel env, never in git. The Gemini free tier may use prompts for training, so it must never receive insurance text.
+
+## v0.8 notes
+- `domain/Escalation.kt` holds the timings (repeats at +10/+20 min, alert at +30, daily summary 21:00). Repeat alarms use request code `doseId*4+level` in `ReminderScheduler`; cancel them wherever snoozes are cancelled.
+- WhatsApp is never sent silently: `wa.me` links need a tap. Caregiver sync (Firebase) is the planned automatic path; Firebase config must not be committed unless it is the public client config.

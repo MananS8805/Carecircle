@@ -116,7 +116,7 @@ class Repository(ctx: Context) {
         if (db.people().count() <= 1) return false
         val meds = db.medicines().forPersonIncludingArchived(personId)
         meds.forEach { com.carecircle.reminder.ReminderScheduler.cancel(appCtx, it.id) }
-        db.doses().idsForPerson(personId).forEach { com.carecircle.reminder.ReminderScheduler.cancelSnooze(appCtx, it) }
+        db.doses().idsForPerson(personId).forEach { com.carecircle.reminder.ReminderScheduler.cancelSnooze(appCtx, it); com.carecircle.reminder.ReminderScheduler.cancelRepeats(appCtx, it) }
         db.withTransaction {
             db.symptoms().deleteForPerson(personId)
             db.doses().deleteForPerson(personId)

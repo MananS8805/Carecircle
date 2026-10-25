@@ -34,6 +34,7 @@ class DoseAlarmReceiver : BroadcastReceiver() {
                     val dose = db.doses().find(medId, at)
                     if (dose != null && dose.takenAt == null) {
                         Notifier.postDose(ctx, dose, med, personLabel(db, med))
+                        ReminderScheduler.scheduleRepeats(ctx, dose.id, at)
                         val req = OneTimeWorkRequestBuilder<MissedDoseWorker>()
                             .setInitialDelay(MissedDose.GRACE_MINUTES, TimeUnit.MINUTES)
                             .setInputData(workDataOf(Notifier.EXTRA_DOSE_ID to dose.id)).build()
@@ -62,7 +63,8 @@ class SnoozeReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         val doseId = intent.getLongExtra(Notifier.EXTRA_DOSE_ID, -1)
         if (doseId < 0) return
-        val repost = intent.action == ACTION_REPOST
+        val level = if (intent.action == ACTION_REPEAT) intent.getIntExtra(Notifier.EXTRA_LEVEL, 1) else 0
+        val repost = intent.action == ACTION_REPOST || intent.action == ACTION_REPEAT
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -74,7 +76,7 @@ class SnoozeReceiver : BroadcastReceiver() {
                 }
                 if (repost) {
                     val med = db.medicines().get(dose.medicineId)
-                    if (med != null && med.active) Notifier.postDose(ctx, dose, med, personLabel(db, med))
+                    if (med != null && med.active) Notifier.postDose(ctx, dose, med, personLabel(db, med), level)
                 } else {
                     Notifier.cancelDose(ctx, doseId)
                     ReminderScheduler.scheduleSnooze(ctx, doseId, Snooze.fireAt(System.currentTimeMillis()))
@@ -86,6 +88,37 @@ class SnoozeReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_SNOOZE = "com.carecircle.action.SNOOZE"
         const val ACTION_REPOST = "com.carecircle.action.SNOOZE_REPOST"
+        const val ACTION_REPEAT = "com.carecircle.action.REPEAT_REMINDER"
+    }
+}
+
+/** 9 pm: offers to send today's summary to each person's caregiver. Tapping opens the pre-filled message. */
+class DailySummaryReceiver : BroadcastReceiver() {
+    override fun onReceive(ctx: Context, intent: Intent) {
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val lc = AppLocale.wrap(ctx)
+                val repo = com.carecircle.data.Repository(ctx)
+                for (p in AppDb.get(ctx).people().all()) {
+                    if (p.caregiverPhone.isBlank()) continue
+                    val r = repo.adherence(p.id, 1)
+                    val total = r.taken + r.missed + r.skipped + r.pending
+                    if (total == 0) continue
+                    val notTaken = r.lines.filter { it.outcome != com.carecircle.domain.DoseOutcome.TAKEN }.map { it.name }.distinct().take(3)
+                    var text = lc.getString(R.string.msg_daily, p.name, r.taken, total)
+                    if (notTaken.isNotEmpty()) text += " " + lc.getString(R.string.msg_daily_not_taken, notTaken.joinToString(", "))
+                    val url = Messages.whatsAppUrl(Messages.normalizePhone(p.caregiverPhone), text)
+                    Notifier.linkAlert(
+                        ctx, 4_000_000 + p.id.toInt(),
+                        lc.getString(R.string.notif_daily_title, p.name), lc.getString(R.string.notif_daily_text, r.taken, total), url,
+                    )
+                }
+            } finally {
+                ReminderScheduler.scheduleDailySummary(ctx)
+                pending.finish()
+            }
+        }
     }
 }
 

@@ -393,4 +393,11 @@
     <string name="sev_moderate">Moderate</string>
     <string name="sev_severe">Severe</string>
     <string name="pdf_diary_title">Side effects noted (last 30 days)</string>
+    <!-- v0.8: escalation and daily summary -->
+    <string name="channel_urgent">Final dose reminders</string>
+    <string name="notif_family_soon">Your family will be told in %1$d minutes if this is not marked.</string>
+    <string name="notif_daily_title">Send today\'s summary for %1$s?</string>
+    <string name="notif_daily_text">%1$d of %2$d doses taken today. Tap to message the caregiver.</string>
+    <string name="msg_daily">%1$s, today: %2$d of %3$d doses taken.</string>
+    <string name="msg_daily_not_taken">Not taken: %1$s.</string>
 </resources>

@@ -215,7 +215,7 @@ class BackupService(private val ctx: Context) {
 
     private suspend fun cancelEverything() {
         db.medicines().allIncludingArchived().forEach { ReminderScheduler.cancel(ctx, it.id) }
-        db.doses().allIds().forEach { ReminderScheduler.cancelSnooze(ctx, it) }
+        db.doses().allIds().forEach { ReminderScheduler.cancelSnooze(ctx, it); ReminderScheduler.cancelRepeats(ctx, it) }
         WorkManager.getInstance(ctx).cancelAllWork()
         NotificationManagerCompat.from(ctx).cancelAll()
     }

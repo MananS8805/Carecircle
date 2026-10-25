@@ -14,6 +14,7 @@ object DoseActions {
         if (AppDb.get(ctx).doses().markSkipped(doseId) == 0) return
         Notifier.cancelDose(ctx, doseId)
         ReminderScheduler.cancelSnooze(ctx, doseId)
+        ReminderScheduler.cancelRepeats(ctx, doseId)
     }
 
     /** Marks a dose taken (idempotent), decrements pills, and raises a reorder alert at <= 5 days left. */
@@ -25,6 +26,7 @@ object DoseActions {
         db.medicines().decrementPills(med.id, med.pillsPerDose)
         Notifier.cancelDose(ctx, doseId)
         ReminderScheduler.cancelSnooze(ctx, doseId)
+        ReminderScheduler.cancelRepeats(ctx, doseId)
 
         val updated = db.medicines().get(med.id) ?: return
         val left = Refill.daysLeft(updated.pillCount, updated.pillsPerDose, Schedule.parseTimes(updated.timesCsv).size)

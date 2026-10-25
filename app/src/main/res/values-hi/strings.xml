@@ -375,4 +375,10 @@
     <string name="sev_moderate">मध्यम</string>
     <string name="sev_severe">गंभीर</string>
     <string name="pdf_diary_title">दर्ज दुष्प्रभाव (पिछले 30 दिन)</string>
+    <string name="channel_urgent">अंतिम खुराक याद</string>
+    <string name="notif_family_soon">अगर यह चिह्नित नहीं हुई तो %1$d मिनट में आपके परिवार को बताया जाएगा।</string>
+    <string name="notif_daily_title">%1$s का आज का सारांश भेजें?</string>
+    <string name="notif_daily_text">आज %2$d में से %1$d खुराकें ली गईं। देखभालकर्ता को संदेश भेजने के लिए टैप करें।</string>
+    <string name="msg_daily">%1$s, आज: %3$d में से %2$d खुराकें ली गईं।</string>
+    <string name="msg_daily_not_taken">नहीं ली गईं: %1$s।</string>
 </resources>

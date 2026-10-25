@@ -2,6 +2,11 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v0.8
+- Escalation so a dose is not silently ignored: reminder at the dose time, repeats at +10 and +20 minutes (the second on a louder alarm-sound channel, each saying how many minutes are left before the family is told), family alert at +30 minutes. Repeats stop when the dose is taken or skipped.
+- Evening summary: at 9 pm each person with a caregiver number gets a notification that opens a pre-filled WhatsApp message ("Dad, today: 3 of 4 doses taken. Not taken: Metformin."), so family hears even if nothing was tapped.
+- Honest limit: WhatsApp cannot be sent silently by an app, so these still need one tap. Automatic delivery comes with caregiver sync (planned, needs a Firebase project).
+
 ## v0.7
 - Medicine card, Android side: the strip scan now also reads the printed expiry month (never the manufacturing date), and Edit has an Expiry field. Expiry shows as a green, amber or red pill on the card, the amber/red ones on the Medicines list, and an expired strip warns on the Today dose card.
 - "Doctor's instructions" note on each medicine, shown above the generic information and kept on the phone.
