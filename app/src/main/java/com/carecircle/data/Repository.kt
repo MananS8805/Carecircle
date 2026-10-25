@@ -43,6 +43,7 @@ class Repository(ctx: Context) {
     private val appCtx = ctx.applicationContext
     private val db = AppDb.get(ctx)
     val people get() = db.people()
+    val sync get() = db.sync()
     val medicines get() = db.medicines()
     val doses get() = db.doses()
     private val cards = db.cards()
@@ -76,6 +77,7 @@ class Repository(ctx: Context) {
     /** Adherence for one person over the last [days] days, computed from the schedule and stored events. Never touches the network. */
     suspend fun adherence(personId: Long, days: Int, now: Long = System.currentTimeMillis(), zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): AdherenceResult {
         val (from, to) = Adherence.range(java.time.LocalDate.now(zone), days)
+        db.sync().linksFor(personId).forEach { CareSync.unlinkOwner(appCtx, it.linkId) }
         val meds = db.medicines().forPersonIncludingArchived(personId)
         val ids = meds.map { it.id }.toSet()
         val events = db.doses().since(from.atStartOfDay(zone).toInstant().toEpochMilli()).filter { it.medicineId in ids }

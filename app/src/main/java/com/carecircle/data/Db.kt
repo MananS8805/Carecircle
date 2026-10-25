@@ -138,6 +138,38 @@ interface SymptomDao {
     @Query("DELETE FROM symptom_log WHERE medicineId IN (SELECT id FROM medicine WHERE personId = :personId)") suspend fun deleteForPerson(personId: Long)
 }
 
+/** This phone shares a person's dose status with a family member (a pairing created here). */
+@Entity(tableName = "sync_link", indices = [Index("personId")])
+data class SyncLink(
+    @PrimaryKey val linkId: String,
+    val personId: Long,
+    val createdAt: Long,
+)
+
+/** This phone follows someone else's dose status (a code entered here). */
+@Entity(tableName = "following")
+data class Following(
+    @PrimaryKey val linkId: String,
+    val personName: String,
+    val addedAt: Long,
+    val lastSeenAt: Long,
+)
+
+@Dao
+interface SyncDao {
+    @Query("SELECT * FROM sync_link ORDER BY createdAt DESC") fun observeLinks(): Flow<List<SyncLink>>
+    @Query("SELECT * FROM sync_link ORDER BY createdAt DESC") suspend fun links(): List<SyncLink>
+    @Query("SELECT * FROM sync_link WHERE personId = :personId") suspend fun linksFor(personId: Long): List<SyncLink>
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putLink(l: SyncLink)
+    @Query("DELETE FROM sync_link WHERE linkId = :linkId") suspend fun deleteLink(linkId: String)
+
+    @Query("SELECT * FROM following ORDER BY addedAt") fun observeFollowing(): Flow<List<Following>>
+    @Query("SELECT * FROM following") suspend fun following(): List<Following>
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putFollowing(f: Following)
+    @Query("UPDATE following SET lastSeenAt = :t WHERE linkId = :linkId") suspend fun markSeen(linkId: String, t: Long)
+    @Query("DELETE FROM following WHERE linkId = :linkId") suspend fun deleteFollowing(linkId: String)
+}
+
 @Dao
 interface InfoCardDao {
     @Query("SELECT * FROM info_card WHERE saltKey = :k") suspend fun get(k: String): InfoCardEntity?
@@ -220,7 +252,16 @@ object Migrations {
         }
     }
 
-    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6)
+    /** v0.8 -> v0.9: family sync links (shared by this phone) and followed people. */
+    val M6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS sync_link (linkId TEXT NOT NULL, personId INTEGER NOT NULL, createdAt INTEGER NOT NULL, PRIMARY KEY(linkId))")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_sync_link_personId ON sync_link (personId)")
+            db.execSQL("CREATE TABLE IF NOT EXISTS following (linkId TEXT NOT NULL, personName TEXT NOT NULL, addedAt INTEGER NOT NULL, lastSeenAt INTEGER NOT NULL, PRIMARY KEY(linkId))")
+        }
+    }
+
+    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7)
 }
 
 object Persons {
@@ -230,8 +271,8 @@ object Persons {
 }
 
 @Database(
-    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class],
-    version = 6, exportSchema = true,
+    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class, SyncLink::class, Following::class],
+    version = 7, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun people(): PersonDao
@@ -241,6 +282,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun interactions(): InteractionDao
     abstract fun policies(): PolicyDao
     abstract fun symptoms(): SymptomDao
+    abstract fun sync(): SyncDao
 
     companion object {
         @Volatile private var inst: AppDb? = null

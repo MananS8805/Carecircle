@@ -100,6 +100,19 @@ object Notifier {
         NotificationManagerCompat.from(ctx).notify(id, n)
     }
 
+    /** A notification that just opens the app, used for updates about someone the family member follows. */
+    @SuppressLint("MissingPermission") // canPost() checks POST_NOTIFICATIONS first
+    fun plainAlert(base: Context, id: Int, title: String, text: String) {
+        if (!canPost(base)) return
+        val ctx = AppLocale.wrap(base)
+        ensureChannels(ctx)
+        val n = NotificationCompat.Builder(ctx, CH_ALERT)
+            .setSmallIcon(R.drawable.ic_notif).setContentTitle(title).setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text)).setColor(0xFFF26A21.toInt())
+            .setPriority(NotificationCompat.PRIORITY_HIGH).setContentIntent(openApp(ctx)).setAutoCancel(true).build()
+        NotificationManagerCompat.from(ctx).notify(id, n)
+    }
+
     fun cancelDose(ctx: Context, doseId: Long) = NotificationManagerCompat.from(ctx).cancel(notifId(doseId))
 
     fun notifId(doseId: Long) = (doseId % 1_000_000).toInt() + 1000

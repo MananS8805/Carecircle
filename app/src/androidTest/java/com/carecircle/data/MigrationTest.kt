@@ -15,6 +15,20 @@ class MigrationTest {
     )
 
     @Test
+    fun migrate6To7AddsSyncTablesKeepingData() {
+        helper.createDatabase("mig67", 6).apply {
+            execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")
+            execSQL("INSERT INTO medicine (id, name, doseText, timesCsv, pillCount, pillsPerDose, salt, patientName, active, foodTiming, personId, createdAt) VALUES (1, 'Telma', '40 mg', '08:00', 30, 1, 'telmisartan', '', 1, 'NONE', 1, 7)")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate("mig67", 7, true, Migrations.M6_7)
+        db.query("SELECT name FROM medicine").use { it.moveToFirst(); assertEquals("Telma", it.getString(0)) }
+        db.execSQL("INSERT INTO sync_link (linkId, personId, createdAt) VALUES ('ABCD2345', 1, 5)")
+        db.execSQL("INSERT INTO following (linkId, personName, addedAt, lastSeenAt) VALUES ('WXYZ6789', 'Dad', 5, 5)")
+        db.query("SELECT COUNT(*) FROM sync_link").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
+    }
+
+    @Test
     fun migrate5To6AddsExpiryNoteAndDiaryKeepingData() {
         helper.createDatabase("mig56", 5).apply {
             execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")

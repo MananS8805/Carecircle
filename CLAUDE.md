@@ -66,3 +66,8 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 ## v0.8 notes
 - `domain/Escalation.kt` holds the timings (repeats at +10/+20 min, alert at +30, daily summary 21:00). Repeat alarms use request code `doseId*4+level` in `ReminderScheduler`; cancel them wherever snoozes are cancelled.
 - WhatsApp is never sent silently: `wa.me` links need a tap. Caregiver sync (Firebase) is the planned automatic path; Firebase config must not be committed unless it is the public client config.
+
+## v0.9 notes
+- Family sync: `data/CareSync.kt` (all Firebase calls, never throws into reminder code), `domain/Sync.kt` (pairing code, event ids), `reminder/FollowerWorker.kt`, `ui/FamilyScreen.kt`. Publish hooks are in `DoseActions` (taken/skipped), `MissedDoseWorker` (missed) and `DailySummaryReceiver` (summary).
+- Firestore security lives in `firebase/firestore.rules` and must be published in the console; deployment is manual. Only names, medicine names, status, times and daily counts may be written; never notes, insurance data or contacts.
+- Instant push to a closed family app needs a Cloud Function (Blaze plan); not built.

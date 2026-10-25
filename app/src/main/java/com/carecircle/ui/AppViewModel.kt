@@ -39,6 +39,14 @@ sealed interface InsuranceState {
 
 data class SavedPolicyItem(val id: Long, val policy: SavedPolicy)
 
+/** The code dialog on the patient phone. */
+sealed interface PairingUi {
+    data object None : PairingUi
+    data object Creating : PairingUi
+    data class Code(val code: String, val personName: String) : PairingUi
+    data class Failed(val offline: Boolean) : PairingUi
+}
+
 /** A one-line status for the Settings data card: a string resource, shown once. */
 data class DataMsg(@androidx.annotation.StringRes val res: Int)
 
@@ -314,6 +322,46 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         repo.deletePolicy(id)
         if ((_insurance.value as? InsuranceState.Result)?.savedId == id) _insurance.value = InsuranceState.Idle
     }
+
+    // ---- Family sync ----
+    val syncLinks: StateFlow<List<SyncLink>> = repo.sync.observeLinks().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val following: StateFlow<List<Following>> = repo.sync.observeFollowing().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _linkStates = MutableStateFlow<Map<String, LinkState>>(emptyMap())
+    val linkStates: StateFlow<Map<String, LinkState>> = _linkStates
+    private val _pairing = MutableStateFlow<PairingUi>(PairingUi.None)
+    val pairing: StateFlow<PairingUi> = _pairing
+    private val _followResult = MutableStateFlow<FollowResult?>(null)
+    val followResult: StateFlow<FollowResult?> = _followResult
+
+    fun refreshLinkStates() = viewModelScope.launch {
+        _linkStates.value = syncLinks.value.associate { it.linkId to CareSync.linkState(it.linkId) }
+    }
+
+    /** Called only after the consent dialog. */
+    fun createPairing(personId: Long) = viewModelScope.launch {
+        val p = personOf(personId) ?: return@launch
+        _pairing.value = PairingUi.Creating
+        _pairing.value = when (val r = CareSync.createPairing(getApplication(), personId, p.name)) {
+            is PairResult.Ok -> PairingUi.Code(r.code, p.name)
+            PairResult.Offline -> PairingUi.Failed(offline = true)
+            else -> PairingUi.Failed(offline = false)
+        }
+    }
+
+    fun dismissPairing() { _pairing.value = PairingUi.None; refreshLinkStates() }
+
+    fun unlink(linkId: String) = viewModelScope.launch { CareSync.unlinkOwner(getApplication(), linkId); refreshLinkStates() }
+
+    fun follow(code: String) = viewModelScope.launch {
+        _followResult.value = null
+        val r = CareSync.follow(getApplication(), code)
+        _followResult.value = r
+        if (r is FollowResult.Ok) com.carecircle.reminder.FollowerWorker.ensure(getApplication())
+    }
+
+    fun unfollow(linkId: String) = viewModelScope.launch { CareSync.unfollow(getApplication(), linkId); _followResult.value = null }
+
+    fun events(linkId: String) = CareSync.observeEvents(linkId)
 
     // ---- Export / restore / delete all ----
     private val backup = BackupService(app)

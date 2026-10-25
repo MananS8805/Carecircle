@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// CareCircle caregiver sync. Anyone signed in (anonymously) may look up ONE pairing by its code, but never list pairings.
+// Only the phone that created a pairing writes its events; only the two phones on it can read them.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(p) { return signedIn() && p.ownerUid == request.auth.uid; }
+    function isCaregiver(p) { return signedIn() && p.caregiverUid == request.auth.uid; }
+
+    match /pairings/{linkId} {
+      // Code lookup: a free code, one that is yours, or one that does not exist yet.
+      allow get: if signedIn() && (resource == null || resource.data.caregiverUid == null || isOwner(resource.data) || isCaregiver(resource.data));
+      allow list: if false;
+
+      // The patient phone creates it: unclaimed, expiring, short fields only.
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.caregiverUid == null
+        && request.resource.data.keys().hasOnly(['ownerUid', 'personName', 'createdAt', 'expiresAt', 'caregiverUid'])
+        && request.resource.data.personName is string && request.resource.data.personName.size() <= 40
+        && request.resource.data.expiresAt is timestamp && request.resource.data.expiresAt <= request.time + duration.value(20, 'm');
+
+      // A family phone claims an unclaimed, unexpired pairing, changing nothing else.
+      allow update: if signedIn()
+        && resource.data.caregiverUid == null
+        && resource.data.expiresAt > request.time
+        && request.resource.data.caregiverUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['caregiverUid', 'linkedAt']);
+
+      // Either side can end it.
+      allow delete: if isOwner(resource.data) || isCaregiver(resource.data);
+
+      match /events/{eventId} {
+        function pairing() { return get(/databases/$(database)/documents/pairings/$(linkId)).data; }
+
+        allow read: if isOwner(pairing()) || isCaregiver(pairing());
+        allow create, update: if isOwner(pairing())
+          && request.resource.data.type in ['taken', 'missed', 'skipped', 'summary']
+          && request.resource.data.keys().hasOnly(['type', 'person', 'medicine', 'scheduledAt', 'at', 'taken', 'total'])
+          && request.resource.data.person.size() <= 40 && request.resource.data.medicine.size() <= 80;
+        allow delete: if isOwner(pairing());
+      }
+    }
+  }
+}

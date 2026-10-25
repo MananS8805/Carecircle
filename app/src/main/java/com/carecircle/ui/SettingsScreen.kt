@@ -53,7 +53,7 @@ import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 @Composable
-fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit) {
+fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () -> Unit) {
     val people by vm.people.collectAsStateWithLifecycle()
     val status by rememberReminderStatus()
     var showSetup by remember { mutableStateOf(false) }
@@ -68,6 +68,12 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit) {
             Text(stringResource(R.string.settings_people), style = MaterialTheme.typography.titleLarge)
             Muted(people.joinToString(", ") { displayName(it, people) })
             SoftButton(stringResource(R.string.people_manage), onManagePeople, Modifier.padding(top = 10.dp))
+        }
+
+        SoftCard(Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.family_title), style = MaterialTheme.typography.titleLarge)
+            Muted(stringResource(R.string.family_settings_hint))
+            SoftButton(stringResource(R.string.family_open), onFamily, Modifier.padding(top = 10.dp))
         }
 
         LanguageCard(vm)
@@ -90,7 +96,7 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit) {
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
-                    Muted(stringResource(R.string.settings_version, "0.8"))
+                    Muted(stringResource(R.string.settings_version, "0.9"))
                 }
             }
             Text(stringResource(R.string.settings_privacy), Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodySmall)

@@ -2,6 +2,12 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v0.9
+- Caregiver sync (Firebase anonymous sign-in + Firestore): a patient phone creates a short-lived 8-character code after a consent screen; a family phone enters it. From then on the patient phone sends **Taken, Missed (automatically after 30 minutes, no tap), Skipped and a 9 pm daily summary**, with names and times only. The family phone shows a live status list and, in the background about every 15 minutes, raises notifications for missed doses and daily summaries.
+- Either side can end the link; sharing off deletes the stored events. Delete-all and restore also unlink. Events older than 14 days are pruned.
+- `firebase/firestore.rules` and `firebase/README.md` document the setup. `app/google-services.json` is git-ignored; without it the app builds and Family sync says it is not set up.
+- Room migration 6 to 7.
+
 ## v0.8
 - Escalation so a dose is not silently ignored: reminder at the dose time, repeats at +10 and +20 minutes (the second on a louder alarm-sound channel, each saying how many minutes are left before the family is told), family alert at +30 minutes. Repeats stop when the dose is taken or skipped.
 - Evening summary: at 9 pm each person with a caregiver number gets a notification that opens a pre-filled WhatsApp message ("Dad, today: 3 of 4 doses taken. Not taken: Metformin."), so family hears even if nothing was tapped.

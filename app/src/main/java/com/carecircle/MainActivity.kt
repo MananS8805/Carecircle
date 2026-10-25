@@ -17,6 +17,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         Notifier.ensureChannels(this)
+        com.carecircle.reminder.FollowerWorker.ensure(this)
         setContent {
             CareCircleTheme {
                 val vm: AppViewModel = viewModel()

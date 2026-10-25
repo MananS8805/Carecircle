@@ -101,10 +101,11 @@ class DailySummaryReceiver : BroadcastReceiver() {
                 val lc = AppLocale.wrap(ctx)
                 val repo = com.carecircle.data.Repository(ctx)
                 for (p in AppDb.get(ctx).people().all()) {
-                    if (p.caregiverPhone.isBlank()) continue
                     val r = repo.adherence(p.id, 1)
                     val total = r.taken + r.missed + r.skipped + r.pending
                     if (total == 0) continue
+                    com.carecircle.data.CareSync.publish(ctx, p.id, com.carecircle.domain.SyncEvent(com.carecircle.domain.SyncType.SUMMARY, p.name, at = System.currentTimeMillis(), taken = r.taken, total = total))
+                    if (p.caregiverPhone.isBlank()) continue
                     val notTaken = r.lines.filter { it.outcome != com.carecircle.domain.DoseOutcome.TAKEN }.map { it.name }.distinct().take(3)
                     var text = lc.getString(R.string.msg_daily, p.name, r.taken, total)
                     if (notTaken.isNotEmpty()) text += " " + lc.getString(R.string.msg_daily_not_taken, notTaken.joinToString(", "))
@@ -151,6 +152,7 @@ class MissedDoseWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
             ctx.getString(R.string.notif_missed_title, med.name, time), ctx.getString(R.string.notif_missed_text), url,
         )
         db.doses().markMissedHandled(id)
+        DoseActions.publishMissed(applicationContext, dose, med) // automatic: no tap needed
         return Result.success()
     }
 }

@@ -184,6 +184,7 @@ class BackupService(private val ctx: Context) {
     /** Replaces everything (after the user confirmed). Alarms are re-armed for the restored medicines. */
     suspend fun restore(raw: BackupFile) = withContext(Dispatchers.IO) {
         val file = BackupCodec.withPeople(raw)
+        CareSync.unlinkAll(ctx) // links belong to the old people; stop sharing before they are replaced
         cancelEverything()
         db.clearAllTables()
         db.people().insertAll(file.people.map { Person(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder) })
@@ -204,6 +205,7 @@ class BackupService(private val ctx: Context) {
     }
 
     suspend fun deleteAll() = withContext(Dispatchers.IO) {
+        CareSync.unlinkAll(ctx)
         cancelEverything()
         db.clearAllTables()
         val language = prefs.language
