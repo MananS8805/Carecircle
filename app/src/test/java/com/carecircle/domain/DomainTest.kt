@@ -66,4 +66,34 @@ class DomainTest {
         val ocr = "Amoxycillin 500mg\nClavulanic Acid 125 mg"
         assertEquals(listOf("amoxycillin", "clavulanic acid"), SaltParser.parse(ocr))
     }
+
+    @Test fun snoozeFiresTenMinutesLater() {
+        assertEquals(1_000_000L + 600_000L, Snooze.fireAt(1_000_000L))
+    }
+
+    @Test fun snoozeDoesNothingOnceTaken() {
+        assertTrue(Snooze.shouldRepost(null))
+        assertFalse(Snooze.shouldRepost(123L))
+    }
+
+    @Test fun snoozeDoesNotMoveMissedDeadline() {
+        val scheduled = 5_000_000L
+        val snoozedUntil = Snooze.fireAt(scheduled + 60_000L)
+        // The deadline is still scheduled + grace, regardless of the snooze time.
+        assertFalse(MissedDose.isMissed(scheduled, scheduled + 29 * 60_000L, null))
+        assertTrue(MissedDose.isMissed(scheduled, scheduled + 30 * 60_000L, null))
+        assertTrue(snoozedUntil < scheduled + 30 * 60_000L)
+    }
+
+    @Test fun conditionInferredFromGenericName() {
+        assertEquals(Condition.DIABETES, Conditions.infer("Glycomet", "metformin"))
+        assertEquals(OrganKind.PANCREAS, Conditions.infer("", "Metformin IP 500 mg")?.organ)
+        assertEquals(Condition.BLOOD_PRESSURE, Conditions.infer("Telma 40", "telmisartan"))
+        assertNull(Conditions.infer("Vitamin C", ""))
+    }
+
+    @Test fun conditionFromChipTag() {
+        assertEquals(Condition.ASTHMA, Conditions.fromTag(" asthma "))
+        assertNull(Conditions.fromTag("my own tag"))
+    }
 }

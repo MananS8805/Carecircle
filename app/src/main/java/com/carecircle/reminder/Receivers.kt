@@ -4,10 +4,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.work.*
+import com.carecircle.R
 import com.carecircle.data.AppDb
 import com.carecircle.data.DoseEvent
 import com.carecircle.data.Prefs
 import com.carecircle.domain.MissedDose
+import com.carecircle.domain.Snooze
 import com.carecircle.domain.Messages
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +34,7 @@ class DoseAlarmReceiver : BroadcastReceiver() {
                     db.doses().insert(DoseEvent(medicineId = medId, scheduledAt = at)) // unique index ignores duplicates
                     val dose = db.doses().find(medId, at)
                     if (dose != null && dose.takenAt == null) {
-                        Notifier.doseDue(ctx, dose.id, "Time for ${med.name}", "${med.doseText} - tap Taken when done")
+                        Notifier.postDose(ctx, dose, med)
                         val req = OneTimeWorkRequestBuilder<MissedDoseWorker>()
                             .setInitialDelay(MissedDose.GRACE_MINUTES, TimeUnit.MINUTES)
                             .setInputData(workDataOf(Notifier.EXTRA_DOSE_ID to dose.id)).build()
@@ -53,6 +55,38 @@ class TakenActionReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try { DoseActions.markTaken(ctx, id) } finally { pending.finish() }
         }
+    }
+}
+
+/** "Snooze 10 min" action, and the one-shot alarm that re-posts the same dose notification. */
+class SnoozeReceiver : BroadcastReceiver() {
+    override fun onReceive(ctx: Context, intent: Intent) {
+        val doseId = intent.getLongExtra(Notifier.EXTRA_DOSE_ID, -1)
+        if (doseId < 0) return
+        val repost = intent.action == ACTION_REPOST
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val db = AppDb.get(ctx)
+                val dose = db.doses().get(doseId)
+                if (dose == null || !Snooze.shouldRepost(dose.takenAt)) {
+                    Notifier.cancelDose(ctx, doseId)
+                    return@launch
+                }
+                if (repost) {
+                    val med = db.medicines().get(dose.medicineId)
+                    if (med != null && med.active) Notifier.postDose(ctx, dose, med)
+                } else {
+                    Notifier.cancelDose(ctx, doseId)
+                    ReminderScheduler.scheduleSnooze(ctx, doseId, Snooze.fireAt(System.currentTimeMillis()))
+                }
+            } finally { pending.finish() }
+        }
+    }
+
+    companion object {
+        const val ACTION_SNOOZE = "com.carecircle.action.SNOOZE"
+        const val ACTION_REPOST = "com.carecircle.action.SNOOZE_REPOST"
     }
 }
 
@@ -78,7 +112,10 @@ class MissedDoseWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         val time = Instant.ofEpochMilli(dose.scheduledAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("h:mm a"))
         val patient = med.patientName.ifBlank { prefs.patientName.ifBlank { "your family member" } }
         val url = Messages.whatsAppUrl(Messages.normalizePhone(prefs.caregiverPhone), Messages.missedDose(patient, med.name, time))
-        Notifier.linkAlert(applicationContext, 3_000_000 + (id % 1_000_000).toInt(), "Missed: ${med.name} ($time)", "Tap to alert the caregiver on WhatsApp.", url)
+        Notifier.linkAlert(
+            applicationContext, 3_000_000 + (id % 1_000_000).toInt(),
+            applicationContext.getString(R.string.notif_missed_title, med.name, time), applicationContext.getString(R.string.notif_missed_text), url,
+        )
         db.doses().markMissedHandled(id)
         return Result.success()
     }

@@ -22,8 +22,8 @@ Android app helping families manage medicines for elderly parents (India first).
 - No heavy dependencies without need. Follow existing code style (official Kotlin style, 4 spaces; TS strict, ESM with `.js` import suffixes).
 - India defaults: +91 numbers, INN->USAN name map in `backend/lib/sources.ts` (paracetamol -> acetaminophen etc.).
 
-## Status (v0.1)
-Backend verified (tests + typecheck). Android sources were written WITHOUT an Android SDK available, so they have not been compiled: first task is always `./gradlew :app:assembleDebug` and fixing any compile errors.
+## Status (v0.2)
+Android app compiles and `DomainTest` passes (wrapper 8.9, JDK 17, SDK 35; set `sdk.dir` in local.properties, git-ignored). UI lives in `ui/` (screens) and `ui/theme/` (Theme, Components, OrganArt, logo). All user-facing text is in `res/values/strings.xml`. `domain/Condition.kt` maps medicines to conditions/organs for the organ view.
 Notes: RxNorm interaction API was retired, so interactions come from the label's drug_interactions section. Strip scan uses the system camera (TakePicture) instead of CameraX for simplicity; CameraX live preview is a later upgrade.
 
 ## Roadmap

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CareCircle</string>
+
+    <!-- Tabs -->
+    <string name="tab_today">Today</string>
+    <string name="tab_medicines">Medicines</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Common actions -->
+    <string name="action_taken">Taken</string>
+    <string name="action_snooze">Snooze 10 min</string>
+    <string name="action_save">Save</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_back">Back</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_remove">Remove medicine</string>
+    <string name="action_add_pills">+30 pills</string>
+    <string name="action_reorder">Reorder</string>
+    <string name="alert_caregiver">Alert caregiver on WhatsApp</string>
+    <string name="family_member_fallback">your family member</string>
+    <string name="cd_doctor_pdf">Doctor visit PDF</string>
+
+    <!-- Disclaimers -->
+    <string name="disclaimer_medical">Informational only, not medical advice.</string>
+
+    <!-- Today -->
+    <string name="greeting_anon">Hi there!</string>
+    <string name="greeting_name">Hi, %1$s!</string>
+    <string name="today_headline">Let\'s take care of today\'s medicines</string>
+    <string name="today_doses">Today\'s doses</string>
+    <string name="today_empty">No medicines scheduled. Add one in the Medicines tab.</string>
+    <string name="status_taken">Taken</string>
+    <string name="status_missed">Missed</string>
+    <string name="status_due">Due now</string>
+    <string name="status_upcoming">Upcoming</string>
+    <plurals name="pills_count">
+        <item quantity="one">%d pill</item>
+        <item quantity="other">%d pills</item>
+    </plurals>
+
+    <!-- Organ hero -->
+    <string name="hero_taken_today">Taken today</string>
+    <string name="hero_doses_scheduled">of %1$d doses</string>
+    <string name="hero_next_dose">Next dose</string>
+    <string name="hero_empty_pill">Your body map</string>
+    <string name="hero_empty_hint">Add a medicine and the organ it treats appears here.</string>
+    <string name="hero_organ_desc">%1$s, interactive organ illustration</string>
+    <string name="hero_acts_on">%1$s - acts on your %2$s</string>
+    <plurals name="hero_tap_hint">
+        <item quantity="one">Tap the organ to see its medicines</item>
+        <item quantity="other">Tap the organ to see its medicines, swipe for more</item>
+    </plurals>
+    <string name="organ_heart">heart</string>
+    <string name="organ_pancreas">pancreas</string>
+    <string name="organ_lungs">lungs</string>
+    <string name="organ_kidney">kidney</string>
+    <string name="organ_brain">brain</string>
+    <string name="organ_thyroid">thyroid</string>
+    <string name="organ_joint">joints</string>
+    <string name="organ_body">whole body</string>
+
+    <!-- Conditions -->
+    <string name="cond_diabetes">Diabetes</string>
+    <string name="cond_blood_pressure">Blood pressure</string>
+    <string name="cond_cholesterol">Cholesterol</string>
+    <string name="cond_thyroid">Thyroid</string>
+    <string name="cond_heart">Heart</string>
+    <string name="cond_asthma">Asthma</string>
+    <string name="cond_arthritis">Arthritis</string>
+    <string name="cond_kidney">Kidney</string>
+    <string name="cond_brain">Brain and nerves</string>
+    <string name="cond_infection">Infection</string>
+    <string name="cond_pain">Pain</string>
+    <string name="cond_other">Other</string>
+
+    <!-- Reminder health / onboarding -->
+    <string name="banner_title">Reminders may be late or missing</string>
+    <string name="banner_notifications">Notifications are turned off for CareCircle.</string>
+    <string name="banner_exact">Exact alarms are not allowed, so doses may be a few minutes late.</string>
+    <string name="banner_fix">Fix this</string>
+    <string name="onb_title">Let\'s make sure reminders reach you</string>
+    <string name="onb_intro">A reminder that does not fire is the worst failure for a medicine app. Three quick settings help.</string>
+    <string name="onb_notif_title">Notifications</string>
+    <string name="onb_notif_why">So we can show the dose reminder with Taken and Snooze buttons.</string>
+    <string name="onb_exact_title">Exact alarms</string>
+    <string name="onb_exact_why">So reminders fire on the minute, even when the phone is idle.</string>
+    <string name="onb_battery_title">Battery optimisation</string>
+    <string name="onb_battery_why">Choose "Don\'t optimise" for CareCircle so the phone does not delay reminders.</string>
+    <string name="onb_allow">Allow</string>
+    <string name="onb_open_settings">Open settings</string>
+    <string name="onb_done">Done</string>
+
+    <!-- Notifications -->
+    <string name="channel_doses">Dose reminders</string>
+    <string name="channel_alerts">Missed dose and refill alerts</string>
+    <string name="notif_time_for">Time for %1$s</string>
+    <string name="notif_dose_text">%1$s - tap Taken when done</string>
+    <string name="notif_dose_fallback">your dose</string>
+    <string name="notif_missed_title">Missed: %1$s (%2$s)</string>
+    <string name="notif_missed_text">Tap to alert the caregiver on WhatsApp.</string>
+    <string name="notif_reorder_title">%1$s: %2$d day(s) left</string>
+    <string name="notif_reorder_text">Tap to message the pharmacy to reorder.</string>
+
+    <!-- Medicines list -->
+    <string name="meds_add">Add medicine</string>
+    <string name="meds_empty">No medicines yet. Add the first one to start reminders.</string>
+    <plurals name="pills_left">
+        <item quantity="one">%1$d pill left (about %2$d days)</item>
+        <item quantity="other">%1$d pills left (about %2$d days)</item>
+    </plurals>
+
+    <!-- Edit -->
+    <string name="edit_add_title">Add medicine</string>
+    <string name="edit_edit_title">Edit medicine</string>
+    <string name="field_name">Medicine name</string>
+    <string name="field_dose">Dose (e.g. 500 mg)</string>
+    <string name="field_times">Times, 24h, comma separated</string>
+    <string name="field_pills">Pills in stock</string>
+    <string name="field_per_dose">Pills per dose</string>
+    <string name="field_patient">Patient name (optional)</string>
+    <string name="field_salt">Generic name / salt</string>
+    <string name="scan_strip">Scan medicine strip</string>
+    <string name="scan_failed_retry">Could not read a composition. Retake closer to the printed salt, or type it.</string>
+    <string name="scan_read">Read: %1$s - please confirm.</string>
+    <string name="scan_error">Scan failed. Try again or type the name.</string>
+
+    <!-- Info card -->
+    <string name="info_title">About this medicine</string>
+    <string name="info_need_name">Add the generic name (or scan the strip) to see official medicine information.</string>
+    <string name="info_edit_name">Edit name</string>
+    <string name="info_loading">Looking up official information...</string>
+    <string name="info_offline">Offline - showing saved information.</string>
+    <string name="info_partial">No official information found for: %1$s</string>
+    <string name="info_not_found">No official information found for %1$s. Check the spelling of the generic name.</string>
+    <string name="info_rate_limited">Too many requests, try again in a minute.</string>
+    <string name="info_error">Could not load information and nothing is saved yet. Check your connection.</string>
+    <string name="info_why">Why you take it</string>
+    <string name="info_how">How and when to take it</string>
+    <string name="info_side_effects">Common side effects</string>
+    <string name="info_call_doctor">Call your doctor if</string>
+    <string name="info_interactions">Key interactions</string>
+    <string name="info_sources">Sources</string>
+
+    <!-- Settings -->
+    <string name="settings_people">People and contacts</string>
+    <string name="field_patient_name">Patient name</string>
+    <string name="field_caregiver">Caregiver WhatsApp number</string>
+    <string name="field_pharmacy">Pharmacy WhatsApp number</string>
+    <string name="settings_reminders">Reminders</string>
+    <string name="settings_review_setup">Review reminder setup</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_privacy">Your data stays on this phone. Only a medicine\'s generic name is sent to the CareCircle server to fetch public drug information.</string>
+</resources>

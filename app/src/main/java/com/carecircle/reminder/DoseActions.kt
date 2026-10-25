@@ -1,6 +1,7 @@
 package com.carecircle.reminder
 
 import android.content.Context
+import com.carecircle.R
 import com.carecircle.data.AppDb
 import com.carecircle.data.Prefs
 import com.carecircle.domain.Messages
@@ -16,6 +17,7 @@ object DoseActions {
         val med = db.medicines().get(dose.medicineId) ?: return
         db.medicines().decrementPills(med.id, med.pillsPerDose)
         Notifier.cancelDose(ctx, doseId)
+        ReminderScheduler.cancelSnooze(ctx, doseId)
 
         val updated = db.medicines().get(med.id) ?: return
         val left = Refill.daysLeft(updated.pillCount, updated.pillsPerDose, Schedule.parseTimes(updated.timesCsv).size)
@@ -23,7 +25,10 @@ object DoseActions {
             val prefs = Prefs(ctx)
             val text = Messages.reorder(updated.name, left, updated.patientName.ifBlank { prefs.patientName.ifBlank { "my family member" } })
             val url = Messages.whatsAppUrl(Messages.normalizePhone(prefs.pharmacyPhone), text)
-            Notifier.linkAlert(ctx, 2_000_000 + updated.id.toInt(), "${updated.name}: $left day(s) left", "Tap to message the pharmacy to reorder.", url)
+            Notifier.linkAlert(
+                ctx, 2_000_000 + updated.id.toInt(),
+                ctx.getString(R.string.notif_reorder_title, updated.name, left), ctx.getString(R.string.notif_reorder_text), url,
+            )
         }
     }
 }

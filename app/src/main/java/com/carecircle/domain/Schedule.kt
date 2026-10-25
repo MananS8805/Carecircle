@@ -42,3 +42,13 @@ object MissedDose {
     fun isMissed(scheduledAtMs: Long, nowMs: Long, takenAtMs: Long?, graceMinutes: Long = GRACE_MINUTES): Boolean =
         takenAtMs == null && nowMs >= scheduledAtMs + graceMinutes * 60_000L
 }
+
+/** Snooze for dose reminders: one-shot re-post, never moves the missed-dose deadline. */
+object Snooze {
+    const val MINUTES = 10L
+
+    fun fireAt(nowMs: Long, minutes: Long = MINUTES): Long = nowMs + minutes * 60_000L
+
+    /** A snooze (or its re-post) does nothing once the dose is taken. */
+    fun shouldRepost(takenAtMs: Long?): Boolean = takenAtMs == null
+}

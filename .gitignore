@@ -9,3 +9,7 @@ build/
 node_modules
 .vercel
 .env*
+.scratch/
+*.jks
+*.keystore
+local.properties

@@ -4,7 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.carecircle.data.*
+import com.carecircle.domain.Condition
+import com.carecircle.domain.Conditions
 import com.carecircle.domain.MissedDose
+import com.carecircle.domain.OrganKind
 import com.carecircle.domain.Schedule
 import com.carecircle.reminder.DoseActions
 import com.carecircle.reminder.ReminderScheduler
@@ -19,6 +22,9 @@ enum class DoseStatus { UPCOMING, DUE, TAKEN, MISSED }
 
 data class TodayItem(val med: Medicine, val scheduledAt: Long, val event: DoseEvent?, val status: DoseStatus)
 
+/** Medicines grouped by the body part they act on, for the interactive organ view. */
+data class OrganGroup(val condition: Condition?, val organ: OrganKind, val meds: List<Medicine>)
+
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     val repo = Repository(app)
     val prefs = Prefs(app)
@@ -26,6 +32,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     val medicines: StateFlow<List<Medicine>> =
         repo.medicines.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val bodyMap: StateFlow<List<OrganGroup>> = medicines.map { meds ->
+        meds.groupBy { Conditions.infer(it.name, it.salt) }
+            .map { (c, ms) -> OrganGroup(c, c?.organ ?: OrganKind.BODY, ms) }
+            .sortedByDescending { it.meds.size }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val ticker = flow { while (true) { emit(System.currentTimeMillis()); kotlinx.coroutines.delay(30_000) } }
 
@@ -81,6 +93,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _card.value = repo.medicineCard(salt)
         _loading.value = false
     }
+
+    fun clearCard() { _card.value = null; _loading.value = false }
 
     fun nowZoned(): ZonedDateTime = ZonedDateTime.now(zone)
 }

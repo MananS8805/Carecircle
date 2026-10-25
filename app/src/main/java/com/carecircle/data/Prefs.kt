@@ -14,4 +14,7 @@ class Prefs(ctx: Context) {
     var patientName: String
         get() = sp.getString("patient", "") ?: ""
         set(v) = sp.edit().putString("patient", v).apply()
+    var onboardingDone: Boolean
+        get() = sp.getBoolean("onboardingDone", false)
+        set(v) = sp.edit().putBoolean("onboardingDone", v).apply()
 }

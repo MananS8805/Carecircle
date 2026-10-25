@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.CareCircle" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.CareCircle" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F1F1F3</item>
+        <item name="android:statusBarColor">#F1F1F3</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
 </resources>
