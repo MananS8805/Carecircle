@@ -53,7 +53,7 @@ import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 @Composable
-fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () -> Unit) {
+fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () -> Unit, onHealth: () -> Unit) {
     val people by vm.people.collectAsStateWithLifecycle()
     val status by rememberReminderStatus()
     var showSetup by remember { mutableStateOf(false) }
@@ -86,7 +86,8 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () ->
             StatusLine(stringResource(R.string.onb_notif_title), status.notifications)
             if (android.os.Build.VERSION.SDK_INT >= 31) StatusLine(stringResource(R.string.onb_exact_title), status.exactAlarms)
             StatusLine(stringResource(R.string.onb_battery_title), status.batteryUnrestricted)
-            SoftButton(stringResource(R.string.settings_review_setup), { showSetup = true }, Modifier.padding(top = 10.dp))
+            SoftButton(stringResource(R.string.health_open), onHealth, Modifier.padding(top = 10.dp))
+            SoftButton(stringResource(R.string.settings_review_setup), { showSetup = true }, Modifier.padding(top = 8.dp))
         }
 
         DataCard(vm)
@@ -97,7 +98,7 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () ->
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
-                    Muted(stringResource(R.string.settings_version, "1.1"))
+                    Muted(stringResource(R.string.settings_version, "1.2"))
                 }
             }
             Text(stringResource(R.string.settings_privacy), Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodySmall)

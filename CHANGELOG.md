@@ -2,6 +2,12 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v1.2
+- Reminders health check (Settings): one screen that answers "will my reminders fire?" with checks for notifications, reminder categories, exact alarms, battery, Do Not Disturb, scheduled medicines and when the last reminder was posted, a fix button for each, and a test reminder.
+- Home-screen widget: the dose that needs attention (or the next one) with a one-tap Taken button; refreshed whenever a dose changes.
+- Second caregiver: an optional backup number per person. If a dose is still open 45 minutes after its time (15 minutes after the first alert), a notification offers a pre-filled WhatsApp message to the second caregiver; the Today card also gets a button. Family sync already supports several family phones per person (one code each).
+- Room migration 8 to 9; backup schema version 7.
+
 ## v1.1
 - Safety checks, all on the phone: an allergy list per person (Manage people) with a warning on the Edit and Detail screens when a medicine's name or generic name seems to fall under it (including groups such as penicillin or NSAIDs); a warning when the same ingredient is in more than one medicine; a "High-alert medicine" flag with a reminder to follow the prescription exactly (warfarin, insulin, digoxin and similar). Warnings never block saving and never say a medicine is safe.
 - Medicine card text is tidied: section headings and reference marks from the label are removed, three short sentences per section with "Show more".

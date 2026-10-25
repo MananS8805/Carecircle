@@ -198,6 +198,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteSymptom(id: Long) = viewModelScope.launch { repo.deleteSymptom(id) }
 
+    /** Active medicine count and when the oldest was added, for the reminders health check. */
+    suspend fun healthInputs(): Pair<Int, Long> {
+        val meds = repo.medicines.all()
+        return meds.size to (meds.map { it.createdAt }.filter { it > 0 }.minOrNull() ?: 0L)
+    }
+
     // ---- Allergies and safety flags ----
     fun allergiesFor(personId: Long) = repo.allergies(personId)
     fun addAllergy(personId: Long, name: String) = viewModelScope.launch { repo.addAllergy(personId, name) }

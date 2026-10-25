@@ -165,6 +165,16 @@ private fun DoseCard(d: TodayItem, vm: AppViewModel, owner: Person?, onAlert: ()
             val hasNumber = !owner?.caregiverPhone.isNullOrBlank()
             SoftButton(stringResource(R.string.alert_caregiver), onAlert, Modifier.fillMaxWidth().padding(top = 8.dp), enabled = hasNumber)
             if (!hasNumber) Muted(stringResource(R.string.alert_add_number, owner?.name ?: ""), Modifier.padding(top = 4.dp))
+            val second = owner?.caregiver2Phone
+            if (!second.isNullOrBlank()) {
+                val ctx2 = LocalContext.current
+                SoftButton(stringResource(R.string.alert_second), {
+                    val who = owner.name
+                    val text = ctx2.getString(R.string.msg_missed, who, Messages.medicineLabel(d.med.name, d.med.doseText), Fmt.time(d.scheduledAt))
+                    val url = Messages.whatsAppUrl(Messages.normalizePhone(second), text)
+                    ctx2.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }, Modifier.fillMaxWidth().padding(top = 8.dp))
+            }
         }
     }
 }

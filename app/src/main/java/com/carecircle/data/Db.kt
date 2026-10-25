@@ -14,6 +14,7 @@ data class Person(
     val caregiverPhone: String = "",
     val pharmacyPhone: String = "",
     val sortOrder: Int = 0,
+    val caregiver2Phone: String? = null, // optional backup caregiver, alerted 15 minutes after the first
 )
 
 @Entity(tableName = "medicine", indices = [Index("personId")])
@@ -288,7 +289,14 @@ object Migrations {
         }
     }
 
-    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7, M7_8)
+    /** v1.1 -> v1.2: an optional second caregiver number per person. */
+    val M8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE person ADD COLUMN caregiver2Phone TEXT")
+        }
+    }
+
+    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7, M7_8, M8_9)
 }
 
 object Persons {
@@ -299,7 +307,7 @@ object Persons {
 
 @Database(
     entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class, SyncLink::class, Following::class, Allergy::class],
-    version = 8, exportSchema = true,
+    version = 9, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun people(): PersonDao

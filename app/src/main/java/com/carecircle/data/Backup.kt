@@ -54,7 +54,7 @@ data class BackupPolicy(val savedAt: Long, val json: String, val personId: Long 
 
 /** A family member with their own contacts. Added in backup version 3. */
 @Serializable
-data class BackupPerson(val id: Long, val name: String, val caregiverPhone: String = "", val pharmacyPhone: String = "", val sortOrder: Int = 0)
+data class BackupPerson(val id: Long, val name: String, val caregiverPhone: String = "", val pharmacyPhone: String = "", val sortOrder: Int = 0, val caregiver2Phone: String? = null)
 
 /** Contacts of the single implicit person in version 1 and 2 files. Version 3 stores them on each person instead. */
 @Serializable
@@ -85,7 +85,7 @@ sealed interface BackupParse {
 /** Pure JSON encode / decode / validation, so it can be unit-tested on the JVM. */
 object BackupCodec {
     const val APP_ID = "carecircle"
-    const val CURRENT_VERSION = 6
+    const val CURRENT_VERSION = 7
     const val HISTORY_DAYS = 90
     const val MAX_BYTES = 10 * 1024 * 1024
 
@@ -103,7 +103,7 @@ object BackupCodec {
         val ids = meds.map { it.id }.toSet()
         return BackupFile(
             schemaVersion = CURRENT_VERSION, exportedAt = now,
-            people = people.map { BackupPerson(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder) },
+            people = people.map { BackupPerson(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder, it.caregiver2Phone) },
             medicines = meds.map {
                 BackupMedicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming, it.personId, it.conditionTag, it.createdAt, it.archivedAt, it.expiry, it.doctorNote)
             },
@@ -196,7 +196,7 @@ class BackupService(private val ctx: Context) {
         CareSync.unlinkAll(ctx) // links belong to the old people; stop sharing before they are replaced
         cancelEverything()
         db.clearAllTables()
-        db.people().insertAll(file.people.map { Person(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder) })
+        db.people().insertAll(file.people.map { Person(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder, it.caregiver2Phone) })
         db.medicines().insertAll(
             file.medicines.map {
                 Medicine(

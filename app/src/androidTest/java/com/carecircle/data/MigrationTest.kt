@@ -15,6 +15,18 @@ class MigrationTest {
     )
 
     @Test
+    fun migrate8To9AddsSecondCaregiverKeepingPeople() {
+        helper.createDatabase("mig89", 8).apply {
+            execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Dad', '919876543210', '', 0)")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate("mig89", 9, true, Migrations.M8_9)
+        db.query("SELECT caregiverPhone, caregiver2Phone FROM person").use {
+            it.moveToFirst(); assertEquals("919876543210", it.getString(0)); assertEquals(true, it.isNull(1))
+        }
+    }
+
+    @Test
     fun migrate7To8AddsAllergyTableKeepingData() {
         helper.createDatabase("mig78", 7).apply {
             execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")

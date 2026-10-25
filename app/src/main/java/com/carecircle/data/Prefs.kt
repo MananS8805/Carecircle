@@ -25,6 +25,11 @@ class Prefs(ctx: Context) {
         get() = sp.getString("appMode", "") ?: ""
         set(v) = sp.edit().putString("appMode", v).apply()
 
+    /** When this app last posted a dose reminder. Shown on the reminders health check. */
+    var lastReminderAt: Long
+        get() = sp.getLong("lastReminderAt", 0L)
+        set(v) = sp.edit().putLong("lastReminderAt", v).apply()
+
     fun clearAll() = sp.edit().clear().apply()
 
     companion object {

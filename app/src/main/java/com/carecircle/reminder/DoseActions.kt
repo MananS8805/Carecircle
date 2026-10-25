@@ -30,6 +30,7 @@ object DoseActions {
         val db = AppDb.get(ctx)
         if (db.doses().markSkipped(doseId) == 0) return
         db.doses().get(doseId)?.let { dose -> db.medicines().get(dose.medicineId)?.let { publish(ctx, SyncType.SKIPPED, dose, it) } }
+        DoseWidget.refreshAll(ctx)
         Notifier.cancelDose(ctx, doseId)
         ReminderScheduler.cancelSnooze(ctx, doseId)
         ReminderScheduler.cancelRepeats(ctx, doseId)
@@ -46,6 +47,7 @@ object DoseActions {
         ReminderScheduler.cancelSnooze(ctx, doseId)
         ReminderScheduler.cancelRepeats(ctx, doseId)
         publish(ctx, SyncType.TAKEN, dose, med)
+        DoseWidget.refreshAll(ctx)
 
         val updated = db.medicines().get(med.id) ?: return
         val left = Refill.daysLeft(updated.pillCount, updated.pillsPerDose, Schedule.parseTimes(updated.timesCsv).size)

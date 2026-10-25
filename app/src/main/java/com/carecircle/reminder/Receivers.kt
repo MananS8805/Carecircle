@@ -34,11 +34,19 @@ class DoseAlarmReceiver : BroadcastReceiver() {
                     val dose = db.doses().find(medId, at)
                     if (dose != null && dose.takenAt == null) {
                         Notifier.postDose(ctx, dose, med, personLabel(db, med))
+                        com.carecircle.data.Prefs(ctx).lastReminderAt = System.currentTimeMillis()
                         ReminderScheduler.scheduleRepeats(ctx, dose.id, at)
+                        DoseWidget.refreshAll(ctx)
                         val req = OneTimeWorkRequestBuilder<MissedDoseWorker>()
                             .setInitialDelay(MissedDose.GRACE_MINUTES, TimeUnit.MINUTES)
                             .setInputData(workDataOf(Notifier.EXTRA_DOSE_ID to dose.id)).build()
                         WorkManager.getInstance(ctx).enqueueUniqueWork("missed-${dose.id}", ExistingWorkPolicy.KEEP, req)
+                        if (!db.people().get(med.personId)?.caregiver2Phone.isNullOrBlank()) {
+                            val req2 = OneTimeWorkRequestBuilder<MissedDoseWorker>()
+                                .setInitialDelay(MissedDose.GRACE_MINUTES + 15, TimeUnit.MINUTES)
+                                .setInputData(workDataOf(Notifier.EXTRA_DOSE_ID to dose.id, Notifier.EXTRA_LEVEL to 2)).build()
+                            WorkManager.getInstance(ctx).enqueueUniqueWork("missed2-${dose.id}", ExistingWorkPolicy.KEEP, req2)
+                        }
                     }
                 }
                 ReminderScheduler.scheduleFor(ctx, medId)
@@ -140,6 +148,7 @@ class MissedDoseWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         if (id < 0) return Result.success()
         val db = AppDb.get(applicationContext)
         val dose = db.doses().get(id) ?: return Result.success()
+        if (inputData.getInt(Notifier.EXTRA_LEVEL, 1) == 2) return notifySecondCaregiver(db, dose)
         if (dose.missedHandled || dose.skipped || !MissedDose.isMissed(dose.scheduledAt, System.currentTimeMillis(), dose.takenAt)) return Result.success()
         val med = db.medicines().get(dose.medicineId) ?: return Result.success()
         val ctx = AppLocale.wrap(applicationContext)
@@ -156,6 +165,22 @@ class MissedDoseWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         DoseActions.publishMissed(applicationContext, dose, med) // automatic: no tap needed
         return Result.success()
     }
+}
+
+/** 45 minutes after the dose: if it is still open, offer a pre-filled message to the backup caregiver. */
+private suspend fun MissedDoseWorker.notifySecondCaregiver(db: AppDb, dose: com.carecircle.data.DoseEvent): androidx.work.ListenableWorker.Result {
+    if (dose.takenAt != null || dose.skipped) return androidx.work.ListenableWorker.Result.success()
+    val med = db.medicines().get(dose.medicineId) ?: return androidx.work.ListenableWorker.Result.success()
+    val person = db.people().get(med.personId) ?: return androidx.work.ListenableWorker.Result.success()
+    val phone = person.caregiver2Phone?.takeIf { it.isNotBlank() } ?: return androidx.work.ListenableWorker.Result.success()
+    val lc = AppLocale.wrap(applicationContext)
+    val time = Fmt.time(dose.scheduledAt, AppLocale.locale(applicationContext))
+    val text = lc.getString(R.string.msg_missed, person.name, Messages.medicineLabel(med.name, med.doseText), time)
+    Notifier.linkAlert(
+        applicationContext, 3_500_000 + (dose.id % 500_000).toInt(),
+        lc.getString(R.string.notif_missed2_title, med.name, time), lc.getString(R.string.notif_missed2_text), Messages.whatsAppUrl(Messages.normalizePhone(phone), text),
+    )
+    return androidx.work.ListenableWorker.Result.success()
 }
 
 /** The person's name for notification titles, only when more than one person is tracked. */

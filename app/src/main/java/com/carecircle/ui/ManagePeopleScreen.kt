@@ -79,11 +79,14 @@ private fun PersonEditor(p: Person, all: List<Person>, vm: AppViewModel, canDele
     var name by remember(p.id) { mutableStateOf(p.name) }
     var caregiver by remember(p.id) { mutableStateOf(p.caregiverPhone) }
     var pharmacy by remember(p.id) { mutableStateOf(p.pharmacyPhone) }
-    fun push(n: String = name, c: String = caregiver, ph: String = pharmacy) = onChange(p.copy(name = n.take(Persons.MAX_NAME), caregiverPhone = c, pharmacyPhone = ph))
+    var caregiver2 by remember(p.id) { mutableStateOf(p.caregiver2Phone.orEmpty()) }
+    fun push(n: String = name, c: String = caregiver, ph: String = pharmacy, c2: String = caregiver2) =
+        onChange(p.copy(name = n.take(Persons.MAX_NAME), caregiverPhone = c, pharmacyPhone = ph, caregiver2Phone = c2.ifBlank { null }))
     SoftCard(Modifier.fillMaxWidth()) {
         Text(displayName(p, all), style = MaterialTheme.typography.titleLarge)
         PhoneField(name, { name = it.take(Persons.MAX_NAME); push(n = name) }, stringResource(R.string.field_person_name), KeyboardType.Text)
         PhoneField(caregiver, { caregiver = it; push(c = it) }, stringResource(R.string.field_caregiver), KeyboardType.Phone)
+        PhoneField(caregiver2, { caregiver2 = it; push(c2 = it) }, stringResource(R.string.field_caregiver2), KeyboardType.Phone)
         PhoneField(pharmacy, { pharmacy = it; push(ph = it) }, stringResource(R.string.field_pharmacy), KeyboardType.Phone)
         AllergySection(p.id, vm)
         if (canDelete) TextButton(onClick = onDelete) { Text(stringResource(R.string.people_delete), color = Palette.Bad) }

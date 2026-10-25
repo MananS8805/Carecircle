@@ -494,4 +494,37 @@
     <string name="high_alert_note">Take exactly as prescribed. Do not change the dose without asking your doctor.</string>
     <string name="info_show_more">Show more</string>
     <string name="info_show_less">Show less</string>
+    <!-- v1.2: reminders health check -->
+    <string name="health_open">Reminders health check</string>
+    <string name="health_title">Reminders health check</string>
+    <string name="health_good">Reminders should fire on time</string>
+    <string name="health_warn">Reminders work, but check the warnings</string>
+    <string name="health_bad">Reminders may not fire: fix the red items</string>
+    <string name="health_scheduled">%1$d medicines scheduled</string>
+    <string name="health_last">Last reminder posted: %1$s</string>
+    <string name="health_last_never">No reminder has been posted yet.</string>
+    <string name="health_checks">Checks</string>
+    <string name="health_channels">Reminder sound and alerts</string>
+    <string name="health_dnd">Do Not Disturb</string>
+    <string name="health_medicines">Medicines with times</string>
+    <string name="health_fired">Reminders have fired</string>
+    <string name="health_why_notif">Without this no reminder can be shown.</string>
+    <string name="health_why_channels">The reminder categories must not be switched off in the app notification settings.</string>
+    <string name="health_why_exact">Lets reminders fire on the minute even when the phone is idle.</string>
+    <string name="health_why_dnd">Do Not Disturb can silence reminders. Allow CareCircle in its exceptions.</string>
+    <string name="health_why_medicines">Add a medicine with at least one time to get reminders.</string>
+    <string name="health_why_fired">A medicine was added over a day ago but no reminder has appeared. Check the items above and send a test.</string>
+    <string name="health_test">Send a test reminder</string>
+    <string name="health_test_title">Test reminder</string>
+    <string name="health_test_text">If you can see and hear this, reminders can reach you.</string>
+    <string name="health_test_sent">Test sent. Pull down the notification shade to see it.</string>
+    <string name="health_recheck">Check again</string>
+    <!-- v1.2: widget and second caregiver -->
+    <string name="widget_description">Shows the next dose with a Taken button.</string>
+    <string name="widget_label_done">TODAY</string>
+    <string name="widget_all_done">All doses done</string>
+    <string name="field_caregiver2">Second caregiver WhatsApp number (optional)</string>
+    <string name="alert_second">Alert second caregiver on WhatsApp</string>
+    <string name="notif_missed2_title">Still missed: %1$s (%2$s)</string>
+    <string name="notif_missed2_text">The first caregiver was told 15 minutes ago. Tap to alert the second caregiver.</string>
 </resources>

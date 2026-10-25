@@ -78,3 +78,8 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 
 ## v1.1 notes
 - `domain/Safety.kt` (allergy classes, ingredient overlap, high-alert list) and `LabelText` are pure and tested. The lists are small and extendable; they only raise flags to ask a doctor or pharmacist about.
+
+## v1.2 notes
+- `domain/ReminderHealth.kt` (pure) is filled by `ui/HealthScreen.readHealth`. `Prefs.lastReminderAt` is stamped in `DoseAlarmReceiver`.
+- `reminder/DoseWidget` is a plain AppWidgetProvider (RemoteViews, no extra dependency); call `DoseWidget.refreshAll(ctx)` after anything that changes a dose.
+- The second-caregiver alert is a `MissedDoseWorker` run with `EXTRA_LEVEL = 2` at +45 minutes.

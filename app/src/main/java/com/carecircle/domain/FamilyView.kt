@@ -37,7 +37,8 @@ object FamilyView {
 
     /** Organs for the medicines seen, most common first; the generic body only when nothing else matched. */
     fun organs(medicines: List<String>): List<OrganKind> {
-        val counts = medicines.mapNotNull { Conditions.infer(it, "")?.organ }.groupingBy { it }.eachCount()
+        val counts = mutableMapOf<OrganKind, Int>()
+        medicines.mapNotNull { Conditions.infer(it, "")?.organ }.forEach { counts[it] = (counts[it] ?: 0) + 1 }
         return counts.entries.sortedByDescending { it.value }.map { it.key }.ifEmpty { listOf(OrganKind.BODY) }
     }
 
