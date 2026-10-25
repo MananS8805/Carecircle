@@ -27,13 +27,13 @@ data class AdherenceResult(
     val lines: List<DoseLine>,
     val perMedicine: List<MedStat>,
 ) {
-    val taken = days.sumOf { it.taken }
-    val missed = days.sumOf { it.missed }
-    val skipped = days.sumOf { it.skipped }
-    val pending = days.sumOf { it.pending }
+    val taken: Int = days.sumOf { it.taken }
+    val missed: Int = days.sumOf { it.missed }
+    val skipped: Int = days.sumOf { it.skipped }
+    val pending: Int = days.sumOf { it.pending }
 
     /** Doses that are decided (not pending). */
-    val decided get() = taken + missed + skipped
+    val decided: Int get() = taken + missed + skipped
 
     /** Whole-number percentage of decided doses that were taken, or null when there is nothing to judge. */
     val percent: Int? get() = if (decided == 0) null else Math.round(taken * 100.0 / decided).toInt()

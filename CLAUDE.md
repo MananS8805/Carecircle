@@ -54,3 +54,6 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - `domain/Coverage.kt` (synonym map in `ConditionSynonyms`), `domain/VoiceParser.kt`, `domain/Adherence.kt` are pure and unit-tested. Tags, coverage matching, voice text and adherence never leave the phone (only user-initiated share intents and the PDF).
 - Voice entry uses `RecognizerIntent` (the system speech service), so CareCircle holds no RECORD_AUDIO permission; the rationale dialog says the service may use its own online processing.
 - New strings must be added to values, values-hi and values-gu (StringsTest and lint enforce it). Review the new disclaimers (`cov_*`, `voice_rationale`, `msg_weekly`) with a native speaker.
+
+## v0.6.1 notes
+- `data/OnDeviceAi.kt` wraps `com.google.mlkit:genai-prompt:1.0.0-beta4`. The libraries are built with a newer Kotlin than 2.0.21, hence `-Xskip-metadata-version-check` in `app/build.gradle.kts`; upgrading Kotlin to 2.2+ would remove the need. Unsupported phones report UNAVAILABLE; always keep the extractive fallback.

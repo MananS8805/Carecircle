@@ -2,6 +2,10 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v0.6.1
+- Settings: "On-device AI (experimental)" card. Checks whether the phone can run Gemini Nano through ML Kit GenAI (AICore), can download the model and run a quick local test. Groundwork for simplifying medicine text with no API key and no network.
+- Fixed a lint error in v0.6 (explicit Int types on `AdherenceResult`) so CI passes. Compiler flag `-Xskip-metadata-version-check` lets Kotlin 2.0.21 read the newer ML Kit GenAI libraries.
+
 ## v0.6
 - Condition tags: "What is it for?" chips plus free text on every medicine (also drives the organ view). The Detail screen can suggest a tag from the medicine information, never silently. Room migration 4 to 5 (tag, created/archived times, skipped doses).
 - "Your policy" card on a medicine: lines from the saved policy summary that mention its condition, each with page, clause and an expandable quote. Honest empty states; never says covered or excluded. Matching runs on the phone with a synonym map in `domain/Coverage.kt`.

@@ -334,4 +334,16 @@
     <string name="pdf_adherence_title">નિયમિતતા (છેલ્લા 30 દિવસ)</string>
     <string name="pdf_adherence_range">%1$s થી %2$s</string>
     <string name="pdf_med_counts">લીધી %1$d, ચૂકી %2$d, છોડી %3$d</string>
+    <string name="ai_title">ઑન-ડિવાઇસ AI (પ્રાયોગિક)</string>
+    <string name="ai_intro">તપાસે છે કે આ ફોન Google Gemini Nano ને સ્થાનિક રીતે ચલાવી શકે છે કે નહીં, જેથી ઇન્ટરનેટ કે API કી વિના દવાનું લખાણ સરળ બનાવી શકાય.</string>
+    <string name="ai_check">આ ફોન તપાસો</string>
+    <string name="ai_download">મૉડલ ડાઉનલોડ કરો</string>
+    <string name="ai_test">ઝડપી પરીક્ષણ ચલાવો</string>
+    <string name="ai_status_available">ઉપલબ્ધ: આ ફોન ઑન-ડિવાઇસ મૉડલ ચલાવી શકે છે.</string>
+    <string name="ai_status_downloadable">સમર્થિત છે, પણ પહેલા મૉડલ ડાઉનલોડ કરવું પડશે.</string>
+    <string name="ai_status_downloading">મૉડલ ડાઉનલોડ થઈ રહ્યું છે. થોડી મિનિટ પછી ફરી તપાસો.</string>
+    <string name="ai_status_unavailable">આ ફોન પર ઉપલબ્ધ નથી.</string>
+    <string name="ai_status_error">તપાસી શકાયું નથી. Google Play services અપડેટ કરીને ફરી પ્રયત્ન કરો.</string>
+    <string name="ai_test_prompt">પરિવારના સંભાળ રાખનાર માટે એક ટૂંકા સરળ વાક્યમાં લખો: માથાનો દુખાવો, પીઠનો દુખાવો અને દાંતના દુખાવામાં અસ્થાયી રાહત આપે છે; તાવ ઘટાડે છે.</string>
+    <string name="ai_test_result">મૉડલનો જવાબ: %1$s</string>
 </resources>

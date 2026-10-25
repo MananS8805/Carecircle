@@ -43,6 +43,9 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.carecircle.AppLocale
 import com.carecircle.R
+import com.carecircle.data.OnDeviceAi
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import com.carecircle.ui.theme.LogoMark
 import com.carecircle.ui.theme.Muted
 import com.carecircle.ui.theme.Palette
@@ -69,6 +72,8 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit) {
 
         LanguageCard(vm)
 
+        AiCard()
+
         SoftCard(Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.settings_reminders), style = MaterialTheme.typography.titleLarge)
             StatusLine(stringResource(R.string.onb_notif_title), status.notifications)
@@ -93,6 +98,49 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit) {
         }
     }
     if (showSetup) OnboardingDialog(status, onDone = { showSetup = false })
+}
+
+/** Checks whether this phone can run Gemini Nano on the device (experimental). The test text never leaves the phone. */
+@Composable
+private fun AiCard() {
+    val scope = rememberCoroutineScope()
+    var state by remember { mutableStateOf<OnDeviceAi.Availability?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var reply by remember { mutableStateOf("") }
+    val sample = stringResource(R.string.ai_test_prompt)
+    SoftCard(Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.ai_title), style = MaterialTheme.typography.titleLarge)
+        Muted(stringResource(R.string.ai_intro))
+        state?.let {
+            Text(
+                stringResource(
+                    when (it) {
+                        OnDeviceAi.Availability.AVAILABLE -> R.string.ai_status_available
+                        OnDeviceAi.Availability.DOWNLOADABLE -> R.string.ai_status_downloadable
+                        OnDeviceAi.Availability.DOWNLOADING -> R.string.ai_status_downloading
+                        OnDeviceAi.Availability.UNAVAILABLE -> R.string.ai_status_unavailable
+                        OnDeviceAi.Availability.ERROR -> R.string.ai_status_error
+                    },
+                ),
+                Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyLarge, color = Palette.Orange,
+            )
+        }
+        Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SoftButton(stringResource(R.string.ai_check), {
+                busy = true; reply = ""
+                scope.launch { state = OnDeviceAi.availability(); busy = false }
+            }, Modifier.fillMaxWidth(), enabled = !busy)
+            if (state == OnDeviceAi.Availability.DOWNLOADABLE) SoftButton(stringResource(R.string.ai_download), {
+                busy = true
+                scope.launch { OnDeviceAi.download(); state = OnDeviceAi.availability(); busy = false }
+            }, Modifier.fillMaxWidth(), enabled = !busy)
+            if (state == OnDeviceAi.Availability.AVAILABLE) SoftButton(stringResource(R.string.ai_test), {
+                busy = true
+                scope.launch { reply = OnDeviceAi.generate(sample).orEmpty(); busy = false }
+            }, Modifier.fillMaxWidth(), enabled = !busy)
+        }
+        if (reply.isNotEmpty()) Text(stringResource(R.string.ai_test_result, reply), Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodyMedium)
+    }
 }
 
 /** System default, English, Hindi or Gujarati. The change recreates the screen; the selected person is stored, so it survives. */

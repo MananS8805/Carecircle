@@ -334,4 +334,16 @@
     <string name="pdf_adherence_title">नियमितता (पिछले 30 दिन)</string>
     <string name="pdf_adherence_range">%1$s से %2$s</string>
     <string name="pdf_med_counts">ली %1$d, छूटी %2$d, छोड़ी %3$d</string>
+    <string name="ai_title">ऑन-डिवाइस AI (प्रायोगिक)</string>
+    <string name="ai_intro">जाँचता है कि क्या यह फ़ोन Google Gemini Nano को स्थानीय रूप से चला सकता है, ताकि इंटरनेट या API कुंजी के बिना दवा का पाठ सरल किया जा सके।</string>
+    <string name="ai_check">इस फ़ोन की जाँच करें</string>
+    <string name="ai_download">मॉडल डाउनलोड करें</string>
+    <string name="ai_test">छोटा परीक्षण चलाएँ</string>
+    <string name="ai_status_available">उपलब्ध: यह फ़ोन ऑन-डिवाइस मॉडल चला सकता है।</string>
+    <string name="ai_status_downloadable">समर्थित है, पर पहले मॉडल डाउनलोड करना होगा।</string>
+    <string name="ai_status_downloading">मॉडल डाउनलोड हो रहा है। कुछ मिनट बाद फिर जाँचें।</string>
+    <string name="ai_status_unavailable">इस फ़ोन पर उपलब्ध नहीं है।</string>
+    <string name="ai_status_error">जाँच नहीं हो सकी। Google Play services अपडेट करके फिर कोशिश करें।</string>
+    <string name="ai_test_prompt">परिवार के देखभालकर्ता के लिए एक छोटे सरल वाक्य में लिखें: सिरदर्द, पीठ दर्द और दाँत दर्द से अस्थायी राहत देता है; बुखार कम करता है।</string>
+    <string name="ai_test_result">मॉडल का उत्तर: %1$s</string>
 </resources>

@@ -350,4 +350,17 @@
     <string name="pdf_adherence_title">Adherence (last 30 days)</string>
     <string name="pdf_adherence_range">%1$s to %2$s</string>
     <string name="pdf_med_counts">taken %1$d, missed %2$d, skipped %3$d</string>
+    <!-- On-device AI (experimental) -->
+    <string name="ai_title">On-device AI (experimental)</string>
+    <string name="ai_intro">Checks whether this phone can run Google Gemini Nano locally, so medicine text could be simplified without the internet or any API key.</string>
+    <string name="ai_check">Check this phone</string>
+    <string name="ai_download">Download the model</string>
+    <string name="ai_test">Run a quick test</string>
+    <string name="ai_status_available">Available: this phone can run the on-device model.</string>
+    <string name="ai_status_downloadable">Supported, but the model must be downloaded first.</string>
+    <string name="ai_status_downloading">The model is downloading. Check again in a few minutes.</string>
+    <string name="ai_status_unavailable">Not available on this phone.</string>
+    <string name="ai_status_error">Could not check. Update Google Play services and try again.</string>
+    <string name="ai_test_prompt">Rewrite in one short plain sentence for a family caregiver: Temporarily relieves minor aches and pains due to headache, backache and toothache; reduces fever.</string>
+    <string name="ai_test_result">Model reply: %1$s</string>
 </resources>

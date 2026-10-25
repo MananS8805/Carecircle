@@ -29,7 +29,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+    kotlinOptions {
+        jvmTarget = "17"
+        // The ML Kit GenAI libraries are built with a newer Kotlin than 2.0.21; their public API is still readable.
+        freeCompilerArgs += "-Xskip-metadata-version-check"
+    }
     testOptions { unitTests.isReturnDefaultValues = true }
     sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
 
@@ -84,6 +88,7 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.mlkit:genai-prompt:1.0.0-beta4")
 
     val camerax = "1.4.1"
     implementation("androidx.camera:camera-core:$camerax")
