@@ -74,6 +74,7 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () ->
             Text(stringResource(R.string.family_title), style = MaterialTheme.typography.titleLarge)
             Muted(stringResource(R.string.family_settings_hint))
             SoftButton(stringResource(R.string.family_open), onFamily, Modifier.padding(top = 10.dp))
+            SoftButton(stringResource(R.string.mode_switch_family), { vm.setMode(com.carecircle.data.Prefs.MODE_FAMILY) }, Modifier.padding(top = 8.dp))
         }
 
         LanguageCard(vm)
@@ -96,7 +97,7 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () ->
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
-                    Muted(stringResource(R.string.settings_version, "0.9"))
+                    Muted(stringResource(R.string.settings_version, "1.0"))
                 }
             }
             Text(stringResource(R.string.settings_privacy), Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodySmall)

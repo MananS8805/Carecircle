@@ -71,3 +71,7 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - Family sync: `data/CareSync.kt` (all Firebase calls, never throws into reminder code), `domain/Sync.kt` (pairing code, event ids), `reminder/FollowerWorker.kt`, `ui/FamilyScreen.kt`. Publish hooks are in `DoseActions` (taken/skipped), `MissedDoseWorker` (missed) and `DailySummaryReceiver` (summary).
 - Firestore security lives in `firebase/firestore.rules` and must be published in the console; deployment is manual. Only names, medicine names, status, times and daily counts may be written; never notes, insurance data or contacts.
 - Instant push to a closed family app needs a Cloud Function (Blaze plan); not built.
+
+## v1.0 notes
+- Two experiences in one app: `CareCircleApp` (patient) and `ui/family/FamilyApp` (family). `Prefs.appMode` decides; the family view has its own colours in `FamilyTheme.kt` and never reuses the patient Palette.
+- `CareSync.publishStatus` writes `pairings/{id}/status/current`; the family view reads it with `observeStatus`. Organs on the family side are inferred from medicine names only; no condition data is shared.

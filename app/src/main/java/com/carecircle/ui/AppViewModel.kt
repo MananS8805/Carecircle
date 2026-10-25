@@ -323,6 +323,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if ((_insurance.value as? InsuranceState.Result)?.savedId == id) _insurance.value = InsuranceState.Idle
     }
 
+    // ---- App mode: patient app or family view ----
+    private val _mode = MutableStateFlow(prefs.appMode.ifEmpty { if (prefs.onboardingDone) Prefs.MODE_PATIENT else "" })
+    /** "" means the role chooser is shown; otherwise [Prefs.MODE_PATIENT] or [Prefs.MODE_FAMILY]. */
+    val appMode: StateFlow<String> = _mode
+
+    fun setMode(m: String) { prefs.appMode = m; _mode.value = m }
+
     // ---- Family sync ----
     val syncLinks: StateFlow<List<SyncLink>> = repo.sync.observeLinks().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val following: StateFlow<List<Following>> = repo.sync.observeFollowing().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -350,6 +357,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissPairing() { _pairing.value = PairingUi.None; refreshLinkStates() }
 
+    /** Brings the family ring for today up to date when the app opens. */
+    fun refreshStatuses() = viewModelScope.launch {
+        repo.sync.links().map { it.personId }.distinct().forEach { CareSync.publishStatus(getApplication(), it) }
+    }
+
     fun unlink(linkId: String) = viewModelScope.launch { CareSync.unlinkOwner(getApplication(), linkId); refreshLinkStates() }
 
     fun follow(code: String) = viewModelScope.launch {
@@ -362,6 +374,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun unfollow(linkId: String) = viewModelScope.launch { CareSync.unfollow(getApplication(), linkId); _followResult.value = null }
 
     fun events(linkId: String) = CareSync.observeEvents(linkId)
+
+    fun status(linkId: String) = CareSync.observeStatus(linkId)
 
     // ---- Export / restore / delete all ----
     private val backup = BackupService(app)

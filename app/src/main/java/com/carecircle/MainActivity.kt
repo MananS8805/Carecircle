@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.carecircle.reminder.Notifier
 import com.carecircle.reminder.ReminderScheduler
@@ -21,8 +23,16 @@ class MainActivity : AppCompatActivity() {
         setContent {
             CareCircleTheme {
                 val vm: AppViewModel = viewModel()
-                LaunchedEffect(Unit) { ReminderScheduler.scheduleAll(applicationContext) }
-                CareCircleApp(vm)
+                LaunchedEffect(Unit) {
+                    ReminderScheduler.scheduleAll(applicationContext)
+                    vm.refreshStatuses()
+                }
+                val mode by vm.appMode.collectAsStateWithLifecycle()
+                when (mode) {
+                    com.carecircle.data.Prefs.MODE_FAMILY -> com.carecircle.ui.family.FamilyApp(vm)
+                    com.carecircle.data.Prefs.MODE_PATIENT -> CareCircleApp(vm)
+                    else -> com.carecircle.ui.RoleChooser(onPick = vm::setMode)
+                }
             }
         }
     }

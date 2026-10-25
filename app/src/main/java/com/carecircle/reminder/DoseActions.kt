@@ -20,6 +20,7 @@ object DoseActions {
             SyncEvent(type, person.name, Messages.medicineLabel(med.name, med.doseText), dose.scheduledAt, System.currentTimeMillis()),
             dose.id,
         )
+        CareSync.publishStatus(ctx, med.personId)
     }
 
     suspend fun publishMissed(ctx: Context, dose: com.carecircle.data.DoseEvent, med: com.carecircle.data.Medicine) = publish(ctx, SyncType.MISSED, dose, med)

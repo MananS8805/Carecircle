@@ -34,6 +34,12 @@ data class SyncEventDoc(
     val scheduledAt: Long, val at: Long, val taken: Int, val total: Int,
 )
 
+/** Today at a glance for one followed person, kept up to date by the patient phone. */
+data class StatusDoc(
+    val day: Long, val taken: Int, val total: Int, val missed: Int, val skipped: Int,
+    val nextAt: Long, val nextMedicine: String, val updatedAt: Long,
+)
+
 sealed interface PairResult {
     data class Ok(val code: String) : PairResult
     data object NotConfigured : PairResult
@@ -63,6 +69,7 @@ enum class LinkState { WAITING, LINKED, GONE, UNKNOWN }
 object CareSync {
     private const val PAIRINGS = "pairings"
     private const val EVENTS = "events"
+    private const val STATUS = "status"
     private const val RETAIN_DAYS = 14L
     private const val NETWORK_MS = 15_000L
 
@@ -149,6 +156,34 @@ object CareSync {
         }
     }
 
+    /**
+     * Refreshes the "today" summary the family sees: doses taken / scheduled / missed and the next dose. Called after every
+     * dose event and when the app opens. Same privacy as events: counts, a time and a medicine name.
+     */
+    suspend fun publishStatus(ctx: Context, personId: Long) {
+        if (!isConfigured(ctx)) return
+        try {
+            val links = AppDb.get(ctx).sync().linksFor(personId)
+            if (links.isEmpty()) return
+            uid() ?: return
+            val r = Repository(ctx).adherence(personId, 1)
+            val now = System.currentTimeMillis()
+            val next = r.lines.filter { it.scheduledAt > now && it.outcome == com.carecircle.domain.DoseOutcome.PENDING }.minByOrNull { it.scheduledAt }
+            val body = mapOf(
+                "day" to java.time.LocalDate.now().toEpochDay(), "taken" to r.taken,
+                "total" to (r.taken + r.missed + r.skipped + r.pending), "missed" to r.missed, "skipped" to r.skipped,
+                "nextAt" to (next?.scheduledAt ?: 0L), "nextMedicine" to (next?.name.orEmpty().take(80)), "updatedAt" to now,
+            )
+            for (l in links) withTimeoutOrNull(6_000) {
+                db.collection(PAIRINGS).document(l.linkId).collection(STATUS).document("current").set(body).awaitTask()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Never break reminders because sync failed.
+        }
+    }
+
     private suspend fun prune(events: com.google.firebase.firestore.CollectionReference) {
         val cutoff = System.currentTimeMillis() - RETAIN_DAYS * 86_400_000L
         withTimeoutOrNull(4_000) {
@@ -163,6 +198,7 @@ object CareSync {
                 val ref = db.collection(PAIRINGS).document(linkId)
                 withTimeoutOrNull(NETWORK_MS) {
                     ref.collection(EVENTS).limit(400).get().awaitTask().documents.forEach { it.reference.delete() }
+                    ref.collection(STATUS).get().awaitTask().documents.forEach { it.reference.delete() }
                     ref.delete().awaitTask()
                 }
             }
@@ -219,6 +255,21 @@ object CareSync {
         val reg = db.collection(PAIRINGS).document(linkId).collection(EVENTS)
             .orderBy("at", Query.Direction.DESCENDING).limit(30)
             .addSnapshotListener { snap, _ -> if (snap != null) trySend(snap.documents.mapNotNull { it.toEvent() }) }
+        awaitClose { reg.remove() }
+    }
+
+    /** Live "today" summary of a followed person; null until the patient phone has sent one. */
+    fun observeStatus(linkId: String): Flow<StatusDoc?> = callbackFlow {
+        val reg = db.collection(PAIRINGS).document(linkId).collection(STATUS).document("current")
+            .addSnapshotListener { snap, _ ->
+                if (snap != null) trySend(
+                    if (!snap.exists()) null else StatusDoc(
+                        day = snap.getLong("day") ?: 0L, taken = (snap.getLong("taken") ?: 0L).toInt(), total = (snap.getLong("total") ?: 0L).toInt(),
+                        missed = (snap.getLong("missed") ?: 0L).toInt(), skipped = (snap.getLong("skipped") ?: 0L).toInt(),
+                        nextAt = snap.getLong("nextAt") ?: 0L, nextMedicine = snap.getString("nextMedicine").orEmpty(), updatedAt = snap.getLong("updatedAt") ?: 0L,
+                    ),
+                )
+            }
         awaitClose { reg.remove() }
     }
 

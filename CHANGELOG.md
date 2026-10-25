@@ -2,6 +2,11 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v1.0
+- Family view: a separate experience for people who follow a patient, with its own calm teal look and its own navigation (Family, Add, Settings). First launch asks "I take medicines" or "I follow a family member"; the choice can be switched in Settings.
+- Each followed person has a live card: an animated ring of doses taken today, a mood (all taken, on track, missed, no update), and the next dose. Their page has a big tappable ring (flip to the next dose), an interactive organ for what their medicines are for (worked out on the family phone from medicine names), a 14-day bar chart (tap a day), and a timeline of recent activity.
+- The patient phone now keeps a small "today" status (taken, scheduled, missed, next dose) up to date in Firestore; rules updated in `firebase/firestore.rules` (publish them again).
+
 ## v0.9
 - Caregiver sync (Firebase anonymous sign-in + Firestore): a patient phone creates a short-lived 8-character code after a consent screen; a family phone enters it. From then on the patient phone sends **Taken, Missed (automatically after 30 minutes, no tap), Skipped and a 9 pm daily summary**, with names and times only. The family phone shows a live status list and, in the background about every 15 minutes, raises notifications for missed doses and daily summaries.
 - Either side can end the link; sharing off deletes the stored events. Delete-all and restore also unlink. Events older than 14 days are pruned.

@@ -42,6 +42,15 @@ service cloud.firestore {
           && request.resource.data.person.size() <= 40 && request.resource.data.medicine.size() <= 80;
         allow delete: if isOwner(pairing());
       }
+
+      // "Today" summary: written by the patient phone, read by both sides.
+      match /status/{doc} {
+        function pairingS() { return get(/databases/$(database)/documents/pairings/$(linkId)).data; }
+        allow read: if isOwner(pairingS()) || isCaregiver(pairingS());
+        allow create, update: if isOwner(pairingS())
+          && request.resource.data.keys().hasOnly(['day', 'taken', 'total', 'missed', 'skipped', 'nextAt', 'nextMedicine', 'updatedAt']);
+        allow delete: if isOwner(pairingS());
+      }
     }
   }
 }

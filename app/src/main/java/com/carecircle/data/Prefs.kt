@@ -20,9 +20,16 @@ class Prefs(ctx: Context) {
         get() = sp.getString("language", "") ?: ""
         set(v) = sp.edit().putString("language", v).apply()
 
+    /** "" = not chosen yet, "patient" = track and manage medicines, "family" = follow a family member. */
+    var appMode: String
+        get() = sp.getString("appMode", "") ?: ""
+        set(v) = sp.edit().putString("appMode", v).apply()
+
     fun clearAll() = sp.edit().clear().apply()
 
     companion object {
+        const val MODE_PATIENT = "patient"
+        const val MODE_FAMILY = "family"
         const val UNSET = -2L
         const val ALL_PEOPLE = -1L
     }

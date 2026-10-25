@@ -104,6 +104,7 @@ class DailySummaryReceiver : BroadcastReceiver() {
                     val r = repo.adherence(p.id, 1)
                     val total = r.taken + r.missed + r.skipped + r.pending
                     if (total == 0) continue
+                    com.carecircle.data.CareSync.publishStatus(ctx, p.id)
                     com.carecircle.data.CareSync.publish(ctx, p.id, com.carecircle.domain.SyncEvent(com.carecircle.domain.SyncType.SUMMARY, p.name, at = System.currentTimeMillis(), taken = r.taken, total = total))
                     if (p.caregiverPhone.isBlank()) continue
                     val notTaken = r.lines.filter { it.outcome != com.carecircle.domain.DoseOutcome.TAKEN }.map { it.name }.distinct().take(3)
