@@ -1,11 +1,11 @@
 import { parseIngredients } from "./normalize.js";
 import { buildSources, fetchLabel, fetchMedlinePlus, resolveRxcui } from "./sources.js";
-import { assembleCard, buildPrompt, extractiveCard, summarizeWithLlm } from "./summarize.js";
+import { assembleCard, buildPrompt, extractiveCard, summarizeWithLlm, type LlmEnv } from "./summarize.js";
 import { TtlCache } from "./cache.js";
 import { allow } from "./ratelimit.js";
 import type { MedicineCard } from "./types.js";
 
-type Env = { ANTHROPIC_API_KEY?: string; LLM_MODEL?: string; APP_KEY?: string };
+type Env = LlmEnv & { APP_KEY?: string };
 const cache = new TtlCache<{ cards: MedicineCard[]; unresolved: string[] }>(6 * 60 * 60 * 1000);
 export function clearCache() { (cache as any).m.clear(); }
 

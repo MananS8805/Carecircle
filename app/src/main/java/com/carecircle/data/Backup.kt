@@ -33,7 +33,13 @@ data class BackupMedicine(
     val conditionTag: String? = null, // added in backup version 4
     val createdAt: Long = 0,
     val archivedAt: Long? = null,
+    val expiry: String? = null,       // added in backup version 5
+    val doctorNote: String? = null,
 )
+
+/** A side-effect diary entry. Added in backup version 5. */
+@Serializable
+data class BackupSymptom(val medicineId: Long, val loggedAt: Long, val symptom: String, val severity: Int = 1, val note: String = "")
 
 @Serializable
 data class BackupDose(val medicineId: Long, val scheduledAt: Long, val takenAt: Long? = null, val missedHandled: Boolean = false, val skipped: Boolean = false)
@@ -61,6 +67,7 @@ data class BackupFile(
     val medicines: List<BackupMedicine> = emptyList(),
     val doses: List<BackupDose> = emptyList(),
     val policySummaries: List<BackupPolicy> = emptyList(),
+    val symptoms: List<BackupSymptom> = emptyList(),
 )
 
 sealed interface BackupParse {
@@ -73,7 +80,7 @@ sealed interface BackupParse {
 /** Pure JSON encode / decode / validation, so it can be unit-tested on the JVM. */
 object BackupCodec {
     const val APP_ID = "carecircle"
-    const val CURRENT_VERSION = 4
+    const val CURRENT_VERSION = 5
     const val HISTORY_DAYS = 90
     const val MAX_BYTES = 10 * 1024 * 1024
 
@@ -84,6 +91,7 @@ object BackupCodec {
     fun build(
         people: List<Person>, meds: List<Medicine>, doses: List<DoseEvent>, now: Long,
         policies: List<PolicySummaryEntity> = emptyList(),
+        symptoms: List<SymptomLog> = emptyList(),
     ): BackupFile {
         val from = now - HISTORY_DAYS * 24L * 3600_000L
         val ids = meds.map { it.id }.toSet()
@@ -91,11 +99,12 @@ object BackupCodec {
             schemaVersion = CURRENT_VERSION, exportedAt = now,
             people = people.map { BackupPerson(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder) },
             medicines = meds.map {
-                BackupMedicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming, it.personId, it.conditionTag, it.createdAt, it.archivedAt)
+                BackupMedicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming, it.personId, it.conditionTag, it.createdAt, it.archivedAt, it.expiry, it.doctorNote)
             },
             doses = doses.filter { it.scheduledAt >= from && it.medicineId in ids }
                 .map { BackupDose(it.medicineId, it.scheduledAt, it.takenAt, it.missedHandled, it.skipped) },
             policySummaries = policies.map { BackupPolicy(it.savedAt, it.json, it.personId) },
+            symptoms = symptoms.filter { it.medicineId in ids }.map { BackupSymptom(it.medicineId, it.loggedAt, it.symptom, it.severity, it.note) },
         )
     }
 
@@ -136,6 +145,7 @@ object BackupCodec {
         if (ids.any { it <= 0 } || ids.toSet().size != ids.size) return false
         if (f.medicines.any { it.name.isBlank() || it.pillCount < 0 || it.pillsPerDose < 1 }) return false
         if (f.doses.any { it.medicineId !in ids }) return false
+        if (f.symptoms.any { it.medicineId !in ids || it.severity !in 1..3 }) return false
         val pids = f.people.map { it.id }
         if (pids.any { it <= 0 } || pids.toSet().size != pids.size) return false
         if (f.people.any { it.name.isBlank() }) return false
@@ -151,7 +161,7 @@ class BackupService(private val ctx: Context) {
     suspend fun export(out: OutputStream, now: Long = System.currentTimeMillis()) = withContext(Dispatchers.IO) {
         val file = BackupCodec.build(
             db.people().all(), db.medicines().allIncludingArchived(), db.doses().since(now - BackupCodec.HISTORY_DAYS * 24L * 3600_000L), now,
-            db.policies().all(),
+            db.policies().all(), db.symptoms().all(),
         )
         out.use { it.write(BackupCodec.encode(file).toByteArray(Charsets.UTF_8)) }
     }
@@ -182,10 +192,12 @@ class BackupService(private val ctx: Context) {
                 Medicine(
                     it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming,
                     it.personId, it.conditionTag?.trim()?.take(60)?.ifEmpty { null }, it.createdAt, it.archivedAt,
+                    it.expiry, it.doctorNote?.take(500)?.ifBlank { null },
                 )
             },
         )
         db.doses().insertAll(file.doses.map { DoseEvent(medicineId = it.medicineId, scheduledAt = it.scheduledAt, takenAt = it.takenAt, missedHandled = it.missedHandled, skipped = it.skipped) })
+        db.symptoms().insertAll(file.symptoms.map { SymptomLog(medicineId = it.medicineId, loggedAt = it.loggedAt, symptom = it.symptom, severity = it.severity, note = it.note) })
         db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json, personId = it.personId) })
         prefs.selectedPersonId = Prefs.UNSET
         ReminderScheduler.scheduleAll(ctx)

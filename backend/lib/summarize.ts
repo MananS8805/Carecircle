@@ -49,19 +49,60 @@ export function extractiveCard(generic: string, s: LabelSections, medline?: stri
   };
 }
 
-export async function summarizeWithLlm(prompt: string, env: { ANTHROPIC_API_KEY?: string; LLM_MODEL?: string }, f: F = fetch) {
-  if (!env.ANTHROPIC_API_KEY) return null;
+export type LlmEnv = {
+  ANTHROPIC_API_KEY?: string; LLM_MODEL?: string;
+  GEMINI_API_KEY?: string; GEMINI_MODEL?: string;
+  /** "gemini" or "anthropic". When unset, Gemini is used if its key exists, otherwise Anthropic. */
+  LLM_PROVIDER?: string;
+};
+
+/** Which provider the medicine-info cards use. Public label text only ever goes to it, never anything about the user. */
+export function pickProvider(env: LlmEnv): "gemini" | "anthropic" | null {
+  const want = env.LLM_PROVIDER?.toLowerCase();
+  if (want === "gemini") return env.GEMINI_API_KEY ? "gemini" : null;
+  if (want === "anthropic") return env.ANTHROPIC_API_KEY ? "anthropic" : null;
+  if (env.GEMINI_API_KEY) return "gemini";
+  if (env.ANTHROPIC_API_KEY) return "anthropic";
+  return null;
+}
+
+async function callGemini(prompt: string, env: LlmEnv, f: F): Promise<string | null> {
+  const model = env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  const r = await f(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY! },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 1200, responseMimeType: "application/json" },
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!r.ok) return null;
+  const j: any = await r.json();
+  const text = j?.candidates?.[0]?.content?.parts?.[0]?.text;
+  return typeof text === "string" ? text : null;
+}
+
+async function callAnthropic(prompt: string, env: LlmEnv, f: F): Promise<string | null> {
+  const r = await f("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({ model: env.LLM_MODEL ?? "claude-haiku-4-5", max_tokens: 900, temperature: 0, messages: [{ role: "user", content: prompt }] }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!r.ok) return null;
+  const j: any = await r.json();
+  const text = j?.content?.[0]?.text;
+  return typeof text === "string" ? text : null;
+}
+
+/** Rewrites label text with the configured provider; null on any failure so the caller falls back to the plain extract. */
+export async function summarizeWithLlm(prompt: string, env: LlmEnv, f: F = fetch) {
+  const provider = pickProvider(env);
+  if (!provider) return null;
   try {
-    const r = await f("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: env.LLM_MODEL ?? "claude-haiku-4-5", max_tokens: 900, temperature: 0, messages: [{ role: "user", content: prompt }] }),
-      signal: AbortSignal.timeout(20000),
-    });
-    if (!r.ok) return null;
-    const j: any = await r.json();
-    const text = j?.content?.[0]?.text;
-    return typeof text === "string" ? parseLlmJson(text) : null;
+    const text = provider === "gemini" ? await callGemini(prompt, env, f) : await callAnthropic(prompt, env, f);
+    return text ? parseLlmJson(text) : null;
   } catch { return null; }
 }
 

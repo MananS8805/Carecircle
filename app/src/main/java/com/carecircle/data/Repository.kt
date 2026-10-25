@@ -118,6 +118,7 @@ class Repository(ctx: Context) {
         meds.forEach { com.carecircle.reminder.ReminderScheduler.cancel(appCtx, it.id) }
         db.doses().idsForPerson(personId).forEach { com.carecircle.reminder.ReminderScheduler.cancelSnooze(appCtx, it) }
         db.withTransaction {
+            db.symptoms().deleteForPerson(personId)
             db.doses().deleteForPerson(personId)
             db.policies().deleteForPerson(personId)
             db.medicines().deleteForPerson(personId)

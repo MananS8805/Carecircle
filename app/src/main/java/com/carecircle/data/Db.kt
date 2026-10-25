@@ -32,6 +32,19 @@ data class Medicine(
     val conditionTag: String? = null,                      // what it is for: a built-in chip label or free text, max 60 chars
     @ColumnInfo(defaultValue = "0") val createdAt: Long = 0, // when it was added; doses before this never count as missed
     val archivedAt: Long? = null,                           // when it was removed; doses after this do not count
+    val expiry: String? = null,                             // "2028-02": printed expiry month of the strip in hand
+    val doctorNote: String? = null,                         // the doctor's own instructions, shown above the generic card
+)
+
+/** One side effect the person noticed. Severity: 1 mild, 2 moderate, 3 severe. Stays on the phone. */
+@Entity(tableName = "symptom_log", indices = [Index("medicineId")])
+data class SymptomLog(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val medicineId: Long,
+    val loggedAt: Long,
+    val symptom: String,
+    val severity: Int = 1,
+    val note: String = "",
 )
 
 @Entity(tableName = "dose_event", indices = [Index("medicineId", "scheduledAt", unique = true)])
@@ -115,6 +128,17 @@ interface DoseDao {
 }
 
 @Dao
+interface SymptomDao {
+    @Query("SELECT * FROM symptom_log WHERE medicineId = :medicineId ORDER BY loggedAt DESC") fun observeFor(medicineId: Long): Flow<List<SymptomLog>>
+    @Query("SELECT * FROM symptom_log WHERE loggedAt >= :from ORDER BY loggedAt DESC") suspend fun since(from: Long): List<SymptomLog>
+    @Query("SELECT * FROM symptom_log") suspend fun all(): List<SymptomLog>
+    @Insert suspend fun insert(e: SymptomLog): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(e: List<SymptomLog>)
+    @Query("DELETE FROM symptom_log WHERE id = :id") suspend fun delete(id: Long)
+    @Query("DELETE FROM symptom_log WHERE medicineId IN (SELECT id FROM medicine WHERE personId = :personId)") suspend fun deleteForPerson(personId: Long)
+}
+
+@Dao
 interface InfoCardDao {
     @Query("SELECT * FROM info_card WHERE saltKey = :k") suspend fun get(k: String): InfoCardEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun put(e: InfoCardEntity)
@@ -186,7 +210,17 @@ object Migrations {
         }
     }
 
-    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5)
+    /** v0.6 -> v0.7: printed expiry month, the doctor's note, and the side-effect diary. */
+    val M5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE medicine ADD COLUMN expiry TEXT")
+            db.execSQL("ALTER TABLE medicine ADD COLUMN doctorNote TEXT")
+            db.execSQL("CREATE TABLE IF NOT EXISTS symptom_log (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, medicineId INTEGER NOT NULL, loggedAt INTEGER NOT NULL, symptom TEXT NOT NULL, severity INTEGER NOT NULL, note TEXT NOT NULL)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_symptom_log_medicineId ON symptom_log (medicineId)")
+        }
+    }
+
+    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6)
 }
 
 object Persons {
@@ -196,8 +230,8 @@ object Persons {
 }
 
 @Database(
-    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class],
-    version = 5, exportSchema = true,
+    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class],
+    version = 6, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun people(): PersonDao
@@ -206,6 +240,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun cards(): InfoCardDao
     abstract fun interactions(): InteractionDao
     abstract fun policies(): PolicyDao
+    abstract fun symptoms(): SymptomDao
 
     companion object {
         @Volatile private var inst: AppDb? = null
