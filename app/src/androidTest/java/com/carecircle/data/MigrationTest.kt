@@ -15,6 +15,24 @@ class MigrationTest {
     )
 
     @Test
+    fun migrate4To5KeepsMedicinesWithNullTagAndStampsCreatedAt() {
+        helper.createDatabase("mig45", 4).apply {
+            execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")
+            execSQL("INSERT INTO medicine (id, name, doseText, timesCsv, pillCount, pillsPerDose, salt, patientName, active, foodTiming, personId) VALUES (1, 'Telma', '40 mg', '08:00', 30, 1, 'telmisartan', '', 1, 'NONE', 1)")
+            execSQL("INSERT INTO medicine (id, name, doseText, timesCsv, pillCount, pillsPerDose, salt, patientName, active, foodTiming, personId) VALUES (2, 'Old', '', '09:00', 0, 1, '', '', 0, 'NONE', 1)")
+            execSQL("INSERT INTO dose_event (medicineId, scheduledAt, takenAt, missedHandled) VALUES (1, 1000, 2000, 0)")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate("mig45", 5, true, Migrations.M4_5)
+        db.query("SELECT conditionTag, createdAt, archivedAt FROM medicine WHERE id = 1").use {
+            it.moveToFirst()
+            assertEquals(true, it.isNull(0)); assertEquals(1000L, it.getLong(1)); assertEquals(true, it.isNull(2))
+        }
+        db.query("SELECT archivedAt FROM medicine WHERE id = 2").use { it.moveToFirst(); assertEquals(false, it.isNull(0)) }
+        db.query("SELECT skipped FROM dose_event").use { it.moveToFirst(); assertEquals(0, it.getInt(0)) }
+    }
+
+    @Test
     fun migrate3To4CreatesDefaultPersonWithOldContactsAndKeepsEverything() {
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
         ctx.getSharedPreferences("carecircle", android.content.Context.MODE_PRIVATE).edit()

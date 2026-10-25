@@ -41,6 +41,10 @@ import com.carecircle.data.CardResult
 import com.carecircle.data.Medicine
 import com.carecircle.data.MedicineCard
 import com.carecircle.domain.Conditions
+import com.carecircle.domain.Coverage
+import com.carecircle.domain.CoverageKind
+import com.carecircle.domain.SavedPolicy
+import com.carecircle.domain.resolve
 import com.carecircle.domain.Messages
 import com.carecircle.domain.OrganKind
 import com.carecircle.ui.theme.BigButton
@@ -52,7 +56,7 @@ import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 @Composable
-fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () -> Unit) {
+fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () -> Unit, onOpenInsurance: () -> Unit) {
     var med by remember { mutableStateOf<Medicine?>(null) }
     LaunchedEffect(id) { med = vm.repo.medicines.get(id) }
     val card by vm.card.collectAsStateWithLifecycle()
@@ -63,7 +67,12 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
     val people by vm.people.collectAsStateWithLifecycle()
     val owner = people.firstOrNull { it.id == m.personId }
     val left = vm.repo.daysLeft(m)
-    val condition = Conditions.infer(m.name, m.salt)
+    val condition = Conditions.resolve(m.conditionTag, m.name, m.salt)
+    var policy by remember { mutableStateOf<SavedPolicy?>(null) }
+    var policyLoaded by remember { mutableStateOf(false) }
+    LaunchedEffect(m.personId, m.conditionTag) { policy = vm.latestPolicy(m.personId); policyLoaded = true }
+    val suggestion = (card as? CardResult.Ok)?.takeIf { m.conditionTag.isNullOrBlank() }
+        ?.response?.cards?.firstNotNullOfOrNull { Coverage.suggestFromText(it.whyYouTakeIt) }
     val organ = condition?.organ ?: OrganKind.BODY
 
     LazyColumn(
@@ -104,6 +113,16 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
             }
         }
 
+        if (suggestion != null) item {
+            SoftCard(Modifier.fillMaxWidth(), tint = Palette.OrangeSoft) {
+                Text(stringResource(R.string.tag_suggest, suggestion.label()), style = MaterialTheme.typography.bodyLarge)
+                SoftButton(stringResource(R.string.tag_suggest_apply, suggestion.label()), {
+                    val updated = m.copy(conditionTag = suggestion.label)
+                    vm.save(updated) { med = updated }
+                }, Modifier.padding(top = 8.dp))
+            }
+        }
+        if (!m.conditionTag.isNullOrBlank() && policyLoaded) item { PolicyCard(m.conditionTag!!, policy, onOpenInsurance) }
         item { Text(stringResource(R.string.info_title), style = MaterialTheme.typography.titleLarge) }
         when {
             m.salt.isBlank() -> item { NoticeCard(stringResource(R.string.info_need_name), stringResource(R.string.info_edit_name)) { onEdit(m.id) } }
@@ -141,6 +160,37 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+/** What the saved policy text says about this condition. Only the policy's own words, each with page, clause and quote. */
+@Composable
+private fun PolicyCard(tag: String, policy: SavedPolicy?, onOpenInsurance: () -> Unit) {
+    val matches = Coverage.matchCoverage(tag, policy?.summary)
+    SoftCard(Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.cov_title), style = MaterialTheme.typography.titleLarge)
+        when {
+            policy == null -> {
+                Text(stringResource(R.string.cov_no_policy), Modifier.padding(top = 6.dp), style = MaterialTheme.typography.bodyLarge)
+                SoftButton(stringResource(R.string.cov_open_insurance), onOpenInsurance, Modifier.padding(top = 8.dp))
+            }
+            matches.isEmpty() -> Text(stringResource(R.string.cov_no_mention), Modifier.padding(top = 6.dp), style = MaterialTheme.typography.bodyLarge)
+            else -> matches.forEach { m ->
+                Pill(
+                    stringResource(
+                        when (m.kind) {
+                            CoverageKind.WAITING_SPECIFIC -> R.string.cov_kind_waiting
+                            CoverageKind.PRE_EXISTING -> R.string.cov_kind_pre_existing
+                            CoverageKind.EXCLUSION -> R.string.cov_kind_exclusion
+                            CoverageKind.INCLUSION -> R.string.cov_kind_inclusion
+                        },
+                    ),
+                    Palette.OrangeSoft, Palette.Ink, Modifier.padding(top = 12.dp),
+                )
+                CitedValue(null, m.text, m.page, m.clause, m.quote)
+            }
+        }
+        Text(stringResource(R.string.disclaimer_insurance), Modifier.padding(top = 12.dp), style = MaterialTheme.typography.labelMedium, color = Palette.Muted)
     }
 }
 

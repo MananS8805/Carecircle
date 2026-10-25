@@ -5,8 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.carecircle.R
 import com.carecircle.data.*
+import com.carecircle.domain.AdherenceResult
 import com.carecircle.domain.Condition
 import com.carecircle.domain.Conditions
+import com.carecircle.domain.resolve
 import com.carecircle.domain.MissedDose
 import com.carecircle.domain.PolicyLimits
 import com.carecircle.domain.SavedPolicy
@@ -40,7 +42,7 @@ data class SavedPolicyItem(val id: Long, val policy: SavedPolicy)
 /** A one-line status for the Settings data card: a string resource, shown once. */
 data class DataMsg(@androidx.annotation.StringRes val res: Int)
 
-enum class DoseStatus { UPCOMING, DUE, TAKEN, MISSED }
+enum class DoseStatus { UPCOMING, DUE, TAKEN, SKIPPED, MISSED }
 
 data class TodayItem(val med: Medicine, val scheduledAt: Long, val event: DoseEvent?, val status: DoseStatus)
 
@@ -83,7 +85,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val bodyMap: StateFlow<List<OrganGroup>> = todayMedicines.map { meds ->
-        meds.groupBy { Conditions.infer(it.name, it.salt) }
+        meds.groupBy { Conditions.resolve(it.conditionTag, it.name, it.salt) }
             .map { (c, ms) -> OrganGroup(c, c?.organ ?: OrganKind.BODY, ms) }
             .sortedByDescending { it.meds.size }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -106,6 +108,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     val ev = events.firstOrNull { it.medicineId == m.id && it.scheduledAt == at }
                     val status = when {
                         ev?.takenAt != null -> DoseStatus.TAKEN
+                        ev?.skipped == true -> DoseStatus.SKIPPED
                         MissedDose.isMissed(at, now, null) -> DoseStatus.MISSED
                         now >= at -> DoseStatus.DUE
                         else -> DoseStatus.UPCOMING
@@ -114,6 +117,45 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }.sortedBy { it.scheduledAt }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** The saved policy summary for a person (the most recent one), or null when none is saved. */
+    suspend fun latestPolicy(personId: Long): SavedPolicy? = repo.latestPolicy(personId)
+
+    // ---- History ----
+    private val _history = MutableStateFlow<AdherenceResult?>(null)
+    val history: StateFlow<AdherenceResult?> = _history
+    private val _historyDays = MutableStateFlow(7)
+    val historyDays: StateFlow<Int> = _historyDays
+
+    fun loadHistory(days: Int) = viewModelScope.launch {
+        _historyDays.value = days
+        val p = scopePerson.value ?: return@launch
+        _history.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { repo.adherence(p.id, days) }
+    }
+
+    /** Opens the share sheet with a short, translated 7-day summary. User-initiated only; nothing is sent by the app itself. */
+    fun shareWeeklySummary() = viewModelScope.launch {
+        val p = scopePerson.value ?: return@launch
+        val base = getApplication<Application>()
+        val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { repo.adherence(p.id, 7) }
+        val pct = r.percent ?: return@launch
+        val ctx = com.carecircle.AppLocale.wrap(base)
+        val worst = r.perMedicine.firstOrNull()?.takeIf { it.missed > 0 }
+        val text = ctx.getString(R.string.msg_weekly, p.name, r.taken, r.decided, pct) +
+            (worst?.let { " " + ctx.getString(R.string.msg_weekly_most_missed, com.carecircle.domain.Messages.medicineLabel(it.name, it.doseText)) } ?: "")
+        val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT, text)
+        base.startActivity(android.content.Intent.createChooser(send, ctx.getString(R.string.hist_share)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    /** Builds the doctor-visit PDF for the selected person, with 30 days of adherence, and opens the share sheet. */
+    fun shareDoctorPdf() = viewModelScope.launch {
+        val p = scopePerson.value ?: return@launch
+        val ctx = getApplication<Application>()
+        val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            PdfExport.create(ctx, p.name, medicines.value, repo.adherence(p.id, 30))
+        }
+        PdfExport.share(ctx, file)
+    }
 
     fun personOf(id: Long): Person? = people.value.firstOrNull { it.id == id }
 
@@ -134,15 +176,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         DoseActions.markTaken(ctx, ev.id)
     }
 
+    fun skip(item: TodayItem) = viewModelScope.launch {
+        repo.doses.insert(DoseEvent(medicineId = item.med.id, scheduledAt = item.scheduledAt))
+        val ev = repo.doses.find(item.med.id, item.scheduledAt) ?: return@launch
+        DoseActions.skip(getApplication(), ev.id)
+    }
+
     fun save(m: Medicine, onDone: (Long) -> Unit = {}) = viewModelScope.launch {
-        val withPerson = if (m.personId > 0) m else m.copy(personId = scopePerson.value?.id ?: repo.ensureDefaultPerson().id)
+        val tag = m.conditionTag?.trim()?.take(60)?.ifEmpty { null }
+        val stamped = m.copy(conditionTag = tag, createdAt = if (m.createdAt > 0) m.createdAt else System.currentTimeMillis())
+        val withPerson = if (stamped.personId > 0) stamped else stamped.copy(personId = scopePerson.value?.id ?: repo.ensureDefaultPerson().id)
         val id = if (m.id == 0L) repo.medicines.insert(withPerson) else { repo.medicines.update(withPerson); m.id }
         ReminderScheduler.scheduleFor(getApplication(), id)
         onDone(id)
     }
 
     fun archive(id: Long) = viewModelScope.launch {
-        repo.medicines.archive(id)
+        repo.medicines.archive(id, System.currentTimeMillis())
         ReminderScheduler.cancel(getApplication(), id)
     }
 

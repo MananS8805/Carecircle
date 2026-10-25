@@ -22,7 +22,7 @@ Android app helping families manage medicines for elderly parents (India first).
 - No heavy dependencies without need. Follow existing code style (official Kotlin style, 4 spaces; TS strict, ESM with `.js` import suffixes).
 - India defaults: +91 numbers, INN->USAN name map in `backend/lib/sources.ts` (paracetamol -> acetaminophen etc.).
 
-## Status (v0.5)
+## Status (v0.6)
 Android app compiles and `DomainTest` passes (wrapper 8.9, JDK 17, SDK 35; set `sdk.dir` in local.properties, git-ignored). UI lives in `ui/` (screens) and `ui/theme/` (Theme, Components, OrganArt, logo). All user-facing text is in `res/values/strings.xml`. `domain/Condition.kt` maps medicines to conditions/organs for the organ view.
 Notes: RxNorm interaction API was retired, so interactions come from the label's drug_interactions section. Strip scan uses the system camera (TakePicture) instead of CameraX for simplicity; CameraX live preview is a later upgrade.
 
@@ -48,3 +48,9 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - **Translations are machine-drafted and must be reviewed by a native speaker before release.** Review first: `disclaimer_medical`, `disclaimer_insurance`, `disclaimer_interactions`, the consent screen (`consent_*`, `ins_notice_pill`), `onb_*`, `data_delete_*`, `msg_missed`, `msg_reorder`.
 - `StringsTest` checks every key exists in en/hi/gu with identical placeholders. Lint treats MissingTranslation and HardcodedText as errors.
 - CI: `.github/workflows/ci.yml`. Release signing is read from gradle properties or `CARECIRCLE_*` environment variables.
+
+## v0.6 notes
+- Room version 5: `medicine.conditionTag`, `createdAt`, `archivedAt`; `dose_event.skipped`. Adherence counts a dose only between `createdAt` and `archivedAt`. Backup schema version 4.
+- `domain/Coverage.kt` (synonym map in `ConditionSynonyms`), `domain/VoiceParser.kt`, `domain/Adherence.kt` are pure and unit-tested. Tags, coverage matching, voice text and adherence never leave the phone (only user-initiated share intents and the PDF).
+- Voice entry uses `RecognizerIntent` (the system speech service), so CareCircle holds no RECORD_AUDIO permission; the rationale dialog says the service may use its own online processing.
+- New strings must be added to values, values-hi and values-gu (StringsTest and lint enforce it). Review the new disclaimers (`cov_*`, `voice_rationale`, `msg_weekly`) with a native speaker.

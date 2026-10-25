@@ -29,6 +29,9 @@ data class Medicine(
     val active: Boolean = true,
     @ColumnInfo(defaultValue = "NONE") val foodTiming: String = "NONE",
     @ColumnInfo(defaultValue = "1") val personId: Long = 0, // 0 = "not set yet"; the view model fills in the selected person
+    val conditionTag: String? = null,                      // what it is for: a built-in chip label or free text, max 60 chars
+    @ColumnInfo(defaultValue = "0") val createdAt: Long = 0, // when it was added; doses before this never count as missed
+    val archivedAt: Long? = null,                           // when it was removed; doses after this do not count
 )
 
 @Entity(tableName = "dose_event", indices = [Index("medicineId", "scheduledAt", unique = true)])
@@ -38,6 +41,7 @@ data class DoseEvent(
     val scheduledAt: Long,         // epoch millis
     val takenAt: Long? = null,
     val missedHandled: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val skipped: Boolean = false,
 )
 
 @Entity(tableName = "info_card")
@@ -88,7 +92,7 @@ interface MedicineDao {
     @Query("SELECT * FROM medicine WHERE id = :id") suspend fun get(id: Long): Medicine?
     @Insert suspend fun insert(m: Medicine): Long
     @Update suspend fun update(m: Medicine)
-    @Query("UPDATE medicine SET active = 0 WHERE id = :id") suspend fun archive(id: Long)
+    @Query("UPDATE medicine SET active = 0, archivedAt = :now WHERE id = :id") suspend fun archive(id: Long, now: Long)
     @Query("UPDATE medicine SET pillCount = MAX(0, pillCount - :n) WHERE id = :id") suspend fun decrementPills(id: Long, n: Int)
     @Query("DELETE FROM medicine WHERE personId = :personId") suspend fun deleteForPerson(personId: Long)
 }
@@ -102,6 +106,7 @@ interface DoseDao {
     fun observeBetween(from: Long, to: Long): Flow<List<DoseEvent>>
     @Query("UPDATE dose_event SET takenAt = :now WHERE id = :id AND takenAt IS NULL") suspend fun markTaken(id: Long, now: Long): Int
     @Query("UPDATE dose_event SET missedHandled = 1 WHERE id = :id") suspend fun markMissedHandled(id: Long)
+    @Query("UPDATE dose_event SET skipped = 1 WHERE id = :id AND takenAt IS NULL") suspend fun markSkipped(id: Long): Int
     @Query("SELECT * FROM dose_event WHERE scheduledAt >= :from ORDER BY scheduledAt") suspend fun since(from: Long): List<DoseEvent>
     @Query("SELECT id FROM dose_event") suspend fun allIds(): List<Long>
     @Query("SELECT id FROM dose_event WHERE medicineId IN (SELECT id FROM medicine WHERE personId = :personId)") suspend fun idsForPerson(personId: Long): List<Long>
@@ -168,7 +173,20 @@ object Migrations {
         }
     }
 
-    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx))
+    /** v0.5 -> v0.6: condition tag, when a medicine was added or removed (for adherence), and skipped doses. */
+    val M4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            val now = System.currentTimeMillis()
+            db.execSQL("ALTER TABLE medicine ADD COLUMN conditionTag TEXT")
+            db.execSQL("ALTER TABLE medicine ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE medicine ADD COLUMN archivedAt INTEGER")
+            db.execSQL("ALTER TABLE dose_event ADD COLUMN skipped INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("UPDATE medicine SET createdAt = COALESCE((SELECT MIN(scheduledAt) FROM dose_event WHERE dose_event.medicineId = medicine.id), ?)", arrayOf<Any?>(now))
+            db.execSQL("UPDATE medicine SET archivedAt = ? WHERE active = 0", arrayOf<Any?>(now))
+        }
+    }
+
+    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5)
 }
 
 object Persons {
@@ -179,7 +197,7 @@ object Persons {
 
 @Database(
     entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class],
-    version = 4, exportSchema = true,
+    version = 5, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun people(): PersonDao

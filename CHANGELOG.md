@@ -2,6 +2,13 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v0.6
+- Condition tags: "What is it for?" chips plus free text on every medicine (also drives the organ view). The Detail screen can suggest a tag from the medicine information, never silently. Room migration 4 to 5 (tag, created/archived times, skipped doses).
+- "Your policy" card on a medicine: lines from the saved policy summary that mention its condition, each with page, clause and an expandable quote. Honest empty states; never says covered or excluded. Matching runs on the phone with a synonym map in `domain/Coverage.kt`.
+- Voice entry of a new medicine (English, Hinglish, Hindi, Gujarati phrases): the phone speech service listens, `VoiceParser` fills name, dose, times and food timing, fields are marked "Check this", nothing is saved until you press Save.
+- Adherence History (7 / 30 days): totals and percentage (never 0% without data), a bar per day, doses of a tapped day, per-medicine breakdown (most missed first), "Share weekly summary". "Skip this dose" action. The doctor-visit PDF now lists what each medicine is for and an "Adherence (last 30 days)" section.
+- Backup schema version 4 (reads 1 to 3).
+
 ## v0.5
 - People: each person has their own medicines, saved policy summaries and caregiver/pharmacy numbers. Person chips on Today (with "All people", grouped), Medicines and Insurance; "Manage people" in Settings (add, rename, edit numbers, delete with a confirmation that states how many medicines go). Room migration 3 to 4 moves the old numbers into the default person. Backup schema version 3 (reads 1 and 2). WhatsApp messages name the person; buttons are disabled with a hint when a number is missing; notification titles include the name when there is more than one person.
 - Hindi and Gujarati across every screen, notification, message template and the PDF, with an in-app language switch (per-app locale, `localeConfig`). Dates use a 12-hour clock with Latin digits.

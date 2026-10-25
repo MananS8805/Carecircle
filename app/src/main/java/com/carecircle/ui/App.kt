@@ -43,7 +43,8 @@ fun CareCircleApp(vm: AppViewModel) {
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(bottom = pad.calculateBottomPadding())) {
             NavHost(nav, startDestination = "today") {
-                composable("today") { TodayScreen(vm) }
+                composable("today") { TodayScreen(vm, onHistory = { nav.navigate("history") }) }
+                composable("history") { HistoryScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("meds") {
                     MedicinesScreen(vm, onAdd = { nav.navigate("edit/0") }, onOpen = { nav.navigate("detail/$it") }, onInteractions = { nav.navigate("interactions") })
                 }
@@ -62,6 +63,7 @@ fun CareCircleApp(vm: AppViewModel) {
                     DetailScreen(
                         vm, e.arguments?.getString("id")?.toLongOrNull() ?: 0L,
                         onEdit = { nav.navigate("edit/$it") }, onBack = { nav.popBackStack() },
+                        onOpenInsurance = { nav.navigate("insurance") { launchSingleTop = true; popUpTo("today") } },
                     )
                 }
                 composable("settings") { SettingsScreen(vm, onManagePeople = { nav.navigate("people") }) }

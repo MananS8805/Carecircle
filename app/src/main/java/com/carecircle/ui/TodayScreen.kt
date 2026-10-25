@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +52,7 @@ import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 @Composable
-fun TodayScreen(vm: AppViewModel) {
+fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit) {
     val doses by vm.today.collectAsStateWithLifecycle()
     val groups by vm.bodyMap.collectAsStateWithLifecycle()
     val status by rememberReminderStatus()
@@ -69,7 +72,11 @@ fun TodayScreen(vm: AppViewModel) {
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item { BrandRow() }
+        item {
+            BrandRow {
+                IconButton(onClick = onHistory) { Icon(Icons.Default.History, stringResource(R.string.cd_history)) }
+            }
+        }
         item { PersonSwitcher(vm, allowAll = true) }
         item {
             Column {
@@ -125,6 +132,7 @@ fun TodayScreen(vm: AppViewModel) {
 private fun DoseCard(d: TodayItem, vm: AppViewModel, owner: Person?, onAlert: () -> Unit) {
     val (label, bg, fg) = when (d.status) {
         DoseStatus.TAKEN -> Triple(stringResource(R.string.status_taken), Palette.GoodSoft, Palette.Good)
+        DoseStatus.SKIPPED -> Triple(stringResource(R.string.status_skipped), Palette.Line, Palette.Muted)
         DoseStatus.MISSED -> Triple(stringResource(R.string.status_missed), Palette.BadSoft, Palette.Bad)
         DoseStatus.DUE -> Triple(stringResource(R.string.status_due), Palette.OrangeSoft, Palette.Orange)
         DoseStatus.UPCOMING -> Triple(stringResource(R.string.status_upcoming), Palette.Line, Palette.Muted)
@@ -145,6 +153,7 @@ private fun DoseCard(d: TodayItem, vm: AppViewModel, owner: Person?, onAlert: ()
         }
         if (d.status == DoseStatus.DUE || d.status == DoseStatus.MISSED) {
             BigButton(stringResource(R.string.action_taken), { vm.markTaken(d) }, Modifier.padding(top = 12.dp))
+            TextButton(onClick = { vm.skip(d) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_skip), color = Palette.Muted) }
         }
         if (d.status == DoseStatus.MISSED) {
             val hasNumber = !owner?.caregiverPhone.isNullOrBlank()

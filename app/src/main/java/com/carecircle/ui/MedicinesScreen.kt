@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.carecircle.R
 import com.carecircle.domain.Conditions
+import com.carecircle.domain.resolve
 import com.carecircle.domain.OrganKind
 import com.carecircle.domain.Refill
 import com.carecircle.ui.theme.BigButton
@@ -59,7 +60,7 @@ fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit,
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.tab_medicines), style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
                 IconButton(
-                    onClick = { PdfExport.share(ctx, PdfExport.create(ctx, scope?.name.orEmpty(), meds)) }, enabled = meds.isNotEmpty(),
+                    onClick = { vm.shareDoctorPdf() }, enabled = meds.isNotEmpty(),
                 ) { Icon(Icons.Default.PictureAsPdf, stringResource(R.string.cd_doctor_pdf)) }
             }
         }
@@ -69,7 +70,7 @@ fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit,
         if (meds.isEmpty()) item { Muted(stringResource(R.string.meds_empty)) }
         items(meds, key = { it.id }) { m ->
             val left = vm.repo.daysLeft(m)
-            val organ = Conditions.infer(m.name, m.salt)?.organ ?: OrganKind.BODY
+            val organ = Conditions.resolve(m.conditionTag, m.name, m.salt)?.organ ?: OrganKind.BODY
             SoftCard(Modifier.fillMaxWidth(), onClick = { onOpen(m.id) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(64.dp).clip(CircleShape).background(Palette.Canvas).padding(10.dp)) { OrganIcon(organ) }

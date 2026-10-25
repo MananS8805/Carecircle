@@ -30,10 +30,13 @@ data class BackupMedicine(
     val active: Boolean = true,
     val foodTiming: String = "NONE",
     val personId: Long = 0,
+    val conditionTag: String? = null, // added in backup version 4
+    val createdAt: Long = 0,
+    val archivedAt: Long? = null,
 )
 
 @Serializable
-data class BackupDose(val medicineId: Long, val scheduledAt: Long, val takenAt: Long? = null, val missedHandled: Boolean = false)
+data class BackupDose(val medicineId: Long, val scheduledAt: Long, val takenAt: Long? = null, val missedHandled: Boolean = false, val skipped: Boolean = false)
 
 /** A saved policy summary (the summary JSON only). Added in backup version 2. */
 @Serializable
@@ -70,7 +73,7 @@ sealed interface BackupParse {
 /** Pure JSON encode / decode / validation, so it can be unit-tested on the JVM. */
 object BackupCodec {
     const val APP_ID = "carecircle"
-    const val CURRENT_VERSION = 3
+    const val CURRENT_VERSION = 4
     const val HISTORY_DAYS = 90
     const val MAX_BYTES = 10 * 1024 * 1024
 
@@ -88,10 +91,10 @@ object BackupCodec {
             schemaVersion = CURRENT_VERSION, exportedAt = now,
             people = people.map { BackupPerson(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder) },
             medicines = meds.map {
-                BackupMedicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming, it.personId)
+                BackupMedicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming, it.personId, it.conditionTag, it.createdAt, it.archivedAt)
             },
             doses = doses.filter { it.scheduledAt >= from && it.medicineId in ids }
-                .map { BackupDose(it.medicineId, it.scheduledAt, it.takenAt, it.missedHandled) },
+                .map { BackupDose(it.medicineId, it.scheduledAt, it.takenAt, it.missedHandled, it.skipped) },
             policySummaries = policies.map { BackupPolicy(it.savedAt, it.json, it.personId) },
         )
     }
@@ -176,10 +179,13 @@ class BackupService(private val ctx: Context) {
         db.people().insertAll(file.people.map { Person(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder) })
         db.medicines().insertAll(
             file.medicines.map {
-                Medicine(it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming, it.personId)
+                Medicine(
+                    it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming,
+                    it.personId, it.conditionTag?.trim()?.take(60)?.ifEmpty { null }, it.createdAt, it.archivedAt,
+                )
             },
         )
-        db.doses().insertAll(file.doses.map { DoseEvent(medicineId = it.medicineId, scheduledAt = it.scheduledAt, takenAt = it.takenAt, missedHandled = it.missedHandled) })
+        db.doses().insertAll(file.doses.map { DoseEvent(medicineId = it.medicineId, scheduledAt = it.scheduledAt, takenAt = it.takenAt, missedHandled = it.missedHandled, skipped = it.skipped) })
         db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json, personId = it.personId) })
         prefs.selectedPersonId = Prefs.UNSET
         ReminderScheduler.scheduleAll(ctx)

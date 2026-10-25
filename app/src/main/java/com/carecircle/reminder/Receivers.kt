@@ -68,7 +68,7 @@ class SnoozeReceiver : BroadcastReceiver() {
             try {
                 val db = AppDb.get(ctx)
                 val dose = db.doses().get(doseId)
-                if (dose == null || !Snooze.shouldRepost(dose.takenAt)) {
+                if (dose == null || dose.skipped || !Snooze.shouldRepost(dose.takenAt)) {
                     Notifier.cancelDose(ctx, doseId)
                     return@launch
                 }
@@ -105,7 +105,7 @@ class MissedDoseWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         if (id < 0) return Result.success()
         val db = AppDb.get(applicationContext)
         val dose = db.doses().get(id) ?: return Result.success()
-        if (dose.missedHandled || !MissedDose.isMissed(dose.scheduledAt, System.currentTimeMillis(), dose.takenAt)) return Result.success()
+        if (dose.missedHandled || dose.skipped || !MissedDose.isMissed(dose.scheduledAt, System.currentTimeMillis(), dose.takenAt)) return Result.success()
         val med = db.medicines().get(dose.medicineId) ?: return Result.success()
         val ctx = AppLocale.wrap(applicationContext)
         val person = db.people().get(med.personId)

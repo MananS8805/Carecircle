@@ -27,7 +27,7 @@ class BackupTest {
 
     @Test fun roundTripKeepsPeopleMedicinesTimesAndRecentHistory() {
         val parsed = BackupCodec.decode(BackupCodec.encode(built())) as BackupParse.Ok
-        assertEquals(3, parsed.file.schemaVersion)
+        assertEquals(4, parsed.file.schemaVersion)
         assertEquals(listOf("Dad", "Mom"), parsed.file.people.map { it.name })
         assertEquals("919876543210", parsed.file.people[0].caregiverPhone)
         assertEquals(2, parsed.file.medicines.size)
@@ -38,13 +38,31 @@ class BackupTest {
         assertEquals(1, parsed.file.doses.size)
     }
 
+    @Test fun conditionTagsAndSkippedDosesRoundTrip() {
+        val tagged = meds.map { it.copy(conditionTag = "Diabetes", createdAt = 5L) }
+        val withSkip = doses + DoseEvent(medicineId = 1, scheduledAt = now - day, skipped = true)
+        val parsed = BackupCodec.decode(BackupCodec.encode(BackupCodec.build(people, tagged, withSkip, now))) as BackupParse.Ok
+        assertEquals(4, parsed.file.schemaVersion)
+        assertEquals("Diabetes", parsed.file.medicines[0].conditionTag)
+        assertEquals(5L, parsed.file.medicines[0].createdAt)
+        assertTrue(parsed.file.doses.any { it.skipped })
+    }
+
+    @Test fun olderFilesReadWithNullTags() {
+        val v3 = "{\"app\":\"carecircle\",\"schemaVersion\":3,\"exportedAt\":5,\"people\":[{\"id\":1,\"name\":\"Dad\"}]," +
+            "\"medicines\":[{\"id\":1,\"name\":\"Telma\",\"timesCsv\":\"08:00\",\"personId\":1}]}"
+        val parsed = BackupCodec.decode(v3) as BackupParse.Ok
+        assertEquals(null, parsed.file.medicines[0].conditionTag)
+        assertEquals(0L, parsed.file.medicines[0].createdAt)
+    }
+
     @Test fun exportHasNoSecrets() {
         val text = BackupCodec.encode(built()).lowercase()
         assertFalse(text.contains("apikey") || text.contains("appkey") || text.contains("x-app-key"))
     }
 
     @Test fun newerVersionIsRejected() {
-        val text = BackupCodec.encode(built()).replace("\"schemaVersion\": 3", "\"schemaVersion\": 99")
+        val text = BackupCodec.encode(built()).replace("\"schemaVersion\": 4", "\"schemaVersion\": 99")
         assertEquals(BackupParse.Newer, BackupCodec.decode(text))
     }
 

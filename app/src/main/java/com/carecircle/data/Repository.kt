@@ -2,6 +2,10 @@ package com.carecircle.data
 
 import android.content.Context
 import androidx.room.withTransaction
+import com.carecircle.domain.Adherence
+import com.carecircle.domain.AdherenceResult
+import com.carecircle.domain.DoseRecord
+import com.carecircle.domain.MedSchedule
 import com.carecircle.domain.Refill
 import com.carecircle.domain.SavedPolicy
 import com.carecircle.domain.Schedule
@@ -68,6 +72,22 @@ class Repository(ctx: Context) {
         val saved = SavedPolicy(r.summary, r.unverified, r.mode, now)
         policyDao.insert(PolicySummaryEntity(savedAt = now, json = ApiFactory.json.encodeToString(saved), personId = personId))
     }
+
+    /** Adherence for one person over the last [days] days, computed from the schedule and stored events. Never touches the network. */
+    suspend fun adherence(personId: Long, days: Int, now: Long = System.currentTimeMillis(), zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): AdherenceResult {
+        val (from, to) = Adherence.range(java.time.LocalDate.now(zone), days)
+        val meds = db.medicines().forPersonIncludingArchived(personId)
+        val ids = meds.map { it.id }.toSet()
+        val events = db.doses().since(from.atStartOfDay(zone).toInstant().toEpochMilli()).filter { it.medicineId in ids }
+        val schedules = meds.map { m ->
+            val created = if (m.createdAt > 0) m.createdAt else events.filter { it.medicineId == m.id }.minOfOrNull { it.scheduledAt } ?: now
+            MedSchedule(m.id, m.name, m.doseText, m.timesCsv, created, m.archivedAt ?: if (!m.active) now else null)
+        }
+        return Adherence.compute(schedules, events.map { DoseRecord(it.medicineId, it.scheduledAt, it.takenAt, it.skipped) }, from, to, now, zone)
+    }
+
+    suspend fun latestPolicy(personId: Long): SavedPolicy? =
+        policyDao.forPerson(personId).firstOrNull()?.let { runCatching { ApiFactory.json.decodeFromString<SavedPolicy>(it.json) }.getOrNull() }
 
     // ---- People ----
 

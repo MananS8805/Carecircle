@@ -21,7 +21,7 @@ Every version is a git tag (`v0.1` ... `v0.6`); see [CHANGELOG.md](CHANGELOG.md)
 | v0.3 | Time picker, food hints, interaction check, export / restore / delete all |
 | v0.4 | Insurance policy summary with clause citations, CameraX strip scanner |
 | v0.5 | Multiple people with separate data, Hindi and Gujarati UI with in-app switch, CI and release signing config |
-| v0.6 | Condition tags with cited policy notes, voice entry, adherence history |
+| v0.6 | Condition tags with cited policy notes, voice entry of medicines, adherence history and PDF report |
 
 ## Run the Android app
 

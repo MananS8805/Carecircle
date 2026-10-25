@@ -9,6 +9,13 @@ import com.carecircle.domain.Refill
 import com.carecircle.domain.Schedule
 
 object DoseActions {
+    /** Skipping is a deliberate choice: no pill is used up, reminders and the missed-dose alert stop. */
+    suspend fun skip(ctx: Context, doseId: Long) {
+        if (AppDb.get(ctx).doses().markSkipped(doseId) == 0) return
+        Notifier.cancelDose(ctx, doseId)
+        ReminderScheduler.cancelSnooze(ctx, doseId)
+    }
+
     /** Marks a dose taken (idempotent), decrements pills, and raises a reorder alert at <= 5 days left. */
     suspend fun markTaken(ctx: Context, doseId: Long, now: Long = System.currentTimeMillis()) {
         val db = AppDb.get(ctx)

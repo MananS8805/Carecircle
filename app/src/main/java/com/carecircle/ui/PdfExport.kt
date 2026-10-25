@@ -8,30 +8,43 @@ import androidx.core.content.FileProvider
 import com.carecircle.AppLocale
 import com.carecircle.R
 import com.carecircle.data.Medicine
+import com.carecircle.domain.AdherenceResult
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
 
-/** One-page-per-~35-lines list of current medicines for a doctor visit. Generated and shared locally, in the app language. */
+/**
+ * Doctor-visit PDF: current medicines (with what each is for) and 30 days of adherence for one person.
+ * Generated and shared on the phone only, in the app language.
+ */
 object PdfExport {
-    fun create(base: Context, person: String, meds: List<Medicine>): File {
+    fun create(base: Context, person: String, meds: List<Medicine>, adherence: AdherenceResult? = null): File {
         val ctx = AppLocale.wrap(base)
+        val locale = AppLocale.locale(base)
         val doc = PdfDocument()
         val title = Paint().apply { textSize = 20f; isFakeBoldText = true }
         val head = Paint().apply { textSize = 12f; isFakeBoldText = true }
         val body = Paint().apply { textSize = 12f }
         val small = Paint().apply { textSize = 10f }
-        val date = DateFormat.getDateInstance(DateFormat.MEDIUM, AppLocale.locale(base)).format(Date())
+        val fmt = DateFormat.getDateInstance(DateFormat.MEDIUM, locale)
+        val date = fmt.format(Date())
+        val dfmt = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale).withDecimalStyle(java.time.format.DecimalStyle.STANDARD)
         var pageNo = 1
         var page = doc.startPage(PdfDocument.PageInfo.Builder(595, 842, pageNo).create())
         var y = 60f
         fun footer() { page.canvas.drawText(ctx.getString(R.string.disclaimer_medical), 40f, 820f, small) }
+        fun newPageIfNeeded(needed: Float = 20f) {
+            if (y + needed > 800f) {
+                footer(); doc.finishPage(page); pageNo++
+                page = doc.startPage(PdfDocument.PageInfo.Builder(595, 842, pageNo).create()); y = 60f
+            }
+        }
         fun header() {
             val t = if (person.isBlank()) ctx.getString(R.string.pdf_title) else ctx.getString(R.string.pdf_title_person, person)
             page.canvas.drawText(t, 40f, y, title); y += 22f
             page.canvas.drawText(ctx.getString(R.string.pdf_generated, date), 40f, y, body); y += 28f
-            page.canvas.drawText(ctx.getString(R.string.pdf_col_medicine), 40f, y, head); page.canvas.drawText(ctx.getString(R.string.pdf_col_dose), 230f, y, head)
-            page.canvas.drawText(ctx.getString(R.string.pdf_col_times), 330f, y, head); page.canvas.drawText(ctx.getString(R.string.pdf_col_generic), 440f, y, head); y += 18f
+            page.canvas.drawText(ctx.getString(R.string.pdf_col_medicine), 40f, y, head); page.canvas.drawText(ctx.getString(R.string.pdf_col_dose), 200f, y, head)
+            page.canvas.drawText(ctx.getString(R.string.pdf_col_times), 290f, y, head); page.canvas.drawText(ctx.getString(R.string.pdf_col_for), 390f, y, head); y += 18f
         }
         header()
         for (m in meds) {
@@ -39,11 +52,35 @@ object PdfExport {
                 footer(); doc.finishPage(page); pageNo++
                 page = doc.startPage(PdfDocument.PageInfo.Builder(595, 842, pageNo).create()); y = 60f; header()
             }
-            page.canvas.drawText(m.name.take(26), 40f, y, body)
-            page.canvas.drawText(m.doseText.take(14), 230f, y, body)
-            page.canvas.drawText(m.timesCsv.take(16), 330f, y, body)
-            page.canvas.drawText(m.salt.take(20), 440f, y, body)
+            page.canvas.drawText(m.name.take(24), 40f, y, body)
+            page.canvas.drawText(m.doseText.take(14), 200f, y, body)
+            page.canvas.drawText(m.timesCsv.take(18), 290f, y, body)
+            page.canvas.drawText((m.conditionTag ?: m.salt).take(24), 390f, y, body)
             y += 18f
+        }
+
+        if (adherence != null) {
+            y += 18f; newPageIfNeeded(80f)
+            page.canvas.drawText(ctx.getString(R.string.pdf_adherence_title), 40f, y, title); y += 20f
+            page.canvas.drawText(
+                ctx.getString(R.string.pdf_adherence_range, adherence.from.format(dfmt), adherence.to.format(dfmt)) +
+                    "  -  " + ctx.getString(R.string.pdf_generated, date),
+                40f, y, small,
+            ); y += 22f
+            val pct = adherence.percent
+            page.canvas.drawText(
+                if (pct == null) ctx.getString(R.string.hist_no_data)
+                else ctx.getString(R.string.hist_summary, adherence.taken, adherence.decided, pct),
+                40f, y, head,
+            ); y += 20f
+            for (m in adherence.perMedicine) {
+                newPageIfNeeded()
+                page.canvas.drawText(
+                    listOf(m.name, m.doseText).filter { it.isNotBlank() }.joinToString(" ").take(40) + "  -  " +
+                        ctx.getString(R.string.pdf_med_counts, m.taken, m.missed, m.skipped),
+                    40f, y, body,
+                ); y += 16f
+            }
         }
         footer()
         doc.finishPage(page)
