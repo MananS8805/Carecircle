@@ -32,7 +32,7 @@ Every version is a git tag (`v0.1` ... `v0.6`); see [CHANGELOG.md](CHANGELOG.md)
    careCircleApi=https://YOUR-APP.vercel.app/
    careCircleAppKey=YOUR_APP_KEY
    ```
-   `YOUR-APP.vercel.app` is the deploy URL from the backend step below (placeholder until deployed). `careCircleAppKey` must equal the backend `APP_KEY`; leave it out if the backend has none.
+   `YOUR-APP.vercel.app` is your deploy URL from the backend step below. The author's deployment is `https://backend-teal-two-34.vercel.app/` (no `APP_KEY` and no LLM key set yet, so cards use extractive label text). `careCircleAppKey` must equal the backend `APP_KEY`; leave it out if the backend has none.
 4. Run on a device or emulator (API 26+). On first launch a short setup dialog asks for notifications, exact alarms and battery settings.
 5. Tests: `./gradlew :app:testDebugUnitTest`; build: `./gradlew :app:assembleDebug`; lint: `./gradlew :app:lintDebug`.
 
