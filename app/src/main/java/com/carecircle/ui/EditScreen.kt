@@ -137,6 +137,12 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
         else runCatching { voice.launch(intent) }.onFailure { voiceNote = ctx.getString(R.string.voice_unavailable) }
     }
 
+    val scope by vm.scopePerson.collectAsStateWithLifecycle()
+    val owner = existing?.personId?.takeIf { it > 0 } ?: scope?.id ?: 0L
+    val allergyFlow = remember(owner) { vm.allergiesFor(owner) }
+    val allergies by allergyFlow.collectAsStateWithLifecycle(emptyList())
+    val others by vm.medicines.collectAsStateWithLifecycle()
+    val candidate = com.carecircle.domain.MedLite(name, salt)
     val timesOk = TimeList.isValid(times)
     val expiryOk = expiryText.isBlank() || Expiry.parseTyped(expiryText) != null
     val valid = expiryOk && name.isNotBlank() && timesOk && pills.toIntOrNull() != null && perDose.toIntOrNull()?.let { it > 0 } == true
@@ -169,6 +175,8 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
         }
         ConditionPicker(tag, onChange = { tag = it.take(60) })
         AppField(salt, { salt = it }, stringResource(R.string.field_salt))
+        AllergyWarnings(candidate, scope?.name.orEmpty(), allergies.map { it.name })
+        OverlapWarning(candidate, others.filter { it.id != id }.map { com.carecircle.domain.MedLite(it.name, it.salt) })
         AppField(expiryText, { expiryText = it.take(7) }, stringResource(R.string.field_expiry), isError = expiryText.isNotBlank() && Expiry.parseTyped(expiryText) == null)
         SoftButton(stringResource(R.string.scan_strip), onScan, Modifier.fillMaxWidth(), icon = Icons.Default.CameraAlt)
         if (scanMsg.isNotEmpty()) Muted(scanMsg)

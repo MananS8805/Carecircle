@@ -75,3 +75,6 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 ## v1.0 notes
 - Two experiences in one app: `CareCircleApp` (patient) and `ui/family/FamilyApp` (family). `Prefs.appMode` decides; the family view has its own colours in `FamilyTheme.kt` and never reuses the patient Palette.
 - `CareSync.publishStatus` writes `pairings/{id}/status/current`; the family view reads it with `observeStatus`. Organs on the family side are inferred from medicine names only; no condition data is shared.
+
+## v1.1 notes
+- `domain/Safety.kt` (allergy classes, ingredient overlap, high-alert list) and `LabelText` are pure and tested. The lists are small and extendable; they only raise flags to ask a doctor or pharmacist about.

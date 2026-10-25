@@ -27,7 +27,7 @@ class BackupTest {
 
     @Test fun roundTripKeepsPeopleMedicinesTimesAndRecentHistory() {
         val parsed = BackupCodec.decode(BackupCodec.encode(built())) as BackupParse.Ok
-        assertEquals(5, parsed.file.schemaVersion)
+        assertEquals(BackupCodec.CURRENT_VERSION, parsed.file.schemaVersion)
         assertEquals(listOf("Dad", "Mom"), parsed.file.people.map { it.name })
         assertEquals("919876543210", parsed.file.people[0].caregiverPhone)
         assertEquals(2, parsed.file.medicines.size)
@@ -42,7 +42,7 @@ class BackupTest {
         val tagged = meds.map { it.copy(conditionTag = "Diabetes", createdAt = 5L) }
         val withSkip = doses + DoseEvent(medicineId = 1, scheduledAt = now - day, skipped = true)
         val parsed = BackupCodec.decode(BackupCodec.encode(BackupCodec.build(people, tagged, withSkip, now))) as BackupParse.Ok
-        assertEquals(5, parsed.file.schemaVersion)
+        assertEquals(BackupCodec.CURRENT_VERSION, parsed.file.schemaVersion)
         assertEquals("Diabetes", parsed.file.medicines[0].conditionTag)
         assertEquals(5L, parsed.file.medicines[0].createdAt)
         assertTrue(parsed.file.doses.any { it.skipped })
@@ -63,6 +63,14 @@ class BackupTest {
         assertEquals(BackupParse.Malformed, BackupCodec.decode(text))
     }
 
+    @Test fun allergiesRoundTripAndFollowTheirPerson() {
+        val parsed = BackupCodec.decode(BackupCodec.encode(BackupCodec.build(people, meds, doses, now, allergies = listOf(Allergy(personId = 2, name = "Penicillin"))))) as BackupParse.Ok
+        assertEquals("Penicillin", parsed.file.allergies.single().name)
+        assertEquals(2L, parsed.file.allergies.single().personId)
+        val moved = BackupCodec.withPeople(parsed.file.copy(allergies = listOf(BackupAllergy(77, "Sulfa"))))
+        assertEquals(1L, moved.allergies.single().personId)
+    }
+
     @Test fun olderFilesReadWithNullTags() {
         val v3 = "{\"app\":\"carecircle\",\"schemaVersion\":3,\"exportedAt\":5,\"people\":[{\"id\":1,\"name\":\"Dad\"}]," +
             "\"medicines\":[{\"id\":1,\"name\":\"Telma\",\"timesCsv\":\"08:00\",\"personId\":1}]}"
@@ -77,7 +85,7 @@ class BackupTest {
     }
 
     @Test fun newerVersionIsRejected() {
-        val text = BackupCodec.encode(built()).replace("\"schemaVersion\": 5", "\"schemaVersion\": 99")
+        val text = BackupCodec.encode(built()).replace("\"schemaVersion\": ${BackupCodec.CURRENT_VERSION}", "\"schemaVersion\": 99")
         assertEquals(BackupParse.Newer, BackupCodec.decode(text))
     }
 

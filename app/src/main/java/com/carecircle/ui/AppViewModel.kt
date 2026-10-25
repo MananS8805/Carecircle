@@ -198,6 +198,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteSymptom(id: Long) = viewModelScope.launch { repo.deleteSymptom(id) }
 
+    // ---- Allergies and safety flags ----
+    fun allergiesFor(personId: Long) = repo.allergies(personId)
+    fun addAllergy(personId: Long, name: String) = viewModelScope.launch { repo.addAllergy(personId, name) }
+    fun removeAllergy(id: Long) = viewModelScope.launch { repo.removeAllergy(id) }
+
+    /** Allergy names of a person, for one-off checks in screens. */
+    suspend fun allergyNames(personId: Long) = repo.allergyNames(personId)
+
     fun skip(item: TodayItem) = viewModelScope.launch {
         repo.doses.insert(DoseEvent(medicineId = item.med.id, scheduledAt = item.scheduledAt))
         val ev = repo.doses.find(item.med.id, item.scheduledAt) ?: return@launch

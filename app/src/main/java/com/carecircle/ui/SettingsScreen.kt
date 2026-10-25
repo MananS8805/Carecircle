@@ -97,7 +97,7 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () ->
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
-                    Muted(stringResource(R.string.settings_version, "1.0"))
+                    Muted(stringResource(R.string.settings_version, "1.1"))
                 }
             }
             Text(stringResource(R.string.settings_privacy), Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodySmall)

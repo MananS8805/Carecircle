@@ -2,6 +2,11 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## v1.1
+- Safety checks, all on the phone: an allergy list per person (Manage people) with a warning on the Edit and Detail screens when a medicine's name or generic name seems to fall under it (including groups such as penicillin or NSAIDs); a warning when the same ingredient is in more than one medicine; a "High-alert medicine" flag with a reminder to follow the prescription exactly (warfarin, insulin, digoxin and similar). Warnings never block saving and never say a medicine is safe.
+- Medicine card text is tidied: section headings and reference marks from the label are removed, three short sentences per section with "Show more".
+- Room migration 7 to 8; backup schema version 6 (reads 1 to 5).
+
 ## v1.0
 - Family view: a separate experience for people who follow a patient, with its own calm teal look and its own navigation (Family, Add, Settings). First launch asks "I take medicines" or "I follow a family member"; the choice can be switched in Settings.
 - Each followed person has a live card: an animated ring of doses taken today, a mood (all taken, on track, missed, no update), and the next dose. Their page has a big tappable ring (flip to the next dose), an interactive organ for what their medicines are for (worked out on the family phone from medicine names), a 14-day bar chart (tap a day), and a timeline of recent activity.

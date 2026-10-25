@@ -121,6 +121,7 @@ class Repository(ctx: Context) {
         db.doses().idsForPerson(personId).forEach { com.carecircle.reminder.ReminderScheduler.cancelSnooze(appCtx, it); com.carecircle.reminder.ReminderScheduler.cancelRepeats(appCtx, it) }
         db.withTransaction {
             db.symptoms().deleteForPerson(personId)
+            db.allergies().deleteForPerson(personId)
             db.doses().deleteForPerson(personId)
             db.policies().deleteForPerson(personId)
             db.medicines().deleteForPerson(personId)
@@ -130,6 +131,15 @@ class Repository(ctx: Context) {
     }
 
     suspend fun deletePolicy(id: Long) = policyDao.delete(id)
+
+    // ---- Allergies ----
+    fun allergies(personId: Long) = db.allergies().observeFor(personId)
+    suspend fun allergyNames(personId: Long): List<String> = db.allergies().listFor(personId).map { it.name }
+    suspend fun addAllergy(personId: Long, name: String) {
+        val n = name.trim().take(60)
+        if (n.isNotEmpty() && db.allergies().listFor(personId).none { it.name.equals(n, ignoreCase = true) }) db.allergies().insert(Allergy(personId = personId, name = n))
+    }
+    suspend fun removeAllergy(id: Long) = db.allergies().delete(id)
 
     // ---- Side-effect diary ----
     fun symptoms(medicineId: Long) = db.symptoms().observeFor(medicineId)

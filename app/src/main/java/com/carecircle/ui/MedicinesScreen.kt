@@ -65,6 +65,13 @@ fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit,
             }
         }
         item { PersonSwitcher(vm, allowAll = false) }
+        com.carecircle.domain.Safety.duplicateIngredients(meds.map { com.carecircle.domain.MedLite(it.name, it.salt) }).forEach { (ingredient, names) ->
+            item(key = "dup-$ingredient") {
+                SoftCard(Modifier.fillMaxWidth(), tint = Palette.WarnSoft) {
+                    Text(stringResource(R.string.warn_duplicate, ingredient, names.joinToString(", ")), style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        }
         item { BigButton(stringResource(R.string.meds_add), onAdd, icon = Icons.Default.Add) }
         item { SoftButton(stringResource(R.string.inter_button), onInteractions, Modifier.fillMaxWidth(), icon = Icons.Default.CompareArrows) }
         if (meds.isEmpty()) item { Muted(stringResource(R.string.meds_empty)) }
@@ -81,6 +88,7 @@ fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit,
                     }
                 }
                 ExpiryPill(m.expiry, Modifier.padding(top = 8.dp), onlyWhenAttention = true)
+                HighAlertPill(com.carecircle.domain.MedLite(m.name, m.salt), Modifier.padding(top = 8.dp))
                 val low = Refill.needsReorder(left)
                 Text(
                     pluralStringResource(R.plurals.pills_left, m.pillCount, m.pillCount, left),

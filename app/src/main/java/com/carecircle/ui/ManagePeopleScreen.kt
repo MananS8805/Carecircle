@@ -51,7 +51,7 @@ fun ManagePeopleScreen(vm: AppViewModel, onBack: () -> Unit) {
         item { Text(stringResource(R.string.people_manage), style = MaterialTheme.typography.headlineLarge) }
         item { Muted(stringResource(R.string.people_intro)) }
         items(people, key = { it.id }) { p ->
-            PersonEditor(p, people, canDelete = people.size > 1, onChange = vm::updatePerson, onDelete = { deleting = p })
+            PersonEditor(p, people, vm, canDelete = people.size > 1, onChange = vm::updatePerson, onDelete = { deleting = p })
         }
         item {
             val newName = stringResource(R.string.people_new_name, people.size + 1)
@@ -74,7 +74,7 @@ fun ManagePeopleScreen(vm: AppViewModel, onBack: () -> Unit) {
 }
 
 @Composable
-private fun PersonEditor(p: Person, all: List<Person>, canDelete: Boolean, onChange: (Person) -> Unit, onDelete: () -> Unit) {
+private fun PersonEditor(p: Person, all: List<Person>, vm: AppViewModel, canDelete: Boolean, onChange: (Person) -> Unit, onDelete: () -> Unit) {
     // Edits are applied as you type; the key keeps the fields in step with the saved person.
     var name by remember(p.id) { mutableStateOf(p.name) }
     var caregiver by remember(p.id) { mutableStateOf(p.caregiverPhone) }
@@ -85,6 +85,7 @@ private fun PersonEditor(p: Person, all: List<Person>, canDelete: Boolean, onCha
         PhoneField(name, { name = it.take(Persons.MAX_NAME); push(n = name) }, stringResource(R.string.field_person_name), KeyboardType.Text)
         PhoneField(caregiver, { caregiver = it; push(c = it) }, stringResource(R.string.field_caregiver), KeyboardType.Phone)
         PhoneField(pharmacy, { pharmacy = it; push(ph = it) }, stringResource(R.string.field_pharmacy), KeyboardType.Phone)
+        AllergySection(p.id, vm)
         if (canDelete) TextButton(onClick = onDelete) { Text(stringResource(R.string.people_delete), color = Palette.Bad) }
         else Muted(stringResource(R.string.people_last_one), Modifier.padding(top = 6.dp))
     }

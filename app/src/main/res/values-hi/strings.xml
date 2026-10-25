@@ -461,4 +461,15 @@
     <string name="fam_settings_switch">इस फ़ोन को अपनी दवाइयों के लिए इस्तेमाल करें</string>
     <string name="fam_settings_switch_hint">मरीज़ ऐप पर जाएँ: याद दिलाना, खुराकें, बीमा और बहुत कुछ।</string>
     <string name="fam_about">परिवार दृश्य। केवल जानकारी के लिए, चिकित्सा सलाह नहीं।</string>
+    <string name="allergy_title">एलर्जी</string>
+    <string name="allergy_hint">एक जोड़ें, जैसे पेनिसिलिन</string>
+    <string name="allergy_add">जोड़ें</string>
+    <string name="allergy_none">कोई एलर्जी नहीं जोड़ी गई।</string>
+    <string name="warn_allergy">एलर्जी चेतावनी: %1$s की एलर्जी सूची में %2$s है और %3$s में यह हो सकता है। लेने से पहले अपने डॉक्टर या केमिस्ट से पूछें।</string>
+    <string name="warn_duplicate">एक ही घटक एक से अधिक दवा में है: %1$s (%2$s)। खुराक दोगुनी न हो, इसलिए अपने डॉक्टर या केमिस्ट से पूछ लें।</string>
+    <string name="warn_overlap">%1$s पहले से इनमें है: %2$s। दोनों लेने से पहले अपने डॉक्टर या केमिस्ट से पूछें।</string>
+    <string name="high_alert_pill">उच्च सावधानी की दवा</string>
+    <string name="high_alert_note">ठीक वैसे ही लें जैसे बताया गया है। डॉक्टर से पूछे बिना खुराक न बदलें।</string>
+    <string name="info_show_more">और दिखाएँ</string>
+    <string name="info_show_less">कम दिखाएँ</string>
 </resources>

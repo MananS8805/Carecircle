@@ -482,4 +482,16 @@
     <string name="fam_settings_switch">Use this phone for my own medicines</string>
     <string name="fam_settings_switch_hint">Switch to the patient app: reminders, doses, insurance and more.</string>
     <string name="fam_about">Family view. Informational only, not medical advice.</string>
+    <!-- v1.1: safety -->
+    <string name="allergy_title">Allergies</string>
+    <string name="allergy_hint">Add one, for example penicillin</string>
+    <string name="allergy_add">Add</string>
+    <string name="allergy_none">No allergies added.</string>
+    <string name="warn_allergy">Allergy warning: %1$s is on %2$s\'s allergy list and %3$s may contain it. Ask your doctor or pharmacist before taking it.</string>
+    <string name="warn_duplicate">The same ingredient is in more than one medicine: %1$s (%2$s). Check with your doctor or pharmacist so the dose is not doubled.</string>
+    <string name="warn_overlap">%1$s is already in: %2$s. Check with your doctor or pharmacist before taking both.</string>
+    <string name="high_alert_pill">High-alert medicine</string>
+    <string name="high_alert_note">Take exactly as prescribed. Do not change the dose without asking your doctor.</string>
+    <string name="info_show_more">Show more</string>
+    <string name="info_show_less">Show less</string>
 </resources>

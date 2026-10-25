@@ -15,6 +15,18 @@ class MigrationTest {
     )
 
     @Test
+    fun migrate7To8AddsAllergyTableKeepingData() {
+        helper.createDatabase("mig78", 7).apply {
+            execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate("mig78", 8, true, Migrations.M7_8)
+        db.query("SELECT name FROM person").use { it.moveToFirst(); assertEquals("Me", it.getString(0)) }
+        db.execSQL("INSERT INTO allergy (personId, name) VALUES (1, 'Penicillin')")
+        db.query("SELECT COUNT(*) FROM allergy").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
+    }
+
+    @Test
     fun migrate6To7AddsSyncTablesKeepingData() {
         helper.createDatabase("mig67", 6).apply {
             execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")

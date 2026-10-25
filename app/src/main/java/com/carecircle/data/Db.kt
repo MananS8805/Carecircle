@@ -155,6 +155,25 @@ data class Following(
     val lastSeenAt: Long,
 )
 
+/** Something a person is allergic to. Used to warn when a medicine seems to contain it. Stays on the phone. */
+@Entity(tableName = "allergy", indices = [Index("personId")])
+data class Allergy(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val personId: Long,
+    val name: String,
+)
+
+@Dao
+interface AllergyDao {
+    @Query("SELECT * FROM allergy WHERE personId = :personId ORDER BY name") fun observeFor(personId: Long): Flow<List<Allergy>>
+    @Query("SELECT * FROM allergy WHERE personId = :personId ORDER BY name") suspend fun listFor(personId: Long): List<Allergy>
+    @Query("SELECT * FROM allergy") suspend fun all(): List<Allergy>
+    @Insert suspend fun insert(a: Allergy): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(a: List<Allergy>)
+    @Query("DELETE FROM allergy WHERE id = :id") suspend fun delete(id: Long)
+    @Query("DELETE FROM allergy WHERE personId = :personId") suspend fun deleteForPerson(personId: Long)
+}
+
 @Dao
 interface SyncDao {
     @Query("SELECT * FROM sync_link ORDER BY createdAt DESC") fun observeLinks(): Flow<List<SyncLink>>
@@ -261,7 +280,15 @@ object Migrations {
         }
     }
 
-    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7)
+    /** v1.0 -> v1.1: allergy list per person. */
+    val M7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS allergy (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, personId INTEGER NOT NULL, name TEXT NOT NULL)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_allergy_personId ON allergy (personId)")
+        }
+    }
+
+    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7, M7_8)
 }
 
 object Persons {
@@ -271,8 +298,8 @@ object Persons {
 }
 
 @Database(
-    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class, SyncLink::class, Following::class],
-    version = 7, exportSchema = true,
+    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class, SyncLink::class, Following::class, Allergy::class],
+    version = 8, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun people(): PersonDao
@@ -283,6 +310,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun policies(): PolicyDao
     abstract fun symptoms(): SymptomDao
     abstract fun sync(): SyncDao
+    abstract fun allergies(): AllergyDao
 
     companion object {
         @Volatile private var inst: AppDb? = null

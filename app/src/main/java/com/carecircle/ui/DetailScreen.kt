@@ -41,6 +41,7 @@ import com.carecircle.data.CardResult
 import com.carecircle.data.Medicine
 import com.carecircle.data.MedicineCard
 import com.carecircle.domain.Conditions
+import com.carecircle.domain.LabelText
 import com.carecircle.domain.Coverage
 import com.carecircle.domain.CoverageKind
 import com.carecircle.domain.SavedPolicy
@@ -114,6 +115,20 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
             }
         }
 
+        item {
+            val lite = com.carecircle.domain.MedLite(m.name, m.salt)
+            val aflow = remember(m.personId) { vm.allergiesFor(m.personId) }
+            val alist by aflow.collectAsStateWithLifecycle(emptyList())
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                AllergyWarnings(lite, owner?.name.orEmpty(), alist.map { it.name })
+                if (com.carecircle.domain.Safety.isHighAlert(lite)) {
+                    SoftCard(Modifier.fillMaxWidth(), tint = Palette.BadSoft) {
+                        HighAlertPill(lite)
+                        Text(stringResource(R.string.high_alert_note), Modifier.padding(top = 6.dp), style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        }
         item { DoctorNoteCard(m, vm) { med = it } }
         if (suggestion != null) item {
             SoftCard(Modifier.fillMaxWidth(), tint = Palette.OrangeSoft) {
@@ -237,8 +252,13 @@ private fun InfoCard(c: MedicineCard) {
 
 @Composable
 private fun InfoSection(title: String, lines: List<String>) {
-    val l = lines.filter { it.isNotBlank() }
-    if (l.isEmpty()) return
+    val cleaned = lines.flatMap { LabelText.sentences(it) }
+    if (cleaned.isEmpty()) return
+    var open by androidx.compose.runtime.saveable.rememberSaveable(title) { androidx.compose.runtime.mutableStateOf(false) }
+    val shown = if (open) cleaned.take(12) else cleaned.take(3)
     Text(title, Modifier.padding(top = 10.dp), style = MaterialTheme.typography.titleMedium)
-    l.forEach { Text(if (lines.size > 1) "- $it" else it, style = MaterialTheme.typography.bodyMedium) }
+    shown.forEach { Text(if (cleaned.size > 1) "- $it" else it, style = MaterialTheme.typography.bodyMedium) }
+    if (cleaned.size > 3) TextButton(onClick = { open = !open }, contentPadding = PaddingValues(0.dp)) {
+        Text(if (open) stringResource(R.string.info_show_less) else stringResource(R.string.info_show_more), style = MaterialTheme.typography.labelMedium)
+    }
 }

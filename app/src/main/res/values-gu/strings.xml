@@ -461,4 +461,15 @@
     <string name="fam_settings_switch">આ ફોનને મારી દવાઓ માટે વાપરો</string>
     <string name="fam_settings_switch_hint">દર્દી ઍપ પર જાઓ: યાદ, ડોઝ, વીમો અને વધુ.</string>
     <string name="fam_about">પરિવાર દૃશ્ય. ફક્ત માહિતી માટે, તબીબી સલાહ નથી.</string>
+    <string name="allergy_title">એલર્જી</string>
+    <string name="allergy_hint">એક ઉમેરો, જેમ કે પેનિસિલિન</string>
+    <string name="allergy_add">ઉમેરો</string>
+    <string name="allergy_none">કોઈ એલર્જી ઉમેરી નથી.</string>
+    <string name="warn_allergy">એલર્જી ચેતવણી: %1$s ની એલર્જી યાદીમાં %2$s છે અને %3$s માં તે હોઈ શકે. લેતા પહેલાં તમારા ડૉક્ટર અથવા કેમિસ્ટને પૂછો.</string>
+    <string name="warn_duplicate">એક જ ઘટક એક કરતાં વધુ દવામાં છે: %1$s (%2$s). ડોઝ બમણો ન થાય તે માટે તમારા ડૉક્ટર અથવા કેમિસ્ટને પૂછી લો.</string>
+    <string name="warn_overlap">%1$s પહેલેથી આમાં છે: %2$s. બંને લેતા પહેલાં તમારા ડૉક્ટર અથવા કેમિસ્ટને પૂછો.</string>
+    <string name="high_alert_pill">ઉચ્ચ સાવચેતીની દવા</string>
+    <string name="high_alert_note">બરાબર સૂચવ્યા મુજબ લો. ડૉક્ટરને પૂછ્યા વિના ડોઝ બદલશો નહીં.</string>
+    <string name="info_show_more">વધુ બતાવો</string>
+    <string name="info_show_less">ઓછું બતાવો</string>
 </resources>
