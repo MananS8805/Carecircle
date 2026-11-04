@@ -1,7 +1,7 @@
 package com.carecircle.smoke
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
 import com.carecircle.DebugReset
@@ -27,9 +27,10 @@ class DoubleTapTakenTest {
         val id = SmokeSupport.insertDueMedicine(pills = 10, perDose = 2)
         ActivityScenario.launch(MainActivity::class.java).use {
             compose.waitForText("SmokeTest Med")
-            val taken = SmokeSupport.str(R.string.action_taken)
-            compose.onAllNodesWithText(taken)[0].performClick()
-            runCatching { compose.onAllNodesWithText(taken)[0].performClick() } // the button may already be gone
+            val taken = SmokeSupport.str(R.string.cd_taken_for, "SmokeTest Med")
+            SmokeSupport.scrollToTaken(compose)
+            compose.onAllNodesWithContentDescription(taken)[0].performClick()
+            runCatching { compose.onAllNodesWithContentDescription(taken)[0].performClick() } // the button may already be gone
             compose.waitUntil(10_000) { SmokeSupport.doses().any { it.takenAt != null } }
         }
         assertEquals(8, SmokeSupport.medicine(id).pillCount)

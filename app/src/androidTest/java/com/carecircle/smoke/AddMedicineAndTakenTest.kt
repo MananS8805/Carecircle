@@ -2,6 +2,7 @@ package com.carecircle.smoke
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -41,7 +42,8 @@ class AddMedicineAndTakenTest {
         val id = SmokeSupport.insertDueMedicine(pills = 10, perDose = 1)
         ActivityScenario.launch(MainActivity::class.java).use {
             compose.waitForText("SmokeTest Med")
-            compose.onNodeWithText(SmokeSupport.str(R.string.action_taken)).performClick()
+            SmokeSupport.scrollToTaken(compose)
+            compose.onNodeWithContentDescription(SmokeSupport.str(R.string.cd_taken_for, "SmokeTest Med")).performClick()
             compose.waitUntil(10_000) { SmokeSupport.doses().any { it.takenAt != null } }
             // The status pill now reads Taken and the button is gone.
             compose.waitUntil(10_000) { compose.onAllNodesWithText(SmokeSupport.str(R.string.status_taken)).fetchSemanticsNodes().isNotEmpty() }

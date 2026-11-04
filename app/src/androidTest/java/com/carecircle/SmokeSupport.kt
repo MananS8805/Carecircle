@@ -3,6 +3,7 @@ package com.carecircle
 import android.Manifest
 import android.content.Context
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -32,6 +33,12 @@ object SmokeSupport {
         val time = LocalTime.now().minusMinutes(1).withSecond(0).withNano(0).format(DateTimeFormatter.ofPattern("HH:mm"))
         val personId = db.people().all().first().id
         db.medicines().insert(Medicine(name = name, doseText = "100 mg", timesCsv = time, pillCount = pills, pillsPerDose = perDose, personId = personId, createdAt = 1L))
+    }
+
+    /** The Today list is lazy: the dose card is below the organ view, so scroll the main list to the Taken button first. */
+    fun scrollToTaken(rule: ComposeTestRule, name: String = "SmokeTest Med") {
+        rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())[0]
+            .performScrollToNode(androidx.compose.ui.test.hasContentDescription(str(R.string.cd_taken_for, name)))
     }
 
     fun medicine(id: Long): Medicine = runBlocking { AppDb.get(context).medicines().get(id)!! }
