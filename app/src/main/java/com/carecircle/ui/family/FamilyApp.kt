@@ -97,6 +97,8 @@ private val topLevel = setOf("fhome", "fadd", "fsettings")
 /** The whole family experience: who is being followed, how today is going, and what happened recently. */
 @Composable
 fun FamilyApp(vm: AppViewModel) {
+    val warmCtx = LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(Unit) { com.carecircle.data.CareSync.warmUp(warmCtx) }
     val nav = rememberNavController()
     val route = nav.currentBackStackEntryAsState().value?.destination?.route
     val tabs = listOf(
@@ -404,7 +406,7 @@ private fun AddMember(vm: AppViewModel, onDone: () -> Unit) {
                 val ok = r is FollowResult.Ok
                 Text(
                     when (r) {
-                        is FollowResult.Ok -> stringResource(R.string.family_followed, r.personName)
+                        is FollowResult.Ok -> stringResource(R.string.family_followed, r.personName.ifBlank { stringResource(R.string.family_member_fallback) })
                         FollowResult.Invalid -> stringResource(R.string.family_err_invalid)
                         FollowResult.NotFound -> stringResource(R.string.family_err_notfound)
                         FollowResult.Expired -> stringResource(R.string.family_err_expired)

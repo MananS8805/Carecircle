@@ -2,6 +2,14 @@
 
 Each version is a git tag. Informational only, not medical advice.
 
+## 2.0.1 - family sync fix
+
+- Fixed: every status update ended the family link. Two lines (stop sharing a person, cancel their appointment alarms) sat inside `Repository.adherence()` since v0.9, so taking a dose, opening the app or tapping "Send update" deleted the pairing before the status was written. They now live in `deletePerson()` only. `RepositoryGuardTest` fails if a destructive call is ever added to `adherence()` again.
+- Fixed: the Family sync row wrapped "Stop sharing" one letter per line. The status pill now has its own line.
+- Fixed: "Now following ." with no name now reads "Now following your family member."
+- Fixed: on a fresh install the first Share or Follow failed (the first anonymous sign-in can take 20 seconds) and the second worked. Opening a family screen now signs in ahead of time, one sign-in at a time, and a tap waits up to 40 seconds for it. Phones that never use family sync still make no network call at start.
+- Test-only: newer Espresso for Android 17, the smoke tests scroll to the Taken button and use its accessible name, and a debug-only `-Pcarecircle.clone=true` install puts a second copy on one phone for two-role sync tests.
+
 ## Backend (not deployed)
 - `/api/policy-summary` without an LLM key now also reads the **Covered** and **Not covered** lists: the bullet or numbered lines under an Inclusions or Exclusions heading, up to the next heading, each with page, clause and an exact verified quote. Deploy with `npx vercel --prod` when ready.
 

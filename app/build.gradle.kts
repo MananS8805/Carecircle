@@ -75,6 +75,12 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (canSign) signingConfig = signingConfigs.getByName("release")
+            // A throw-away copy of the minified release next to the real app, to smoke-test R8 on a phone:
+            // ./gradlew :app:assembleRelease -Pcarecircle.releaseSuffix=.r8test  (needs that package in google-services.json)
+            (project.findProperty("carecircle.releaseSuffix") as String?)?.let {
+                applicationIdSuffix = it
+                manifestPlaceholders["appLabel"] = "CareCircle R8 test"
+            }
         }
     }
 

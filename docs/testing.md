@@ -44,3 +44,23 @@ on a phone that holds real medicine records you have not backed up.
 
 As of the catch-up work (see `catchup-status.md`) the smoke tests compile (`:app:compileDebugAndroidTestKotlin`) but have **not** been
 run on an emulator or phone, and the CI emulator job has not yet run on GitHub.
+
+
+## Running everything (v2.0.1)
+
+| Layer | Command | Count |
+|---|---|---|
+| Android JVM (domain, contracts, strings) | `./gradlew :app:testDebugUnitTest` | 332 |
+| Backend | `cd backend && npm test && npm run typecheck` | 84 |
+| Firestore rules | `cd firebase/rules-test && npm test` (needs Java) | 44 |
+| On a phone | `./gradlew :app:connectedDebugAndroidTest -Pcarecircle.clone=true` | 72 |
+| Release checks | `scripts/check-release.sh` | 9 checks |
+
+- **Always run the phone tests with `-Pcarecircle.clone=true`.** They wipe the app's data, and this installs them as a separate
+  copy (`com.carecircle.clone`) so your real app and its records are untouched. The copy needs a `com.carecircle.clone` client
+  entry in your local `app/google-services.json` (copy the existing client and change the package name).
+- `ContractTest` compares the app, `firebase/firestore.rules` and the backend field by field. If it fails, one side changed.
+- `RepositoryGuardTest` and `ContractTest.noFunctionThatOnlyReadsContainsADeletingCall` exist because two stray lines in
+  `Repository.adherence()` once ended every family link. A read must never delete.
+- Smoke-test the minified release on a phone without replacing the real app:
+  `./gradlew :app:assembleRelease -Pcarecircle.releaseSuffix=.r8test` (needs that package in `google-services.json`).

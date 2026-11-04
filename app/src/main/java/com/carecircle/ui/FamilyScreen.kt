@@ -52,6 +52,7 @@ import com.carecircle.ui.theme.SoftCard
 @Composable
 fun FamilyScreen(vm: AppViewModel, onBack: () -> Unit) {
     val ctx = LocalContext.current
+    LaunchedEffect(Unit) { CareSync.warmUp(ctx) }
     val configured = remember { CareSync.isConfigured(ctx) }
     val people by vm.people.collectAsStateWithLifecycle()
     val links by vm.syncLinks.collectAsStateWithLifecycle()
@@ -215,7 +216,7 @@ fun FamilyScreen(vm: AppViewModel, onBack: () -> Unit) {
 
 @Composable
 private fun followMessage(r: FollowResult): String = when (r) {
-    is FollowResult.Ok -> stringResource(R.string.family_followed, r.personName)
+    is FollowResult.Ok -> stringResource(R.string.family_followed, r.personName.ifBlank { stringResource(R.string.family_member_fallback) })
     FollowResult.Invalid -> stringResource(R.string.family_err_invalid)
     FollowResult.NotFound -> stringResource(R.string.family_err_notfound)
     FollowResult.Expired -> stringResource(R.string.family_err_expired)
@@ -231,17 +232,18 @@ private fun LinkRow(l: SyncLink, state: LinkState, onRename: () -> Unit, onRemov
     androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
         Text(l.label.ifBlank { stringResource(R.string.family_code_label) + " " + PairingCode.display(l.linkId) }, style = MaterialTheme.typography.titleMedium)
         if (state == LinkState.WAITING) Text(stringResource(R.string.family_code_label) + " " + PairingCode.display(l.linkId), style = MaterialTheme.typography.bodyLarge)
+        val (label, bg, fg) = when (state) {
+            LinkState.LINKED -> Triple(stringResource(R.string.family_state_linked), Palette.GoodSoft, Palette.Good)
+            LinkState.WAITING -> Triple(stringResource(R.string.family_state_waiting), Palette.WarnSoft, Palette.Warn)
+            LinkState.GONE -> Triple(stringResource(R.string.family_state_gone), Palette.Line, Palette.Muted)
+            LinkState.UNKNOWN -> Triple(stringResource(R.string.family_state_unknown), Palette.Line, Palette.Muted)
+        }
+        // The pill has its own line: beside two buttons it left "Stop sharing" one letter wide.
+        Pill(label, bg, fg, Modifier.padding(top = 6.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            val (label, bg, fg) = when (state) {
-                LinkState.LINKED -> Triple(stringResource(R.string.family_state_linked), Palette.GoodSoft, Palette.Good)
-                LinkState.WAITING -> Triple(stringResource(R.string.family_state_waiting), Palette.WarnSoft, Palette.Warn)
-                LinkState.GONE -> Triple(stringResource(R.string.family_state_gone), Palette.Line, Palette.Muted)
-                LinkState.UNKNOWN -> Triple(stringResource(R.string.family_state_unknown), Palette.Line, Palette.Muted)
-            }
-            Pill(label, bg, fg)
+            TextButton(onClick = onRename, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.family_rename), maxLines = 1) }
             androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-            TextButton(onClick = onRename, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.family_rename)) }
-            TextButton(onClick = onRemove, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.family_unlink), color = Palette.Bad) }
+            TextButton(onClick = onRemove, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.family_unlink), color = Palette.Bad, maxLines = 1) }
         }
     }
 }

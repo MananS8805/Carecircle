@@ -89,13 +89,40 @@ object CareSync {
 
     private val db get() = FirebaseFirestore.getInstance()
 
+    /** One sign-in at a time: two overlapping anonymous sign-ins could make two accounts, and a pairing owned by the first would then be refused for the second. */
+    private val signInLock = Mutex()
+    private const val SIGN_IN_MS = 40_000L
+
+    private suspend fun ensureSignedIn(): String? {
+        FirebaseAuth.getInstance().currentUser?.uid?.let { return it }
+        return signInLock.withLock {
+            val auth = FirebaseAuth.getInstance()
+            auth.currentUser?.uid ?: withTimeoutOrNull(SIGN_IN_MS) { auth.signInAnonymously().awaitTask().user?.uid }
+        }
+    }
+
     private suspend fun uid(): String? = try {
-        val auth = FirebaseAuth.getInstance()
-        auth.currentUser?.uid ?: withTimeoutOrNull(NETWORK_MS) { auth.signInAnonymously().awaitTask().user?.uid }
+        ensureSignedIn()
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
         null
+    }
+
+    /**
+     * Signs in ahead of time. The first anonymous sign-in on a fresh install can take 20 seconds, longer than one tap waits,
+     * so the first "Share" or "Follow" used to fail and the second worked. Called when a family screen opens, never at app
+     * start, so phones that do not use family sync make no network call.
+     */
+    suspend fun warmUp(ctx: Context) {
+        if (!isConfigured(ctx)) return
+        try {
+            ensureSignedIn()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // The tap itself retries and reports.
+        }
     }
 
     /** A fresh Firebase ID token for the server to verify, or null when not signed in or offline. */

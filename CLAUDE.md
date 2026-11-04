@@ -124,3 +124,10 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - Acknowledgements: `domain/Acks.kt`. The key is the UTC day plus the dose time, the same on every phone. Parents write `handledSlots` into every link's status; `HandledCache` keeps it per person. Rules: caregiver may only create an ack note, never update it; only the parent reads and deletes.
 - `DiagLog.log(ctx, DiagCode, error?)` takes a code, never a string, and `DiagLogTest` scans the sources for string arguments. Add an event by adding an enum entry. Debug-only things live in `src/debug`, with an empty twin in `src/release`; `scripts/check-release.sh` checks the release build for both.
 - `docs/catchup-status.md` is the honest list of what is verified and what needs a phone.
+
+## v2.0.1 notes
+- `Repository.adherence()` must stay read-only: it once held the "stop sharing" lines and ended every family link on each status update. `RepositoryGuardTest` and `ContractTest` fail if a read path deletes.
+- `ContractTest` ties the app's Firestore field names to `firebase/firestore.rules` and the push request to `backend/lib/notifyMissed.ts`. Change both sides together.
+- Run phone tests with `-Pcarecircle.clone=true` (separate `com.carecircle.clone` copy) so the real app's data is never wiped. See `docs/testing.md`.
+- `CareSync.warmUp()` signs in when a family screen opens (never at app start). All sign-ins go through `ensureSignedIn()`, one at a time.
+- The release signing key lives outside the repo (`~/.carecircle/`). Losing it means every installed copy must be uninstalled to update.

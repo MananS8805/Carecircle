@@ -135,8 +135,6 @@ class Repository(ctx: Context) {
     /** Adherence for one person over the last [days] days, computed from the schedule and stored events. Never touches the network. */
     suspend fun adherence(personId: Long, days: Int, now: Long = System.currentTimeMillis(), zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): AdherenceResult {
         val (from, to) = Adherence.range(java.time.LocalDate.now(zone), days)
-        db.sync().linksFor(personId).forEach { CareSync.unlinkOwner(appCtx, it.linkId) }
-        db.appointments().all().filter { it.personId == personId }.forEach { com.carecircle.reminder.ReminderScheduler.cancelAppointment(appCtx, it.id) }
         val meds = db.medicines().forPersonIncludingArchived(personId)
         val ids = meds.map { it.id }.toSet()
         val events = db.doses().since(from.atStartOfDay(zone).toInstant().toEpochMilli()).filter { it.medicineId in ids }
@@ -175,6 +173,10 @@ class Repository(ctx: Context) {
      */
     suspend fun deletePerson(personId: Long): Boolean {
         if (db.people().count() <= 1) return false
+        // Stop sharing this person and cancel their appointment alarms. This belongs here and nowhere else: it once sat in
+        // adherence(), so every status update ended the family link.
+        db.sync().linksFor(personId).forEach { CareSync.unlinkOwner(appCtx, it.linkId) }
+        db.appointments().all().filter { it.personId == personId }.forEach { com.carecircle.reminder.ReminderScheduler.cancelAppointment(appCtx, it.id) }
         val meds = db.medicines().forPersonIncludingArchived(personId)
         meds.forEach { com.carecircle.reminder.ReminderScheduler.cancel(appCtx, it.id) }
         db.doses().idsForPerson(personId).forEach { com.carecircle.reminder.ReminderScheduler.cancelSnooze(appCtx, it); com.carecircle.reminder.ReminderScheduler.cancelRepeats(appCtx, it) }

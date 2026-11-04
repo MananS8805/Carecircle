@@ -23,3 +23,6 @@ app/google-services.json
 
 # Emulator logs
 *-debug.log
+
+# Shareable builds
+dist/
