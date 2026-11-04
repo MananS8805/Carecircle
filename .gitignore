@@ -20,3 +20,6 @@ local.properties
 backend/.vercel
 backend/node_modules
 app/google-services.json
+
+# Emulator logs
+*-debug.log
