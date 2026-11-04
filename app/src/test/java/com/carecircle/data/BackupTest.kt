@@ -143,4 +143,14 @@ class BackupTest {
         val text = BackupCodec.encode(BackupCodec.build(people + people[0], meds, doses, now))
         assertEquals(BackupParse.Malformed, BackupCodec.decode(text))
     }
+
+    @Test fun refillsRoundTripAndOlderFilesWithoutThemStillImport() {
+        val refills = listOf(RefillEvent(medicineId = 1, date = now - day, quantityAdded = 30, note = "pharmacy"), RefillEvent(medicineId = 9, date = now, quantityAdded = 10))
+        val parsed = BackupCodec.decode(BackupCodec.encode(BackupCodec.build(people, meds, doses, now, refills = refills))) as BackupParse.Ok
+        assertEquals(1, parsed.file.refills.size) // the one for an unknown medicine is dropped
+        assertEquals(30, parsed.file.refills[0].quantityAdded)
+        val old = """{"app":"carecircle","schemaVersion":8,"exportedAt":1,"people":[{"id":1,"name":"Me"}],"medicines":[]}"""
+        val oldParsed = BackupCodec.decode(old) as BackupParse.Ok
+        assertTrue(oldParsed.file.refills.isEmpty())
+    }
 }

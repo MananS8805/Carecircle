@@ -1,5 +1,6 @@
 package com.carecircle.ui
 
+import androidx.compose.foundation.layout.heightIn
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
@@ -89,7 +90,7 @@ private fun PairCard(p: InteractionPair) {
         Text("${p.a.replaceFirstChar { it.uppercase() }}  +  ${p.b.replaceFirstChar { it.uppercase() }}", style = MaterialTheme.typography.titleLarge)
         Text(p.snippet, Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyMedium)
         Text(
-            p.source, Modifier.padding(top = 10.dp).clickable(enabled = p.sourceUrl != null) {
+            p.source, Modifier.heightIn(min = 48.dp).padding(top = 10.dp).clickable(enabled = p.sourceUrl != null, role = androidx.compose.ui.semantics.Role.Button) {
                 ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(p.sourceUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             },
             style = MaterialTheme.typography.bodySmall, color = if (p.sourceUrl != null) Palette.Orange else Palette.Muted,

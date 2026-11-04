@@ -43,6 +43,19 @@ class Prefs(ctx: Context) {
         sp.edit().putString("rescheduleLog", (listOf(line) + old).take(LOG_MAX).joinToString("\n")).apply()
     }
 
+    /** Settings > Display. Not health data, so it survives "Delete all my data" like the language does. */
+    var textSize: String
+        get() = sp.getString("textSize", "normal") ?: "normal"
+        set(v) = sp.edit().putString("textSize", v).apply()
+
+    var highContrast: Boolean
+        get() = sp.getBoolean("highContrast", false)
+        set(v) = sp.edit().putBoolean("highContrast", v).apply()
+
+    var simpleMode: Boolean
+        get() = sp.getBoolean("simpleMode", false)
+        set(v) = sp.edit().putBoolean("simpleMode", v).apply()
+
     fun clearAll() = sp.edit().clear().apply()
 
     companion object {

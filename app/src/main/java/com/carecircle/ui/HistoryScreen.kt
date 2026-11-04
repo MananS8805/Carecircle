@@ -1,5 +1,8 @@
 package com.carecircle.ui
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -127,8 +130,11 @@ private fun DayBars(r: AdherenceResult, selected: LocalDate, onSelect: (LocalDat
     SoftCard(Modifier.fillMaxWidth()) {
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             r.days.forEach { d ->
+                val spoken = stringResource(R.string.cd_history_day, d.date.dayOfMonth.toString(), d.taken, d.missed, d.skipped)
                 Column(
-                    Modifier.clip(RoundedCornerShape(10.dp)).clickable { onSelect(d.date) }
+                    Modifier.clip(RoundedCornerShape(10.dp)).widthIn(min = 48.dp).heightIn(min = 48.dp)
+                        .semantics(mergeDescendants = true) { contentDescription = spoken }
+                        .clickable(role = androidx.compose.ui.semantics.Role.Button) { onSelect(d.date) }
                         .background(if (d.date == selected) Palette.OrangeSoft else Color.Transparent).padding(horizontal = 6.dp, vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {

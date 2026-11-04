@@ -21,6 +21,21 @@ object Messages {
 
     fun smsUri(phone: String?) = "smsto:${phone ?: ""}"
 
+    /** One line of the monthly order: a medicine running low and a 30-day quantity. */
+    data class OrderLine(val label: String, val daysLeft: Int, val quantity: Int)
+
+    data class OrderMed(val name: String, val doseText: String, val pillCount: Int, val pillsPerDose: Int, val timesPerDay: Int, val active: Boolean)
+
+    /**
+     * Medicines with fewer than [thresholdDays] days left and what a [supplyDays]-day supply is. As-needed medicines (no
+     * scheduled times) and removed ones are left out. The user decides whether and where to send it.
+     */
+    fun monthlyOrder(meds: List<OrderMed>, thresholdDays: Int = 10, supplyDays: Int = 30): List<OrderLine> =
+        meds.filter { it.active && it.timesPerDay > 0 }.mapNotNull { m ->
+            val days = Refill.daysLeft(m.pillCount, m.pillsPerDose, m.timesPerDay)
+            if (days >= thresholdDays) null else OrderLine(medicineLabel(m.name, m.doseText), days, m.pillsPerDose.coerceAtLeast(1) * m.timesPerDay * supplyDays)
+        }.sortedBy { it.daysLeft }
+
     /** The medicine as written in a message: "Metformin 500 mg". */
     fun medicineLabel(name: String, dose: String) = listOf(name, dose).filter { it.isNotBlank() }.joinToString(" ")
 }

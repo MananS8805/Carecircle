@@ -15,6 +15,19 @@ class MigrationTest {
     )
 
     @Test
+    fun migrate10To11AddsRefillEventsKeepingMedicines() {
+        helper.createDatabase("mig1011", 10).apply {
+            execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")
+            execSQL("INSERT INTO medicine (id, name, doseText, timesCsv, pillCount, pillsPerDose, salt, patientName, active, foodTiming, personId, createdAt) VALUES (1, 'Telma', '40 mg', '08:00', 30, 1, 'telmisartan', '', 1, 'NONE', 1, 7)")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate("mig1011", 11, true, Migrations.M10_11)
+        db.execSQL("INSERT INTO refill_event (medicineId, date, quantityAdded, note) VALUES (1, 5, 30, '')")
+        db.query("SELECT COUNT(*) FROM refill_event").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
+        db.query("SELECT name FROM medicine").use { it.moveToFirst(); assertEquals("Telma", it.getString(0)) }
+    }
+
+    @Test
     fun migrate9To10AddsVitalsAndAppointments() {
         helper.createDatabase("mig910", 9).apply {
             execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")

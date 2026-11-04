@@ -97,6 +97,36 @@ class Repository(ctx: Context) {
         QuestionResult.Error
     }
 
+    /** What a purchase did: the event to undo and the pill count right after it. */
+    data class RefillOutcome(val eventId: Long, val countAfter: Int, val quantity: Int)
+
+    /** Adds pills and records the purchase in one transaction. Null for a bad quantity or a missing medicine. */
+    suspend fun addRefill(medicineId: Long, quantity: Int, note: String = "", now: Long = System.currentTimeMillis()): RefillOutcome? {
+        if (!com.carecircle.domain.RefillRules.validQuantity(quantity)) return null
+        val out = db.withTransaction {
+            val med = db.medicines().get(medicineId) ?: return@withTransaction null
+            val after = med.pillCount + quantity
+            db.medicines().update(med.copy(pillCount = after))
+            RefillOutcome(db.refills().insert(RefillEvent(medicineId = medicineId, date = now, quantityAdded = quantity, note = note.trim().take(120))), after, quantity)
+        } ?: return null
+        val med = db.medicines().get(medicineId) ?: return out
+        val left = Refill.daysLeft(med.pillCount, med.pillsPerDose, Schedule.parseTimes(med.timesCsv).size)
+        if (!Refill.needsReorder(left)) androidx.core.app.NotificationManagerCompat.from(appCtx).cancel(2_000_000 + medicineId.toInt())
+        return out
+    }
+
+    /** Takes a purchase back, only while the pill count is still what it was right after it. */
+    suspend fun undoRefill(outcome: RefillOutcome): Boolean = db.withTransaction {
+        val ev = db.refills().get(outcome.eventId) ?: return@withTransaction false
+        val med = db.medicines().get(ev.medicineId) ?: return@withTransaction false
+        if (!com.carecircle.domain.RefillRules.canUndo(med.pillCount, outcome.countAfter)) return@withTransaction false
+        db.medicines().update(med.copy(pillCount = med.pillCount - ev.quantityAdded))
+        db.refills().delete(ev.id)
+        true
+    }
+
+    fun refillHistory(medicineId: Long) = db.refills().observeFor(medicineId)
+
     suspend fun savePolicy(personId: Long, r: PolicyResponse, now: Long = System.currentTimeMillis()) {
         val saved = SavedPolicy(r.summary, r.unverified, r.mode, now)
         policyDao.insert(PolicySummaryEntity(savedAt = now, json = ApiFactory.json.encodeToString(saved), personId = personId))
@@ -149,6 +179,7 @@ class Repository(ctx: Context) {
         meds.forEach { com.carecircle.reminder.ReminderScheduler.cancel(appCtx, it.id) }
         db.doses().idsForPerson(personId).forEach { com.carecircle.reminder.ReminderScheduler.cancelSnooze(appCtx, it); com.carecircle.reminder.ReminderScheduler.cancelRepeats(appCtx, it) }
         db.withTransaction {
+            db.refills().deleteForPerson(personId)
             db.symptoms().deleteForPerson(personId)
             db.allergies().deleteForPerson(personId)
             db.vitals().deleteForPerson(personId)

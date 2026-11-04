@@ -36,6 +36,26 @@ object Refill {
     fun needsReorder(daysLeft: Int) = daysLeft <= REORDER_THRESHOLD_DAYS
 }
 
+/** Rules for "I bought more": the allowed quantity, undo, and how often a person usually buys. */
+object RefillRules {
+    const val MAX_QUANTITY = 1000
+    const val MIN_EVENTS_FOR_AVERAGE = 3
+    val QUICK_QUANTITIES = listOf(10, 15, 30)
+
+    fun validQuantity(q: Int) = q in 1..MAX_QUANTITY
+
+    /** Undo only restores the count when nothing else changed it since (a dose taken, an edit). */
+    fun canUndo(currentCount: Int, countRightAfterRefill: Int) = currentCount == countRightAfterRefill
+
+    /** Average whole days between purchases, or null with fewer than three of them. */
+    fun averageDaysBetween(datesMs: List<Long>): Int? {
+        if (datesMs.size < MIN_EVENTS_FOR_AVERAGE) return null
+        val s = datesMs.sorted()
+        val gaps = s.zipWithNext { a, b -> (b - a) / 86_400_000.0 }
+        return Math.round(gaps.average()).toInt()
+    }
+}
+
 object MissedDose {
     const val GRACE_MINUTES = 30L
 

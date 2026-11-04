@@ -37,6 +37,16 @@ data class Medicine(
     val doctorNote: String? = null,                         // the doctor's own instructions, shown above the generic card
 )
 
+/** One purchase of more pills. The pill count is changed by the same amount, and the event can be undone while the count is unchanged. */
+@Entity(tableName = "refill_event", indices = [Index("medicineId")])
+data class RefillEvent(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val medicineId: Long,
+    val date: Long,
+    val quantityAdded: Int,
+    val note: String = "",
+)
+
 /** One side effect the person noticed. Severity: 1 mild, 2 moderate, 3 severe. Stays on the phone. */
 @Entity(tableName = "symptom_log", indices = [Index("medicineId")])
 data class SymptomLog(
@@ -186,6 +196,18 @@ data class Appointment(
     val notes: String = "",
     val remindBefore: Int = 60, // minutes
 )
+
+@Dao
+interface RefillDao {
+    @Query("SELECT * FROM refill_event WHERE medicineId = :medicineId ORDER BY date DESC, id DESC") fun observeFor(medicineId: Long): Flow<List<RefillEvent>>
+    @Query("SELECT * FROM refill_event WHERE medicineId = :medicineId ORDER BY date DESC, id DESC") suspend fun forMedicine(medicineId: Long): List<RefillEvent>
+    @Query("SELECT * FROM refill_event") suspend fun all(): List<RefillEvent>
+    @Query("SELECT * FROM refill_event WHERE id = :id") suspend fun get(id: Long): RefillEvent?
+    @Insert suspend fun insert(e: RefillEvent): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(e: List<RefillEvent>)
+    @Query("DELETE FROM refill_event WHERE id = :id") suspend fun delete(id: Long)
+    @Query("DELETE FROM refill_event WHERE medicineId IN (SELECT id FROM medicine WHERE personId = :personId)") suspend fun deleteForPerson(personId: Long)
+}
 
 @Dao
 interface VitalDao {
@@ -351,7 +373,15 @@ object Migrations {
         }
     }
 
-    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7, M7_8, M8_9, M9_10)
+    /** Refill history. */
+    val M10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS refill_event (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, medicineId INTEGER NOT NULL, date INTEGER NOT NULL, quantityAdded INTEGER NOT NULL, note TEXT NOT NULL)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_refill_event_medicineId ON refill_event (medicineId)")
+        }
+    }
+
+    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7, M7_8, M8_9, M9_10, M10_11)
 }
 
 object Persons {
@@ -361,8 +391,8 @@ object Persons {
 }
 
 @Database(
-    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class, SyncLink::class, Following::class, Allergy::class, VitalLog::class, Appointment::class],
-    version = 10, exportSchema = true,
+    entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class, SyncLink::class, Following::class, Allergy::class, VitalLog::class, Appointment::class, RefillEvent::class],
+    version = 11, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun people(): PersonDao
@@ -376,6 +406,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun allergies(): AllergyDao
     abstract fun vitals(): VitalDao
     abstract fun appointments(): AppointmentDao
+    abstract fun refills(): RefillDao
 
     companion object {
         @Volatile private var inst: AppDb? = null

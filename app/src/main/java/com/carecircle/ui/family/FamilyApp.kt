@@ -1,5 +1,8 @@
 package com.carecircle.ui.family
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.layout.widthIn
 import android.Manifest
 import android.content.Intent
 import android.provider.Settings
@@ -240,7 +243,8 @@ private fun PatientScreen(vm: AppViewModel, linkId: String, onBack: () -> Unit) 
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(name, fontSize = 28.sp, fontWeight = FontWeight.Medium, color = FamilyColors.Ink)
                 Spacer(Modifier.height(14.dp))
-                FRing(FamilyView.fraction(taken, total), 200.dp, 20.dp, color, Modifier.clickable { ringFlip = !ringFlip }) {
+                val ringSpoken = stringResource(R.string.cd_family_ring, taken, total)
+                FRing(FamilyView.fraction(taken, total), 200.dp, 20.dp, color, Modifier.semantics(mergeDescendants = true) { contentDescription = ringSpoken }.clickable(role = androidx.compose.ui.semantics.Role.Button) { ringFlip = !ringFlip }) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         val s = status
                         if (ringFlip && s != null) {
@@ -288,8 +292,11 @@ private fun PatientScreen(vm: AppViewModel, linkId: String, onBack: () -> Unit) 
                 val maxTotal = (days.maxOfOrNull { it.total } ?: 1).coerceAtLeast(1)
                 Row(Modifier.padding(top = 10.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     days.forEach { d ->
+                        val spoken = stringResource(R.string.cd_history_day, d.date.dayOfMonth.toString(), d.taken, d.missed, d.skipped)
                         Column(
-                            Modifier.clip(RoundedCornerShape(10.dp)).clickable { pickedDay = d.date }
+                            Modifier.clip(RoundedCornerShape(10.dp)).widthIn(min = 48.dp).heightIn(min = 48.dp)
+                                .semantics(mergeDescendants = true) { contentDescription = spoken }
+                                .clickable(role = androidx.compose.ui.semantics.Role.Button) { pickedDay = d.date }
                                 .background(if (d.date == pickedDay) FamilyColors.TealSoft else Color.Transparent).padding(horizontal = 5.dp, vertical = 4.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {

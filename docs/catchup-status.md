@@ -24,3 +24,9 @@ Baseline before starting (2026-11-04): backend 39 tests and typecheck green; And
 | A2 | "Ask about your policy" UI, consent each time, prefill from tag | done | `ui/AskPolicy.kt`. Clauses sent are the saved summary quotes (the document itself is never kept on the phone) |
 | A3 | Daily LLM budget, JSON request log, `/health` | done | `budget.ts`, `log.ts`, `health.ts`, `budget.test.ts`. Default store is per-instance memory; see `docs/backend-production.md` |
 | G2 | Claim card + backend confidence/clauseRef/excerpt | done early in A2 | `domain/ClaimAnswer.kt`, `ClaimAnswerTest` |
+| B1 | Home-screen widget | done, **RemoteViews instead of Glance** | `reminder/DoseWidget.kt`, `domain/NextDose.kt`, `NextDoseTest`. No new dependency; same states (due, upcoming, +N more, all done with tomorrow, empty, overdue) |
+| B2 | Refill history, "I bought more", undo | done | `RefillEvent`, migration 10 to 11, `RefillUi.kt`, `RefillTest`, `MigrationTest` (instrumented, not run) |
+| B2 | Monthly order message | done | `Messages.monthlyOrder` + button on Medicines; user-initiated share only |
+| B2 | Backup / delete-all with refills | done | backup version 9, `BackupTest`; old files still import |
+| B3 | Text size, high contrast, Simple mode | done | `domain/Display.kt`, `DisplayTest`, Settings > Display |
+| B3 | Screen audit and semantics tests | partial | dose rows, Taken, source links, chart days and the family ring fixed; `AccessibilityTest` compiles but has not run. A full TalkBack walk-through of every screen is **needs a device** |

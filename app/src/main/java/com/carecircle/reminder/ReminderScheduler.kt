@@ -70,6 +70,8 @@ object ReminderScheduler {
     suspend fun rescheduleAll(ctx: Context, reason: String): Int {
         val armed = scheduleAll(ctx)
         com.carecircle.data.Prefs(ctx).logReschedule(System.currentTimeMillis(), reason, armed)
+        DoseWidget.scheduleMidnightRefresh(ctx)
+        DoseWidget.refreshAll(ctx)
         return armed
     }
 

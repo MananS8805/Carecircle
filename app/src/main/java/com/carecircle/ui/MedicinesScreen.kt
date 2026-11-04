@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,6 +75,7 @@ fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit,
         }
         item { BigButton(stringResource(R.string.meds_add), onAdd, icon = Icons.Default.Add) }
         item { SoftButton(stringResource(R.string.inter_button), onInteractions, Modifier.fillMaxWidth(), icon = Icons.Default.CompareArrows) }
+        item { MonthlyOrderButton(vm, meds, scope) }
         if (meds.isEmpty()) item { Muted(stringResource(R.string.meds_empty)) }
         items(meds, key = { it.id }) { m ->
             val left = vm.repo.daysLeft(m)
@@ -99,4 +101,29 @@ fun MedicinesScreen(vm: AppViewModel, onAdd: () -> Unit, onOpen: (Long) -> Unit,
             }
         }
     }
+}
+
+/** One pre-filled message listing what is running low, with a 30-day quantity. Sent only when the user taps send in WhatsApp or the share sheet. */
+@Composable
+private fun MonthlyOrderButton(vm: AppViewModel, meds: List<com.carecircle.data.Medicine>, person: com.carecircle.data.Person?) {
+    val ctx = LocalContext.current
+    val lines = com.carecircle.domain.Messages.monthlyOrder(
+        meds.map { com.carecircle.domain.Messages.OrderMed(it.name, it.doseText, it.pillCount, it.pillsPerDose, com.carecircle.domain.Schedule.parseTimes(it.timesCsv).size, it.active) },
+    )
+    var none by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    SoftButton(stringResource(R.string.monthly_order), {
+        if (lines.isEmpty()) { none = true; return@SoftButton }
+        none = false
+        val who = person?.name ?: ctx.getString(R.string.family_member_fallback)
+        val text = buildString {
+            append(ctx.getString(R.string.monthly_header, who))
+            lines.forEach { append("\n").append(ctx.getString(R.string.monthly_line, it.label, it.daysLeft, it.quantity)) }
+            append("\n").append(ctx.getString(R.string.monthly_footer))
+        }
+        val phone = com.carecircle.domain.Messages.normalizePhone(person?.pharmacyPhone.orEmpty())
+        val intent = if (phone != null) android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(com.carecircle.domain.Messages.whatsAppUrl(phone, text)))
+        else android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT, text), ctx.getString(R.string.monthly_order))
+        ctx.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+    }, Modifier.fillMaxWidth())
+    if (none) Muted(stringResource(R.string.monthly_none))
 }

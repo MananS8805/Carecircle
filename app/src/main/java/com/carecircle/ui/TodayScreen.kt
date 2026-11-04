@@ -32,6 +32,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -58,6 +62,8 @@ import com.carecircle.ui.theme.SoftCard
 @Composable
 fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit, onVitals: () -> Unit, onAppointments: () -> Unit) {
     val doses by vm.today.collectAsStateWithLifecycle()
+    val display by vm.display.collectAsStateWithLifecycle()
+    val simple = display.simpleMode
     val groups by vm.bodyMap.collectAsStateWithLifecycle()
     val status by rememberReminderStatus()
     val ctx = LocalContext.current
@@ -78,9 +84,9 @@ fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit, onVitals: () -> Unit, o
     ) {
         item {
             BrandRow {
-                IconButton(onClick = onAppointments) { Icon(Icons.Default.Event, stringResource(R.string.appt_title)) }
-                IconButton(onClick = onVitals) { Icon(Icons.Default.MonitorHeart, stringResource(R.string.vitals_title)) }
-                IconButton(onClick = onHistory) { Icon(Icons.Default.History, stringResource(R.string.cd_history)) }
+                if (!simple) IconButton(onClick = onAppointments) { Icon(Icons.Default.Event, stringResource(R.string.appt_title)) }
+                if (!simple) IconButton(onClick = onVitals) { Icon(Icons.Default.MonitorHeart, stringResource(R.string.vitals_title)) }
+                if (!simple) IconButton(onClick = onHistory) { Icon(Icons.Default.History, stringResource(R.string.cd_history)) }
             }
         }
         item { PersonSwitcher(vm, allowAll = true) }
@@ -109,7 +115,7 @@ fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit, onVitals: () -> Unit, o
                 SoftButton(stringResource(R.string.banner_fix), { onboarding = true }, Modifier.padding(top = 10.dp))
             }
         }
-        item { OrganHero(groups, taken, doses.size, next) }
+        if (!simple) item { OrganHero(groups, taken, doses.size, next) }
         item { Text(stringResource(R.string.today_doses), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 6.dp)) }
         if (doses.isEmpty()) item { Muted(stringResource(R.string.today_empty)) }
         val groups = if (showAll) people.map { p -> p to doses.filter { it.med.personId == p.id } }.filter { it.second.isNotEmpty() }
@@ -120,7 +126,7 @@ fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit, onVitals: () -> Unit, o
             }
             items(list, key = { "${it.med.id}-${it.scheduledAt}" }) { d ->
                 val owner = person ?: people.firstOrNull { it.id == d.med.personId }
-                DoseCard(d, vm, owner, onAlert = {
+                DoseCard(d, vm, owner, simple, onAlert = {
                     val who = owner?.name ?: ctx.getString(R.string.family_member_fallback)
                     val text = ctx.getString(R.string.msg_missed, who, Messages.medicineLabel(d.med.name, d.med.doseText), Fmt.time(d.scheduledAt))
                     val url = Messages.whatsAppUrl(Messages.normalizePhone(owner?.caregiverPhone.orEmpty()), text)
@@ -134,8 +140,12 @@ fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit, onVitals: () -> Unit, o
     if (onboarding) OnboardingDialog(status, onDone = { vm.prefs.onboardingDone = true; onboarding = false })
 }
 
+/** The dose row reads as one sentence and is a live region, so a change to Taken is announced. */
+internal fun Modifier.doseRowSemantics(spoken: String): Modifier =
+    semantics(mergeDescendants = true) { contentDescription = spoken; liveRegion = LiveRegionMode.Polite }
+
 @Composable
-private fun DoseCard(d: TodayItem, vm: AppViewModel, owner: Person?, onAlert: () -> Unit) {
+private fun DoseCard(d: TodayItem, vm: AppViewModel, owner: Person?, simple: Boolean, onAlert: () -> Unit) {
     val (label, bg, fg) = when (d.status) {
         DoseStatus.TAKEN -> Triple(stringResource(R.string.status_taken), Palette.GoodSoft, Palette.Good)
         DoseStatus.SKIPPED -> Triple(stringResource(R.string.status_skipped), Palette.Line, Palette.Muted)
@@ -143,7 +153,9 @@ private fun DoseCard(d: TodayItem, vm: AppViewModel, owner: Person?, onAlert: ()
         DoseStatus.DUE -> Triple(stringResource(R.string.status_due), Palette.OrangeSoft, Palette.Orange)
         DoseStatus.UPCOMING -> Triple(stringResource(R.string.status_upcoming), Palette.Line, Palette.Muted)
     }
-    SoftCard(Modifier.fillMaxWidth()) {
+    // One spoken sentence per dose, e.g. "Metformin 500 mg, 8:00 AM, Due now". A live region, so a change to Taken is announced.
+    val spoken = stringResource(R.string.cd_dose_row, Messages.medicineLabel(d.med.name, d.med.doseText), Fmt.time(d.scheduledAt), label)
+    SoftCard(Modifier.fillMaxWidth().doseRowSemantics(spoken)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(Fmt.time(d.scheduledAt), fontSize = 30.sp, fontWeight = FontWeight.Light, modifier = Modifier.weight(1f))
             Pill(label, bg, fg)
@@ -154,15 +166,16 @@ private fun DoseCard(d: TodayItem, vm: AppViewModel, owner: Person?, onAlert: ()
                 .filter { it.isNotBlank() }.joinToString("  -  "),
             style = MaterialTheme.typography.bodyMedium, color = Palette.Muted,
         )
-        ExpiryPill(d.med.expiry, Modifier.padding(top = 8.dp), onlyWhenAttention = true)
+        if (!simple) ExpiryPill(d.med.expiry, Modifier.padding(top = 8.dp), onlyWhenAttention = true)
         if (d.med.expiry?.let { Expiry.parseTyped(it) }?.let { Expiry.status(it, java.time.LocalDate.now()) } == ExpiryStatus.EXPIRED) {
             Text(stringResource(R.string.expiry_warning), Modifier.padding(top = 6.dp), style = MaterialTheme.typography.bodyMedium, color = Palette.Bad)
         }
-        FoodTiming.fromKey(d.med.foodTiming).takeIf { it != FoodTiming.NONE }?.let {
+        FoodTiming.fromKey(d.med.foodTiming).takeIf { it != FoodTiming.NONE && !simple }?.let {
             Pill(stringResource(it.labelRes()), Palette.Canvas, Palette.Ink, Modifier.padding(top = 8.dp))
         }
         if (d.status == DoseStatus.DUE || d.status == DoseStatus.MISSED) {
-            BigButton(stringResource(R.string.action_taken), { vm.markTaken(d) }, Modifier.padding(top = 12.dp))
+            val takenFor = stringResource(R.string.cd_taken_for, d.med.name)
+            BigButton(stringResource(R.string.action_taken), { vm.markTaken(d) }, Modifier.padding(top = 12.dp).semantics { contentDescription = takenFor })
             TextButton(onClick = { vm.skip(d) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_skip), color = Palette.Muted) }
         }
         if (d.status == DoseStatus.MISSED) {

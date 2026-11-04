@@ -24,6 +24,7 @@ Every version is a git tag (`v0.1` ... `v0.6`); see [CHANGELOG.md](CHANGELOG.md)
 | v0.6 | Condition tags with cited policy notes, voice entry of medicines, adherence history and PDF report |
 | v0.7 to v1.3.1 | Medicine card extras, escalation, Firebase caregiver sync, family app, safety flags, reminders health check, widget, vitals and appointments (see CHANGELOG) |
 | v1.4 | Reminder reliability (re-arm on reboot / time change, safety net), cited policy Q&A, backend spend cap and `/health` |
+| v1.5 | Widget states, refill history and monthly order, text size / high contrast / Simple mode |
 
 ## Run the Android app
 

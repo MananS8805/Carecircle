@@ -16,8 +16,8 @@ android {
         applicationId = "com.carecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.4.0"
+        versionCode = 15
+        versionName = "1.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Deployed Vercel URL of /backend. Override in local.properties: careCircleApi=https://your-app.vercel.app/
         val api = (project.findProperty("careCircleApi") as String?) ?: "https://carecircle-api.example.vercel.app/"
@@ -108,6 +108,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation(composeBom)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     androidTestImplementation("androidx.room:room-testing:2.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")

@@ -1,5 +1,6 @@
 package com.carecircle.ui
 
+import androidx.compose.foundation.layout.heightIn
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
@@ -59,7 +60,8 @@ import com.carecircle.ui.theme.SoftCard
 @Composable
 fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () -> Unit, onOpenInsurance: () -> Unit) {
     var med by remember { mutableStateOf<Medicine?>(null) }
-    LaunchedEffect(id) { med = vm.repo.medicines.get(id) }
+    var scopeReload by remember { mutableStateOf(0) }
+    LaunchedEffect(id, scopeReload) { med = vm.repo.medicines.get(id) }
     val card by vm.card.collectAsStateWithLifecycle()
     val loading by vm.loading.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
@@ -102,7 +104,6 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
             Column {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SoftButton(stringResource(R.string.action_edit), { onEdit(m.id) })
-                SoftButton(stringResource(R.string.action_add_pills), { vm.refillAdd(m, 30); onBack() })
                 SoftButton(stringResource(R.string.action_reorder), {
                     val who = owner?.name ?: ctx.getString(R.string.family_member_fallback)
                     val text = ctx.getString(R.string.msg_reorder, Messages.medicineLabel(m.name, m.doseText), who, left)
@@ -129,6 +130,7 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
                 }
             }
         }
+        item { RefillSection(vm, m) { scopeReload++ } }
         item { DoctorNoteCard(m, vm) { med = it } }
         if (suggestion != null) item {
             SoftCard(Modifier.fillMaxWidth(), tint = Palette.OrangeSoft) {
@@ -244,7 +246,7 @@ private fun InfoCard(c: MedicineCard) {
         Text(stringResource(R.string.info_sources), Modifier.padding(top = 12.dp), style = MaterialTheme.typography.labelMedium, color = Palette.Muted)
         c.sources.forEach { s ->
             Text(
-                s.name, Modifier.padding(vertical = 4.dp).clickable(enabled = s.url != null) {
+                s.name, Modifier.heightIn(min = 48.dp).padding(vertical = 4.dp).clickable(enabled = s.url != null, role = androidx.compose.ui.semantics.Role.Button) {
                     ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(s.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 },
                 style = MaterialTheme.typography.bodySmall, color = if (s.url != null) Palette.Orange else Palette.Muted,

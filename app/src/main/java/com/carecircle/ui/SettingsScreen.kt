@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -78,6 +79,8 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () ->
         }
 
         LanguageCard(vm)
+
+        DisplayCard(vm)
 
         AiCard()
 
@@ -173,6 +176,47 @@ private fun LanguageCard(vm: AppViewModel) {
                 )
             }
         }
+    }
+}
+
+/** Text size, high contrast and simple mode. Each applies at once and is remembered. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DisplayCard(vm: AppViewModel) {
+    val d by vm.display.collectAsStateWithLifecycle()
+    SoftCard(Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.display_title), style = MaterialTheme.typography.titleLarge)
+        Muted(stringResource(R.string.display_text_size), Modifier.padding(top = 8.dp))
+        FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                com.carecircle.domain.TextSize.NORMAL to R.string.size_normal,
+                com.carecircle.domain.TextSize.LARGE to R.string.size_large,
+                com.carecircle.domain.TextSize.EXTRA_LARGE to R.string.size_xl,
+            ).forEach { (size, label) ->
+                FilterChip(
+                    selected = d.textSize == size, onClick = { vm.setTextSize(size) }, label = { Text(stringResource(label)) },
+                    modifier = Modifier.heightIn(min = 48.dp), shape = CircleShape,
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Palette.Ink, selectedLabelColor = Color.White),
+                )
+            }
+        }
+        DisplaySwitch(stringResource(R.string.display_contrast), stringResource(R.string.display_contrast_hint), d.highContrast, vm::setHighContrast)
+        DisplaySwitch(stringResource(R.string.display_simple), stringResource(R.string.display_simple_hint), d.simpleMode, vm::setSimpleMode)
+    }
+}
+
+@Composable
+private fun DisplaySwitch(title: String, hint: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(top = 8.dp)
+            .toggleable(value = checked, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Muted(hint)
+        }
+        androidx.compose.material3.Switch(checked = checked, onCheckedChange = null)
     }
 }
 

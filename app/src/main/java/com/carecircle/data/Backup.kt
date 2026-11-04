@@ -3,6 +3,7 @@ package com.carecircle.data
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.WorkManager
+import com.carecircle.domain.RefillRules
 import com.carecircle.reminder.ReminderScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,6 +45,10 @@ data class BackupVital(val personId: Long, val kind: String, val v1: Double, val
 @Serializable
 data class BackupAppointment(val personId: Long, val title: String, val doctor: String = "", val startsAt: Long, val notes: String = "", val remindBefore: Int = 60)
 
+/** A purchase of more pills. Added in backup version 9. */
+@Serializable
+data class BackupRefill(val medicineId: Long, val date: Long, val quantityAdded: Int, val note: String = "")
+
 /** An allergy of a person. Added in backup version 6. */
 @Serializable
 data class BackupAllergy(val personId: Long, val name: String)
@@ -82,6 +87,7 @@ data class BackupFile(
     val allergies: List<BackupAllergy> = emptyList(),
     val vitals: List<BackupVital> = emptyList(),
     val appointments: List<BackupAppointment> = emptyList(),
+    val refills: List<BackupRefill> = emptyList(),
 )
 
 sealed interface BackupParse {
@@ -94,7 +100,7 @@ sealed interface BackupParse {
 /** Pure JSON encode / decode / validation, so it can be unit-tested on the JVM. */
 object BackupCodec {
     const val APP_ID = "carecircle"
-    const val CURRENT_VERSION = 8
+    const val CURRENT_VERSION = 9
     const val HISTORY_DAYS = 90
     const val MAX_BYTES = 10 * 1024 * 1024
 
@@ -109,6 +115,7 @@ object BackupCodec {
         allergies: List<Allergy> = emptyList(),
         vitals: List<VitalLog> = emptyList(),
         appointments: List<Appointment> = emptyList(),
+        refills: List<RefillEvent> = emptyList(),
     ): BackupFile {
         val from = now - HISTORY_DAYS * 24L * 3600_000L
         val ids = meds.map { it.id }.toSet()
@@ -125,6 +132,7 @@ object BackupCodec {
             allergies = allergies.filter { it.name.isNotBlank() }.map { BackupAllergy(it.personId, it.name.take(60)) },
             vitals = vitals.map { BackupVital(it.personId, it.kind, it.v1, it.v2, it.measuredAt, it.note) },
             appointments = appointments.map { BackupAppointment(it.personId, it.title, it.doctor, it.startsAt, it.notes, it.remindBefore) },
+            refills = refills.filter { it.medicineId in ids }.map { BackupRefill(it.medicineId, it.date, it.quantityAdded, it.note.take(120)) },
         )
     }
 
@@ -172,6 +180,7 @@ object BackupCodec {
         if (f.medicines.any { it.name.isBlank() || it.pillCount < 0 || it.pillsPerDose < 1 }) return false
         if (f.doses.any { it.medicineId !in ids }) return false
         if (f.symptoms.any { it.medicineId !in ids || it.severity !in 1..3 }) return false
+        if (f.refills.any { it.medicineId !in ids || it.quantityAdded !in 1..RefillRules.MAX_QUANTITY }) return false
         val pids = f.people.map { it.id }
         if (pids.any { it <= 0 } || pids.toSet().size != pids.size) return false
         if (f.people.any { it.name.isBlank() }) return false
@@ -188,7 +197,7 @@ class BackupService(private val ctx: Context) {
         val file = BackupCodec.build(
             db.people().all(), db.medicines().allIncludingArchived(), db.doses().since(now - BackupCodec.HISTORY_DAYS * 24L * 3600_000L), now,
             db.policies().all(), db.symptoms().all(), db.allergies().all(),
-            db.vitals().all(), db.appointments().all(),
+            db.vitals().all(), db.appointments().all(), db.refills().all(),
         )
         out.use { it.write(BackupCodec.encode(file).toByteArray(Charsets.UTF_8)) }
     }
@@ -227,6 +236,7 @@ class BackupService(private val ctx: Context) {
         db.doses().insertAll(file.doses.map { DoseEvent(medicineId = it.medicineId, scheduledAt = it.scheduledAt, takenAt = it.takenAt, missedHandled = it.missedHandled, skipped = it.skipped) })
         db.vitals().insertAll(file.vitals.map { VitalLog(personId = it.personId, kind = it.kind, v1 = it.v1, v2 = it.v2, measuredAt = it.measuredAt, note = it.note) })
         db.appointments().insertAll(file.appointments.map { Appointment(personId = it.personId, title = it.title, doctor = it.doctor, startsAt = it.startsAt, notes = it.notes, remindBefore = it.remindBefore) })
+        db.refills().insertAll(file.refills.map { RefillEvent(medicineId = it.medicineId, date = it.date, quantityAdded = it.quantityAdded, note = it.note) })
         db.allergies().insertAll(file.allergies.map { Allergy(personId = it.personId, name = it.name) })
         db.symptoms().insertAll(file.symptoms.map { SymptomLog(medicineId = it.medicineId, loggedAt = it.loggedAt, symptom = it.symptom, severity = it.severity, note = it.note) })
         db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json, personId = it.personId) })
@@ -240,8 +250,10 @@ class BackupService(private val ctx: Context) {
         cancelEverything()
         db.clearAllTables()
         val language = prefs.language
+        val (size, contrast, simple) = Triple(prefs.textSize, prefs.highContrast, prefs.simpleMode)
         prefs.clearAll()
         prefs.language = language // a language choice is not health data
+        prefs.textSize = size; prefs.highContrast = contrast; prefs.simpleMode = simple // neither is how the app looks
         db.people().insert(Person(id = 1, name = Persons.DEFAULT_NAME))
         ctx.cacheDir.listFiles()?.forEach { it.delete() }
     }

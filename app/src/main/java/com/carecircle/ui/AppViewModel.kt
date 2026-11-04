@@ -256,15 +256,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val withPerson = if (stamped.personId > 0) stamped else stamped.copy(personId = scopePerson.value?.id ?: repo.ensureDefaultPerson().id)
         val id = if (m.id == 0L) repo.medicines.insert(withPerson) else { repo.medicines.update(withPerson); m.id }
         ReminderScheduler.scheduleFor(getApplication(), id)
+        com.carecircle.reminder.DoseWidget.refreshAll(getApplication())
         onDone(id)
     }
 
     fun archive(id: Long) = viewModelScope.launch {
         repo.medicines.archive(id, System.currentTimeMillis())
         ReminderScheduler.cancel(getApplication(), id)
+        com.carecircle.reminder.DoseWidget.refreshAll(getApplication())
     }
 
-    fun refillAdd(m: Medicine, pills: Int) = viewModelScope.launch { repo.medicines.update(m.copy(pillCount = m.pillCount + pills)) }
+    fun refillHistory(medicineId: Long) = repo.refillHistory(medicineId)
+
+    fun boughtMore(medicineId: Long, quantity: Int, note: String, onDone: (Repository.RefillOutcome?) -> Unit) = viewModelScope.launch {
+        onDone(repo.addRefill(medicineId, quantity, note))
+    }
+
+    fun undoRefill(outcome: Repository.RefillOutcome, onDone: (Boolean) -> Unit) = viewModelScope.launch { onDone(repo.undoRefill(outcome)) }
 
     private val _card = MutableStateFlow<CardResult?>(null)
     val card: StateFlow<CardResult?> = _card
@@ -368,6 +376,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         repo.deletePolicy(id)
         if ((_insurance.value as? InsuranceState.Result)?.savedId == id) _insurance.value = InsuranceState.Idle
     }
+
+    // ---- Display (text size, high contrast, simple mode) ----
+    private val _display = MutableStateFlow(com.carecircle.domain.DisplayPrefs(com.carecircle.domain.TextSize.fromKey(prefs.textSize), prefs.highContrast, prefs.simpleMode))
+    val display: StateFlow<com.carecircle.domain.DisplayPrefs> = _display
+
+    fun setTextSize(size: com.carecircle.domain.TextSize) { prefs.textSize = size.key; _display.value = _display.value.copy(textSize = size) }
+    fun setHighContrast(on: Boolean) { prefs.highContrast = on; _display.value = _display.value.copy(highContrast = on) }
+    fun setSimpleMode(on: Boolean) { prefs.simpleMode = on; _display.value = _display.value.copy(simpleMode = on) }
 
     // ---- Ask about your policy ----
     private val _ask = MutableStateFlow<AskState>(AskState.Idle)

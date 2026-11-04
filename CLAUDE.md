@@ -92,3 +92,8 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - Everything that changes alarms goes through `ReminderScheduler.rescheduleAll(ctx, reason)` (logged in `Prefs.rescheduleLog`) or `RescheduleWorker.enqueue`. Do not call `scheduleAll` directly.
 - Policy Q&A: `domain/ClaimAnswer.kt` is the phone-side second check; the server (`backend/lib/policyQuestion.ts`) verifies quotes first. Never show a covered or not-covered verdict without a verified source clause.
 - Backend: all LLM calls go through `lib/llm.ts` so spend is recorded; `lib/log.ts` can only write its fixed field list. The catch-up plan and its status live in `docs/catchup-status.md`.
+
+## v1.5 notes
+- Accessibility conventions: every clickable has a content description or merged text; secondary targets are at least 48 dp, the main Taken button at least 56 dp; status is never colour alone (icon or text too); a dose row is one merged sentence (`Modifier.doseRowSemantics`) and a live region; check new screens at Extra large text, high contrast and Simple mode, in Hindi and Gujarati.
+- `Palette` reads `Palette.highContrast` from Compose state, so never cache a Palette colour in a top-level `val`; use a getter. High-contrast hex values live in `domain/Display.kt` and are contrast-tested.
+- The widget is RemoteViews, not Glance: no extra dependency, and the same states are covered by `NextDoseTest`. All refills go through `Repository.addRefill` / `undoRefill`.
