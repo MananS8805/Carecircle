@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CareCircle privacy policy</title>
+<style>body{font:16px/1.55 system-ui,sans-serif;max-width:46rem;margin:0 auto;padding:1rem;color:#111}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:.4rem;text-align:left;vertical-align:top}code{background:#f1f1f3;padding:0 .2rem}@media(prefers-color-scheme:dark){body{background:#111;color:#eee}th,td{border-color:#444}code{background:#222}}</style>
+</head><body>
+<h1>CareCircle privacy policy</h1>
+<p><em>Draft for review. Have this reviewed by a lawyer before publishing it or linking it from a store listing. It describes what the app does today and does not claim compliance with any particular law.</em></p>
+<p>Contact: TODO (set <code>SUPPORT<em>EMAIL</code> in <code>gradle.properties</code>) Published at: TODO (set <code>PRIVACY</em>URL</code>; <code>npm run build:privacy</code> in <code>backend/</code> generates <code>public/privacy.html</code> from this file)</p>
+<h2>The short version</h2>
+<p>CareCircle keeps your medicines, doses, notes and health readings on your phone. It sends a little information to a server only when you use a feature that needs it, and the table below lists every case. Nothing is sold, there is no advertising and no analytics.</p>
+<p>CareCircle is informational. It is not medical advice and it is not an insurance claim decision.</p>
+<h2>What stays on your phone</h2>
+<p>People and their names, medicines, doses and dose history, side-effect diary, allergies, health readings (blood pressure, sugar, pulse, weight, temperature), appointments, refill history, saved insurance summaries, caregiver and pharmacy phone numbers, settings, and the reminder refresh log. Photos of medicine strips and of insurance papers are read on the phone and are not kept or uploaded.</p>
+<h2>What can leave your phone, and when</h2>
+<table><thead><tr><th>What</th><th>When</th><th>What is sent</th><th>Where it goes</th></tr></thead><tbody>
+<tr><td><code>GET /api/medicine-info</code></td><td>You open a medicine card</td><td>The generic ingredient name only (for example "paracetamol")</td><td>CareCircle server, which reads public sources (RxNorm, openFDA label, MedlinePlus) and may rewrite the label text with an AI provider. No name of yours or of the person is sent</td></tr>
+<tr><td><code>GET /api/interactions</code></td><td>You run the interaction check</td><td>The generic ingredient names of the selected medicines</td><td>CareCircle server (same public sources)</td></tr>
+<tr><td><code>POST /api/policy-summary</code></td><td>You add an insurance policy, after a consent screen shown every time</td><td>The text read from the policy pages</td><td>CareCircle server, which may use an AI provider to find items. Not stored, not logged</td></tr>
+<tr><td><code>POST /api/policy-question</code></td><td>You ask about your policy, after a consent screen shown every time</td><td>Your question and the saved clause quotes (page, clause number, quote)</td><td>CareCircle server, which may use an AI provider. Not stored, not logged</td></tr>
+<tr><td>Family sync (Firebase)</td><td>Only if you create a code to share a person, or enter a code to follow someone</td><td>An anonymous sign-in; for the shared person: first name, medicine name and dose label, taken / missed / skipped, times, and daily counts</td><td>Google Firebase (Authentication and Firestore). Stopping sharing deletes it</td></tr>
+<tr><td>Voice entry</td><td>You tap the microphone button</td><td>Nothing from CareCircle. Your phone's speech service listens and may process audio online under its own policy. CareCircle only receives the text</td><td>Your phone's speech service</td></tr>
+<tr><td>WhatsApp, SMS and sharing</td><td>You tap a message or share button</td><td>A message you can read and edit first</td><td>The app you pick. CareCircle never sends it by itself</td></tr>
+</tbody></table>
+<h2>What the server logs</h2>
+<p>For each request: the endpoint name, the status, how long it took, whether the answer came from cache and token counts. It does not log what you sent, medicine names, questions, document text or IP addresses. Network providers and Vercel keep their own infrastructure logs under their policies.</p>
+<h2>What is never sent</h2>
+<p>Photos, caregiver and pharmacy phone numbers, allergies, health readings, appointments, notes, refill history, and the contents of a backup file.</p>
+<h2>Your controls</h2>
+<ul>
+<li>Settings &gt; Delete all my data removes everything on the phone, stops sharing, and cancels reminders.</li>
+<li>Remove a person from Family sync to delete what was shared about them.</li>
+<li>Export a backup, or restore one, from Settings. A backup stays in the place you save it, and you can lock it with a password (a lost password cannot be recovered).</li>
+<li>Each upload of insurance text or a policy question needs your confirmation on a screen that says what will be sent.</li>
+</ul>
+<h2>Children</h2>
+<p>CareCircle is meant for adults managing medicines for themselves or for family members.</p>
+<h2>Changes</h2>
+<p>If this policy changes, the new version is published at the address above and the app's Privacy page is updated in the same release.</p>
+</body></html>

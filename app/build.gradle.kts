@@ -16,12 +16,15 @@ android {
         applicationId = "com.carecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "1.5.0"
+        versionCode = 16
+        versionName = "1.6.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Deployed Vercel URL of /backend. Override in local.properties: careCircleApi=https://your-app.vercel.app/
         val api = (project.findProperty("careCircleApi") as String?) ?: "https://carecircle-api.example.vercel.app/"
         buildConfigField("String", "API_BASE_URL", "\"$api\"")
+        // TODO(release): set careCircleSupportEmail and careCirclePrivacyUrl in gradle.properties.
+        buildConfigField("String", "SUPPORT_EMAIL", "\"${(project.findProperty("careCircleSupportEmail") as String?) ?: ""}\"")
+        buildConfigField("String", "PRIVACY_URL", "\"${(project.findProperty("careCirclePrivacyUrl") as String?) ?: ""}\"")
         buildConfigField("String", "APP_KEY", "\"${(project.findProperty("careCircleAppKey") as String?) ?: ""}\"")
     }
     buildFeatures { compose = true; buildConfig = true }

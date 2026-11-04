@@ -377,6 +377,60 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if ((_insurance.value as? InsuranceState.Result)?.savedId == id) _insurance.value = InsuranceState.Idle
     }
 
+    // ---- First-run guide ----
+    private val _guide = MutableStateFlow<com.carecircle.domain.OnboardingState?>(null)
+    /** null while it is being worked out. */
+    val guide: StateFlow<com.carecircle.domain.OnboardingState?> = _guide
+    private var guideHasPerson = false
+    /** Set by the guide's "Say it" button; the add-medicine screen opens its voice prompt once. */
+    val startWithVoice = MutableStateFlow(false)
+
+    init { loadGuide() }
+
+    private fun currentVersion() = com.carecircle.BuildConfig.VERSION_CODE
+
+    fun loadGuide() = viewModelScope.launch {
+        val people = repo.people.all()
+        guideHasPerson = people.any { it.name != Persons.DEFAULT_NAME || it.caregiverPhone.isNotBlank() }
+        _guide.value = com.carecircle.domain.Onboarding.onboardingState(
+            com.carecircle.domain.OnboardingInputs(
+                guideDone = prefs.guideDone, savedStep = prefs.guideStep, legacyOnboardingDone = prefs.onboardingDone,
+                hasMedicines = repo.medicines.all().isNotEmpty(), hasPersonDetails = guideHasPerson, whatsNewSeen = prefs.whatsNewSeen >= currentVersion(),
+            ),
+        )
+    }
+
+    fun reloadGuide() { loadGuide() }
+
+    fun guideNext(from: com.carecircle.domain.OnboardingStep) {
+        val n = com.carecircle.domain.Onboarding.next(from, guideHasPerson)
+        prefs.guideStep = n.ordinal
+        _guide.value = com.carecircle.domain.OnboardingState.Show(n)
+    }
+
+    fun finishGuide() {
+        prefs.guideDone = true; prefs.onboardingDone = true; prefs.whatsNewSeen = currentVersion()
+        _guide.value = com.carecircle.domain.OnboardingState.Done
+    }
+
+    fun dismissWhatsNew() { prefs.whatsNewSeen = currentVersion(); _guide.value = com.carecircle.domain.OnboardingState.Done }
+
+    /** Settings > Replay setup guide. */
+    fun replayGuide() {
+        prefs.guideDone = false; prefs.guideStep = 0
+        _guide.value = com.carecircle.domain.OnboardingState.Show(com.carecircle.domain.OnboardingStep.LANGUAGE_PRIVACY)
+    }
+
+    /** Edits the first person rather than adding one, so rotating the phone or retrying never duplicates anyone. */
+    fun saveFirstPerson(name: String, phone: String, onDone: () -> Unit) = viewModelScope.launch {
+        val first = repo.people.all().firstOrNull()
+        if (first != null && com.carecircle.domain.Onboarding.validName(name)) {
+            repo.updatePerson(first.copy(name = name.trim(), caregiverPhone = phone.trim()))
+            guideHasPerson = true
+        }
+        onDone()
+    }
+
     // ---- Display (text size, high contrast, simple mode) ----
     private val _display = MutableStateFlow(com.carecircle.domain.DisplayPrefs(com.carecircle.domain.TextSize.fromKey(prefs.textSize), prefs.highContrast, prefs.simpleMode))
     val display: StateFlow<com.carecircle.domain.DisplayPrefs> = _display
@@ -496,23 +550,40 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun dismissDataMsg() { _dataMsg.value = null }
     fun cancelRestore() { _restorePreview.value = null }
 
+    private var exportPassword: String? = null
+    fun setExportPassword(p: String?) { exportPassword = p }
+
     fun exportTo(uri: android.net.Uri) = viewModelScope.launch {
+        val pw = exportPassword
+        exportPassword = null // used once; never kept
         _dataMsg.value = try {
             val out = getApplication<Application>().contentResolver.openOutputStream(uri) ?: throw java.io.IOException()
-            backup.export(out)
+            backup.export(out, password = pw)
             DataMsg(R.string.data_export_done)
         } catch (e: Exception) { DataMsg(R.string.data_export_failed) }
     }
 
-    fun readBackup(uri: android.net.Uri) = viewModelScope.launch {
+    private val _needPassword = MutableStateFlow<android.net.Uri?>(null)
+    /** Set while an encrypted backup waits for its password. */
+    val needPassword: StateFlow<android.net.Uri?> = _needPassword
+    private val _wrongPassword = MutableStateFlow(false)
+    val wrongPassword: StateFlow<Boolean> = _wrongPassword
+
+    fun cancelPassword() { _needPassword.value = null; _wrongPassword.value = false }
+    fun submitPassword(p: String) { _needPassword.value?.let { readBackup(it, p) } }
+
+    fun readBackup(uri: android.net.Uri, password: String? = null) = viewModelScope.launch {
         val parsed = try {
             val input = getApplication<Application>().contentResolver.openInputStream(uri) ?: throw java.io.IOException()
-            backup.read(input)
+            backup.read(input, password)
         } catch (e: Exception) { BackupParse.Malformed }
+        _wrongPassword.value = false
         when (parsed) {
-            is BackupParse.Ok -> _restorePreview.value = parsed.file
-            BackupParse.Newer -> _dataMsg.value = DataMsg(R.string.data_restore_newer)
-            BackupParse.Malformed -> _dataMsg.value = DataMsg(R.string.data_restore_bad)
+            is BackupParse.Ok -> { _needPassword.value = null; _restorePreview.value = parsed.file }
+            BackupParse.Newer -> { _needPassword.value = null; _dataMsg.value = DataMsg(R.string.data_restore_newer) }
+            BackupParse.Malformed -> { _needPassword.value = null; _dataMsg.value = DataMsg(R.string.data_restore_bad) }
+            BackupParse.NeedsPassword -> _needPassword.value = uri
+            BackupParse.WrongPassword -> { _needPassword.value = uri; _wrongPassword.value = true }
         }
     }
 
@@ -522,13 +593,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         backup.restore(f)
         selectedId.value = Prefs.UNSET
         _dataMsg.value = DataMsg(R.string.data_restore_done)
+        loadGuide()
     }
 
+    private val _deleteSummary = MutableStateFlow<DeleteSummary?>(null)
+    val deleteSummary: StateFlow<DeleteSummary?> = _deleteSummary
+
     fun deleteAllData() = viewModelScope.launch {
-        backup.deleteAll()
+        _deleteSummary.value = backup.deleteAll()
         selectedId.value = Prefs.UNSET
         _card.value = null; _interactions.value = null; _insurance.value = InsuranceState.Idle
         _dataMsg.value = DataMsg(R.string.data_deleted)
+        loadGuide()
     }
 
     fun nowZoned(): ZonedDateTime = ZonedDateTime.now(zone)

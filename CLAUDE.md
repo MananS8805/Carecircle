@@ -97,3 +97,9 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - Accessibility conventions: every clickable has a content description or merged text; secondary targets are at least 48 dp, the main Taken button at least 56 dp; status is never colour alone (icon or text too); a dose row is one merged sentence (`Modifier.doseRowSemantics`) and a live region; check new screens at Extra large text, high contrast and Simple mode, in Hindi and Gujarati.
 - `Palette` reads `Palette.highContrast` from Compose state, so never cache a Palette colour in a top-level `val`; use a getter. High-contrast hex values live in `domain/Display.kt` and are contrast-tested.
 - The widget is RemoteViews, not Glance: no extra dependency, and the same states are covered by `NextDoseTest`. All refills go through `Repository.addRefill` / `undoRefill`.
+
+## v1.6 notes
+- `data/UserDataRegistry.kt` lists every store (Room tables, Prefs keys, alarms, notifications, background work, widget, cache files). New table or Prefs key = new line there, or `UserDataRegistryTest` fails. Export, restore and delete-all iterate it; a new health-data table also needs a `BackupFile` field and a `backupField` entry.
+- From now on every new network call must be added to `docs/privacy-policy.md`, `ui/PrivacyScreen.kt` (+ strings in en/hi/gu) and `docs/play-store/data-safety-answers.md`. `PrivacyDocsTest` and `backend/test/privacy.test.ts` check the endpoint names.
+- Backup files can be encrypted (`data/BackupCrypto.kt`). The password is held in memory for one call and never stored or logged.
+- The first-run guide state is `domain/Onboarding.kt`; steps are saved in `Prefs.guideStep`. `Palette` colours must stay getters (see v1.5).

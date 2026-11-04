@@ -54,7 +54,7 @@ import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 @Composable
-fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () -> Unit, onHealth: () -> Unit) {
+fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () -> Unit, onHealth: () -> Unit, onPrivacy: () -> Unit) {
     val people by vm.people.collectAsStateWithLifecycle()
     val status by rememberReminderStatus()
     var showSetup by remember { mutableStateOf(false) }
@@ -91,6 +91,8 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () ->
             StatusLine(stringResource(R.string.onb_battery_title), status.batteryUnrestricted)
             SoftButton(stringResource(R.string.health_open), onHealth, Modifier.padding(top = 10.dp))
             SoftButton(stringResource(R.string.settings_review_setup), { showSetup = true }, Modifier.padding(top = 8.dp))
+            SoftButton(stringResource(R.string.guide_replay), { vm.replayGuide() }, Modifier.padding(top = 8.dp))
+            SoftButton(stringResource(R.string.privacy_title), onPrivacy, Modifier.padding(top = 8.dp))
         }
 
         DataCard(vm)
@@ -224,7 +226,8 @@ private fun DisplaySwitch(title: String, hint: String, checked: Boolean, onChang
 @Composable
 private fun DataCard(vm: AppViewModel) {
     val msg by vm.dataMsg.collectAsStateWithLifecycle()
-    val preview by vm.restorePreview.collectAsStateWithLifecycle()
+    val summary by vm.deleteSummary.collectAsStateWithLifecycle()
+    var askExport by remember { mutableStateOf(false) }
     var deleteStep by remember { mutableStateOf(0) }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { it?.let(vm::exportTo) }
     val restore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(vm::readBackup) }
@@ -233,47 +236,43 @@ private fun DataCard(vm: AppViewModel) {
         Text(stringResource(R.string.data_title), style = MaterialTheme.typography.titleLarge)
         Muted(stringResource(R.string.data_intro))
         Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SoftButton(stringResource(R.string.data_export), { export.launch("carecircle-backup.json") }, Modifier.fillMaxWidth())
+            SoftButton(stringResource(R.string.data_export), { askExport = true }, Modifier.fillMaxWidth())
             SoftButton(stringResource(R.string.data_restore), { restore.launch(arrayOf("*/*")) }, Modifier.fillMaxWidth())
             SoftButton(stringResource(R.string.data_delete_all), { deleteStep = 1 }, Modifier.fillMaxWidth())
         }
         msg?.let {
             Text(stringResource(it.res), Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodyMedium, color = Palette.Orange)
         }
+        summary?.let { d ->
+            Text(stringResource(R.string.delete_summary, d.people, d.medicines, d.doseRecords, d.otherRecords), Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyMedium)
+        }
     }
 
-    preview?.let { f ->
-        AlertDialog(
-            onDismissRequest = vm::cancelRestore,
-            title = { Text(stringResource(R.string.data_restore_confirm_title)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.data_restore_confirm_text,
-                        pluralStringResource(R.plurals.medicines_count, f.medicines.size, f.medicines.size),
-                        pluralStringResource(R.plurals.doses_count, f.doses.size, f.doses.size),
-                    ),
-                )
-            },
-            confirmButton = { TextButton(onClick = vm::confirmRestore) { Text(stringResource(R.string.data_restore_replace)) } },
-            dismissButton = { TextButton(onClick = vm::cancelRestore) { Text(stringResource(R.string.action_cancel)) } },
-            containerColor = Palette.Surface,
-        )
-    }
-    if (deleteStep == 1) AlertDialog(
-        onDismissRequest = { deleteStep = 0 },
+    RestoreDialogs(vm)
+    if (askExport) ExportPasswordDialog(
+        onChoose = { pw -> askExport = false; vm.setExportPassword(pw); export.launch("carecircle-backup.json") },
+        onCancel = { askExport = false },
+    )
+    DeleteAllFlow(vm, deleteStep) { deleteStep = it }
+}
+
+/** The two-step confirmation for "Delete all my data"; shared by Settings and the Privacy page. [step] 0 = closed. */
+@Composable
+internal fun DeleteAllFlow(vm: AppViewModel, step: Int, setStep: (Int) -> Unit) {
+    if (step == 1) AlertDialog(
+        onDismissRequest = { setStep(0) },
         title = { Text(stringResource(R.string.data_delete_title)) },
         text = { Text(stringResource(R.string.data_delete_text)) },
-        confirmButton = { TextButton(onClick = { deleteStep = 2 }) { Text(stringResource(R.string.action_continue)) } },
-        dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text(stringResource(R.string.action_cancel)) } },
+        confirmButton = { TextButton(onClick = { setStep(2) }) { Text(stringResource(R.string.action_continue)) } },
+        dismissButton = { TextButton(onClick = { setStep(0) }) { Text(stringResource(R.string.action_cancel)) } },
         containerColor = Palette.Surface,
     )
-    if (deleteStep == 2) AlertDialog(
-        onDismissRequest = { deleteStep = 0 },
+    if (step == 2) AlertDialog(
+        onDismissRequest = { setStep(0) },
         title = { Text(stringResource(R.string.data_delete_final_title)) },
         text = { Text(stringResource(R.string.data_delete_final_text)) },
-        confirmButton = { TextButton(onClick = { deleteStep = 0; vm.deleteAllData() }) { Text(stringResource(R.string.data_delete_final_yes), color = Palette.Bad) } },
-        dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text(stringResource(R.string.action_cancel)) } },
+        confirmButton = { TextButton(onClick = { setStep(0); vm.deleteAllData() }) { Text(stringResource(R.string.data_delete_final_yes), color = Palette.Bad) } },
+        dismissButton = { TextButton(onClick = { setStep(0) }) { Text(stringResource(R.string.action_cancel)) } },
         containerColor = Palette.Surface,
     )
 }

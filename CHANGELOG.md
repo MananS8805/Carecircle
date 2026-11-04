@@ -5,6 +5,11 @@ Each version is a git tag. Informational only, not medical advice.
 ## Backend (not deployed)
 - `/api/policy-summary` without an LLM key now also reads the **Covered** and **Not covered** lists: the bullet or numbered lines under an Inclusions or Exclusions heading, up to the next heading, each with page, clause and an exact verified quote. Deploy with `npx vercel --prod` when ready.
 
+## v1.6
+- First-run guide: five skippable steps (language and privacy with restore-a-backup, first person, first medicine by scan / voice / typing, permissions with a test reminder, summary with an add-widget button). It resumes after the app is killed and never duplicates the first person. People who already use CareCircle see a dismissible "What is new" card instead. "Replay setup guide" in Settings.
+- Privacy page (Settings and the guide) that matches the real network calls, plus `docs/privacy-policy.md`, `backend/public/privacy.html` (`npm run build:privacy`) and the Play Store pack in `docs/play-store/`. A test fails if an endpoint is missing from the policy.
+- Backup, restore and delete-all are driven by `UserDataRegistry`; a test fails if a Room table, a preference key or a backup field is not registered. Optional password for backup files (PBKDF2 210,000 iterations plus AES-GCM). Restore shows people, medicines, dose records and the export date, and runs in one transaction. Delete-all reports what it removed and starts the guide again.
+
 ## v1.5
 - Widget: shows the next dose, a "+N more" line when several share a 30-minute slot, an "All done" state with tomorrow's first dose, "Add a medicine" when empty and a red "Missed? Mark taken" state after 30 minutes. It refreshes after Taken, medicine edits, every re-arm and just after midnight. Pure logic in `domain/NextDose.kt`.
 - Refill history: "I bought more" bottom sheet (10 / 15 / 30 or any amount up to 1000, optional note), the last five purchases with See all, an average days-between figure from three purchases, Undo while the count is unchanged. Room migration 10 to 11, backup version 9. "Monthly order" builds one message for everything under 10 days left with a 30-day quantity.

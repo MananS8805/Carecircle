@@ -30,3 +30,9 @@ Baseline before starting (2026-11-04): backend 39 tests and typecheck green; And
 | B2 | Backup / delete-all with refills | done | backup version 9, `BackupTest`; old files still import |
 | B3 | Text size, high contrast, Simple mode | done | `domain/Display.kt`, `DisplayTest`, Settings > Display |
 | B3 | Screen audit and semantics tests | partial | dose rows, Taken, source links, chart days and the family ring fixed; `AccessibilityTest` compiles but has not run. A full TalkBack walk-through of every screen is **needs a device** |
+| C1 | First-run onboarding (5 steps, resumable) | done | `domain/Onboarding.kt`, `OnboardingTest`, `ui/OnboardingScreen.kt`. Step 3 hands off to the existing scan / add screens |
+| C1 | "What is new" for existing users, replay in Settings | done | `Prefs.whatsNewSeen`, `vm.replayGuide` |
+| C2 | Privacy page, policy, Play docs, privacy.html | done | `ui/PrivacyScreen.kt`, `docs/privacy-policy.md`, `docs/play-store/*`, `backend/scripts/build-privacy.mjs`, `PrivacyDocsTest`, `privacy.test.ts`. `SUPPORT_EMAIL` / `PRIVACY_URL` are blank placeholders (TODO). Legal review still needed |
+| C3 | `UserDataRegistry` drives export, restore, delete-all | done | `data/UserDataRegistry.kt`, `UserDataRegistryTest` |
+| C3 | Password-protected backups | done | `data/BackupCrypto.kt`, `BackupCryptoTest`. UI not run on a device |
+| C3 | Transactional restore with preview, delete-all summary | done | `BackupService.restore` uses `withTransaction`; the SQL-in-transaction path **needs a device check** |

@@ -2,6 +2,7 @@ package com.carecircle.data
 
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
+import androidx.room.withTransaction
 import androidx.work.WorkManager
 import com.carecircle.domain.RefillRules
 import com.carecircle.reminder.ReminderScheduler
@@ -95,6 +96,9 @@ sealed interface BackupParse {
     /** Written by a newer version of CareCircle than this one understands. */
     data object Newer : BackupParse
     data object Malformed : BackupParse
+    /** An encrypted file and no password given yet. */
+    data object NeedsPassword : BackupParse
+    data object WrongPassword : BackupParse
 }
 
 /** Pure JSON encode / decode / validation, so it can be unit-tested on the JVM. */
@@ -188,21 +192,26 @@ object BackupCodec {
     }
 }
 
-/** Database and alarm side of export, restore and delete-all. Never touches the network. */
+/** What "Delete all my data" removed, for the confirmation shown afterwards. */
+data class DeleteSummary(val people: Int, val medicines: Int, val doseRecords: Int, val otherRecords: Int)
+
+/** Database and alarm side of export, restore and delete-all, driven by [UserDataRegistry]. Never touches the network. */
 class BackupService(private val ctx: Context) {
     private val db = AppDb.get(ctx)
     private val prefs = Prefs(ctx)
 
-    suspend fun export(out: OutputStream, now: Long = System.currentTimeMillis()) = withContext(Dispatchers.IO) {
+    /** [password] null = a plain JSON file; otherwise the file is encrypted with it (see [BackupCrypto]). */
+    suspend fun export(out: OutputStream, now: Long = System.currentTimeMillis(), password: String? = null) = withContext(Dispatchers.IO) {
         val file = BackupCodec.build(
             db.people().all(), db.medicines().allIncludingArchived(), db.doses().since(now - BackupCodec.HISTORY_DAYS * 24L * 3600_000L), now,
             db.policies().all(), db.symptoms().all(), db.allergies().all(),
             db.vitals().all(), db.appointments().all(), db.refills().all(),
         )
-        out.use { it.write(BackupCodec.encode(file).toByteArray(Charsets.UTF_8)) }
+        val bytes = BackupCodec.encode(file).toByteArray(Charsets.UTF_8)
+        out.use { it.write(if (password != null) BackupCrypto.encrypt(bytes, password) else bytes) }
     }
 
-    suspend fun read(input: InputStream): BackupParse = withContext(Dispatchers.IO) {
+    suspend fun read(input: InputStream, password: String? = null): BackupParse = withContext(Dispatchers.IO) {
         val buf = java.io.ByteArrayOutputStream()
         val chunk = ByteArray(8192)
         var tooBig = false
@@ -214,55 +223,81 @@ class BackupService(private val ctx: Context) {
                 buf.write(chunk, 0, n)
             }
         }
-        if (tooBig) BackupParse.Malformed else BackupCodec.decode(buf.toString(Charsets.UTF_8.name()))
+        if (tooBig) return@withContext BackupParse.Malformed
+        parse(buf.toByteArray(), password)
     }
 
-    /** Replaces everything (after the user confirmed). Alarms are re-armed for the restored medicines. */
+    /** Pure enough to test: bytes in, a parse result out. Nothing is written anywhere. */
+    fun parse(bytes: ByteArray, password: String?): BackupParse {
+        val plain = if (BackupCrypto.isEncrypted(bytes)) {
+            if (password == null) return BackupParse.NeedsPassword
+            when (val r = BackupCrypto.decrypt(bytes, password)) {
+                is DecryptResult.Ok -> r.plain
+                DecryptResult.WrongPasswordOrDamaged -> return BackupParse.WrongPassword
+                DecryptResult.Malformed -> return BackupParse.Malformed
+            }
+        } else bytes
+        return BackupCodec.decode(String(plain, Charsets.UTF_8))
+    }
+
+    /**
+     * Replaces everything (after the user confirmed). The old data is cleared and the new data written in one transaction, so a
+     * failure leaves the phone exactly as it was. Alarms are then re-armed for the restored medicines.
+     */
     suspend fun restore(raw: BackupFile) = withContext(Dispatchers.IO) {
         val file = BackupCodec.withPeople(raw)
         CareSync.unlinkAll(ctx) // links belong to the old people; stop sharing before they are replaced
-        cancelEverything()
-        db.clearAllTables()
-        db.people().insertAll(file.people.map { Person(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder, it.caregiver2Phone) })
-        db.medicines().insertAll(
-            file.medicines.map {
-                Medicine(
-                    it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming,
-                    it.personId, it.conditionTag?.trim()?.take(60)?.ifEmpty { null }, it.createdAt, it.archivedAt,
-                    it.expiry, it.doctorNote?.take(500)?.ifBlank { null },
-                )
-            },
-        )
-        db.doses().insertAll(file.doses.map { DoseEvent(medicineId = it.medicineId, scheduledAt = it.scheduledAt, takenAt = it.takenAt, missedHandled = it.missedHandled, skipped = it.skipped) })
-        db.vitals().insertAll(file.vitals.map { VitalLog(personId = it.personId, kind = it.kind, v1 = it.v1, v2 = it.v2, measuredAt = it.measuredAt, note = it.note) })
-        db.appointments().insertAll(file.appointments.map { Appointment(personId = it.personId, title = it.title, doctor = it.doctor, startsAt = it.startsAt, notes = it.notes, remindBefore = it.remindBefore) })
-        db.refills().insertAll(file.refills.map { RefillEvent(medicineId = it.medicineId, date = it.date, quantityAdded = it.quantityAdded, note = it.note) })
-        db.allergies().insertAll(file.allergies.map { Allergy(personId = it.personId, name = it.name) })
-        db.symptoms().insertAll(file.symptoms.map { SymptomLog(medicineId = it.medicineId, loggedAt = it.loggedAt, symptom = it.symptom, severity = it.severity, note = it.note) })
-        db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json, personId = it.personId) })
+        cancelRuntimeStores()
+        db.withTransaction {
+            val sdb = db.openHelper.writableDatabase
+            UserDataRegistry.tablesToClearOnRestore().forEach { sdb.execSQL("DELETE FROM $it") }
+            db.people().insertAll(file.people.map { Person(it.id, it.name, it.caregiverPhone, it.pharmacyPhone, it.sortOrder, it.caregiver2Phone) })
+            db.medicines().insertAll(
+                file.medicines.map {
+                    Medicine(
+                        it.id, it.name, it.doseText, it.timesCsv, it.pillCount, it.pillsPerDose, it.salt, it.patientName, it.active, it.foodTiming,
+                        it.personId, it.conditionTag?.trim()?.take(60)?.ifEmpty { null }, it.createdAt, it.archivedAt,
+                        it.expiry, it.doctorNote?.take(500)?.ifBlank { null },
+                    )
+                },
+            )
+            db.doses().insertAll(file.doses.map { DoseEvent(medicineId = it.medicineId, scheduledAt = it.scheduledAt, takenAt = it.takenAt, missedHandled = it.missedHandled, skipped = it.skipped) })
+            db.vitals().insertAll(file.vitals.map { VitalLog(personId = it.personId, kind = it.kind, v1 = it.v1, v2 = it.v2, measuredAt = it.measuredAt, note = it.note) })
+            db.appointments().insertAll(file.appointments.map { Appointment(personId = it.personId, title = it.title, doctor = it.doctor, startsAt = it.startsAt, notes = it.notes, remindBefore = it.remindBefore) })
+            db.refills().insertAll(file.refills.map { RefillEvent(medicineId = it.medicineId, date = it.date, quantityAdded = it.quantityAdded, note = it.note) })
+            db.allergies().insertAll(file.allergies.map { Allergy(personId = it.personId, name = it.name) })
+            db.symptoms().insertAll(file.symptoms.map { SymptomLog(medicineId = it.medicineId, loggedAt = it.loggedAt, symptom = it.symptom, severity = it.severity, note = it.note) })
+            db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json, personId = it.personId) })
+        }
         prefs.selectedPersonId = Prefs.UNSET
-        ReminderScheduler.rescheduleAll(ctx, "restore")
+        ReminderScheduler.rescheduleAll(ctx, "restore") // also refreshes the widget
         ReminderScheduler.scheduleAppointments(ctx)
     }
 
-    suspend fun deleteAll() = withContext(Dispatchers.IO) {
+    /** Removes every registered store marked wipeOnDelete and reports what it removed. */
+    suspend fun deleteAll(): DeleteSummary = withContext(Dispatchers.IO) {
+        val summary = DeleteSummary(
+            people = db.people().count(), medicines = db.medicines().allIncludingArchived().size, doseRecords = db.doses().allIds().size,
+            otherRecords = db.vitals().all().size + db.appointments().all().size + db.refills().all().size + db.symptoms().all().size + db.allergies().all().size + db.policies().all().size,
+        )
         CareSync.unlinkAll(ctx)
-        cancelEverything()
-        db.clearAllTables()
-        val language = prefs.language
-        val (size, contrast, simple) = Triple(prefs.textSize, prefs.highContrast, prefs.simpleMode)
-        prefs.clearAll()
-        prefs.language = language // a language choice is not health data
-        prefs.textSize = size; prefs.highContrast = contrast; prefs.simpleMode = simple // neither is how the app looks
-        db.people().insert(Person(id = 1, name = Persons.DEFAULT_NAME))
-        ctx.cacheDir.listFiles()?.forEach { it.delete() }
+        cancelRuntimeStores()
+        db.openHelper.writableDatabase.let { sdb -> UserDataRegistry.wipeList(StoreKind.ROOM_TABLE).forEach { sdb.execSQL("DELETE FROM $it") } }
+        UserDataRegistry.wipeList(StoreKind.PREFS_KEY).forEach { prefs.remove(it) }
+        if (UserDataRegistry.wipeList(StoreKind.CACHE_FILES).isNotEmpty()) ctx.cacheDir.listFiles()?.forEach { it.deleteRecursively() }
+        db.people().insert(Person(id = 1, name = Persons.DEFAULT_NAME)) // there is always at least one person
+        if (UserDataRegistry.wipeList(StoreKind.WIDGET).isNotEmpty()) com.carecircle.reminder.DoseWidget.refreshAll(ctx)
+        summary
     }
 
-    private suspend fun cancelEverything() {
-        db.medicines().allIncludingArchived().forEach { ReminderScheduler.cancel(ctx, it.id) }
-        db.appointments().all().forEach { ReminderScheduler.cancelAppointment(ctx, it.id) }
-        db.doses().allIds().forEach { ReminderScheduler.cancelSnooze(ctx, it); ReminderScheduler.cancelRepeats(ctx, it) }
-        WorkManager.getInstance(ctx).cancelAllWork()
-        NotificationManagerCompat.from(ctx).cancelAll()
+    /** Alarms, background jobs and notifications. Needs the database rows, so it runs before the tables are emptied. */
+    private suspend fun cancelRuntimeStores() {
+        if (UserDataRegistry.wipeList(StoreKind.ALARMS).isNotEmpty()) {
+            db.medicines().allIncludingArchived().forEach { ReminderScheduler.cancel(ctx, it.id) }
+            db.appointments().all().forEach { ReminderScheduler.cancelAppointment(ctx, it.id) }
+            db.doses().allIds().forEach { ReminderScheduler.cancelSnooze(ctx, it); ReminderScheduler.cancelRepeats(ctx, it) }
+        }
+        if (UserDataRegistry.wipeList(StoreKind.BACKGROUND_WORK).isNotEmpty()) WorkManager.getInstance(ctx).cancelAllWork()
+        if (UserDataRegistry.wipeList(StoreKind.NOTIFICATIONS).isNotEmpty()) NotificationManagerCompat.from(ctx).cancelAll()
     }
 }

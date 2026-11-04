@@ -1,6 +1,11 @@
 package com.carecircle.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -26,6 +31,7 @@ private val topLevel = setOf("today", "meds", "insurance", "settings")
 @Composable
 fun CareCircleApp(vm: AppViewModel) {
     val nav = rememberNavController()
+    val guide by vm.guide.collectAsStateWithLifecycle()
     val route = nav.currentBackStackEntryAsState().value?.destination?.route
     val tabs = listOf(
         NavItem("today", stringResource(R.string.tab_today), Icons.Default.Alarm),
@@ -33,16 +39,26 @@ fun CareCircleApp(vm: AppViewModel) {
         NavItem("insurance", stringResource(R.string.tab_insurance), Icons.Default.Shield),
         NavItem("settings", stringResource(R.string.tab_settings), Icons.Default.Settings),
     )
+    val first = guide ?: run { Box(Modifier.fillMaxSize().background(Palette.Canvas)); return }
+    val startRoute = remember { if (first is com.carecircle.domain.OnboardingState.Show) "onboarding" else "today" }
+    LaunchedEffect(guide) { if (guide is com.carecircle.domain.OnboardingState.Show && route != null && route != "onboarding" && route in topLevel) nav.navigate("onboarding") }
     Scaffold(
         containerColor = Palette.Canvas,
         bottomBar = {
-            if (route == null || route in topLevel) {
+            if (route != "onboarding" && (route == null || route in topLevel)) {
                 PillNavBar(tabs, route) { r -> nav.navigate(r) { launchSingleTop = true; popUpTo("today") } }
             }
         },
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(bottom = pad.calculateBottomPadding())) {
-            NavHost(nav, startDestination = "today") {
+            NavHost(nav, startDestination = startRoute) {
+                composable("onboarding") {
+                    val g = guide
+                    if (g is com.carecircle.domain.OnboardingState.Show) OnboardingScreen(
+                        vm, g.step, onNavigate = { nav.navigate(it) },
+                        onFinished = { nav.navigate("today") { popUpTo("onboarding") { inclusive = true } } },
+                    ) else LaunchedEffect(Unit) { nav.navigate("today") { popUpTo("onboarding") { inclusive = true } } }
+                }
                 composable("today") { TodayScreen(vm, onHistory = { nav.navigate("history") }, onVitals = { nav.navigate("vitals") }, onAppointments = { nav.navigate("appointments") }) }
                 composable("vitals") { VitalsScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("appointments") { AppointmentsScreen(vm, onBack = { nav.popBackStack() }) }
@@ -68,7 +84,8 @@ fun CareCircleApp(vm: AppViewModel) {
                         onOpenInsurance = { nav.navigate("insurance") { launchSingleTop = true; popUpTo("today") } },
                     )
                 }
-                composable("settings") { SettingsScreen(vm, onManagePeople = { nav.navigate("people") }, onFamily = { nav.navigate("family") }, onHealth = { nav.navigate("health") }) }
+                composable("settings") { SettingsScreen(vm, onManagePeople = { nav.navigate("people") }, onFamily = { nav.navigate("family") }, onHealth = { nav.navigate("health") }, onPrivacy = { nav.navigate("privacy") }) }
+                composable("privacy") { PrivacyScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("family") { FamilyScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("health") { HealthScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("people") { ManagePeopleScreen(vm, onBack = { nav.popBackStack() }) }

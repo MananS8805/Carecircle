@@ -90,6 +90,13 @@ fun TodayScreen(vm: AppViewModel, onHistory: () -> Unit, onVitals: () -> Unit, o
             }
         }
         item { PersonSwitcher(vm, allowAll = true) }
+        if (vm.guide.value is com.carecircle.domain.OnboardingState.WhatsNew) item {
+            SoftCard(Modifier.fillMaxWidth(), tint = Palette.OrangeSoft) {
+                Text(stringResource(R.string.whats_new_title), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.whats_new_text), Modifier.padding(top = 4.dp), style = MaterialTheme.typography.bodyLarge)
+                SoftButton(stringResource(R.string.whats_new_dismiss), { vm.dismissWhatsNew() }, Modifier.padding(top = 10.dp))
+            }
+        }
         item {
             Column {
                 Text(

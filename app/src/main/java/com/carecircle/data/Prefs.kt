@@ -56,6 +56,22 @@ class Prefs(ctx: Context) {
         get() = sp.getBoolean("simpleMode", false)
         set(v) = sp.edit().putBoolean("simpleMode", v).apply()
 
+    /** First-run guide: finished or skipped, the step reached (survives process death), and the app version whose news was seen. */
+    var guideDone: Boolean
+        get() = sp.getBoolean("guideDone", false)
+        set(v) = sp.edit().putBoolean("guideDone", v).apply()
+
+    var guideStep: Int
+        get() = sp.getInt("guideStep", 0)
+        set(v) = sp.edit().putInt("guideStep", v).apply()
+
+    var whatsNewSeen: Int
+        get() = sp.getInt("whatsNewSeen", 0)
+        set(v) = sp.edit().putInt("whatsNewSeen", v).apply()
+
+    /** Removes one registered key; used by delete-all so settings that are not health data can stay. */
+    fun remove(key: String) = sp.edit().remove(key).apply()
+
     fun clearAll() = sp.edit().clear().apply()
 
     companion object {

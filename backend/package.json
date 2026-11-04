@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "dev": "vercel dev"
+    "dev": "vercel dev",
+    "build:privacy": "node scripts/build-privacy.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

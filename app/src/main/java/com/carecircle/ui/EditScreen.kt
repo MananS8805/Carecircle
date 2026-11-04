@@ -95,6 +95,7 @@ fun EditScreen(vm: AppViewModel, id: Long, onScan: () -> Unit, onDone: () -> Uni
     var voiceFilled by rememberSaveable { mutableStateOf("") } // comma-separated field names filled by voice
     var voiceNote by rememberSaveable { mutableStateOf("") }
     var askVoice by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { if (vm.startWithVoice.value) { vm.startWithVoice.value = false; askVoice = true } }
     LaunchedEffect(existing) {
         val e = existing
         if (e != null && !loaded) {

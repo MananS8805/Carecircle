@@ -25,6 +25,7 @@ Every version is a git tag (`v0.1` ... `v0.6`); see [CHANGELOG.md](CHANGELOG.md)
 | v0.7 to v1.3.1 | Medicine card extras, escalation, Firebase caregiver sync, family app, safety flags, reminders health check, widget, vitals and appointments (see CHANGELOG) |
 | v1.4 | Reminder reliability (re-arm on reboot / time change, safety net), cited policy Q&A, backend spend cap and `/health` |
 | v1.5 | Widget states, refill history and monthly order, text size / high contrast / Simple mode |
+| v1.6 | First-run guide, Privacy page and Play Store pack, registry-driven backup / delete-all with optional password |
 
 ## Run the Android app
 
@@ -79,7 +80,7 @@ _Placeholder: add phone screenshots here (Today with the organ view, Medicines, 
 
 ## Privacy
 
-Data is local-first (Room + SharedPreferences). Only a medicine's generic name is sent to the backend, and insurance text only after an explicit consent screen (never stored by the server). Strip photos never leave the phone. WhatsApp and SMS messages are composed by you and sent by you.
+See [docs/privacy-policy.md](docs/privacy-policy.md) and the in-app Privacy page. Data is local-first (Room + SharedPreferences). Only a medicine's generic name is sent to the backend, and insurance text only after an explicit consent screen (never stored by the server). Strip photos never leave the phone. WhatsApp and SMS messages are composed by you and sent by you.
 
 ## Layout
 
