@@ -58,6 +58,7 @@ object ReminderScheduler {
     suspend fun scheduleAll(ctx: Context): Int {
         Notifier.ensureChannels(ctx)
         scheduleDailySummary(ctx)
+        scheduleWeeklyReminder(ctx)
         scheduleAppointments(ctx)
         return AppDb.get(ctx).medicines().all().count { scheduleFor(ctx, it.id) }
     }
@@ -117,6 +118,17 @@ object ReminderScheduler {
     fun scheduleDailySummary(ctx: Context, now: ZonedDateTime = ZonedDateTime.now(ZoneId.systemDefault())) {
         val at = Escalation.nextDailySummary(now).toInstant().toEpochMilli()
         arm(ctx.getSystemService(AlarmManager::class.java), at, dailyPi(ctx))
+    }
+
+    private fun weeklyPi(ctx: Context) = PendingIntent.getBroadcast(
+        ctx, 9_900_003, Intent(ctx, WeeklyReminderReceiver::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    /** The optional Sunday 6 pm reminder. Armed only when the user turned it on; rescheduleAll recreates it after a reboot. */
+    fun scheduleWeeklyReminder(ctx: Context, now: ZonedDateTime = ZonedDateTime.now(ZoneId.systemDefault())) {
+        val am = ctx.getSystemService(AlarmManager::class.java)
+        if (!com.carecircle.data.Prefs(ctx).weeklyReminder) { am.cancel(weeklyPi(ctx)); return }
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, com.carecircle.domain.WeeklyReminder.next(now).toInstant().toEpochMilli(), weeklyPi(ctx))
     }
 
     fun cancelSnooze(ctx: Context, doseId: Long) {

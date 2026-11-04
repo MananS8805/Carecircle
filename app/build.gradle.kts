@@ -38,7 +38,10 @@ android {
         // The ML Kit GenAI libraries are built with a newer Kotlin than 2.0.21; their public API is still readable.
         freeCompilerArgs += "-Xskip-metadata-version-check"
     }
-    testOptions { unitTests.isReturnDefaultValues = true }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+        animationsDisabled = true // instrumented tests run with window and transition animations off
+    }
     sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
 
     // Release signing: reads the keystore from gradle properties or environment variables (careCircleKeystore /
@@ -102,6 +105,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-messaging")
 
     val camerax = "1.4.1"
     implementation("androidx.camera:camera-core:$camerax")
@@ -122,6 +126,7 @@ dependencies {
     androidTestImplementation("androidx.room:room-testing:2.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
 }
 
 if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")

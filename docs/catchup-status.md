@@ -46,3 +46,9 @@ Baseline before starting (2026-11-04): backend 39 tests and typecheck green; And
 | D2 | Signing from env or properties, R8, version in gradle.properties | done | `app/build.gradle.kts`, `proguard-rules.pro`. R8 build succeeds; **a release build has not been run on a phone** |
 | D2 | `check-release.sh`, `android.yml`, `signing.md` | done | `scripts/check-release.sh` passes locally; the workflow has not run on GitHub |
 | D3 | Key rotation, headers, body limit, CORS, `/health`, loadtest, docs | done | `lib/http.ts`, `hardening.test.ts` (71 backend tests), `docs/backend-production.md`. The loadtest script was not run against a deployment |
+| E1 | `/api/notify-missed`, Admin SDK, rate limits, data-only push | done | `backend/lib/notifyMissed.ts`, `notifyMissed.test.ts` (fakes for Firebase; **not run against a real Firebase project**). Status codes as briefed plus 409 for no token and 503 when unconfigured |
+| E1 | Family phone token, switch, local notification, dedupe, pending retry | done in code | `Push.kt`, `CaregiverMessagingService`, `CaregiverAlert`, `CaregiverAlertTest`. **Needs two phones, the service account and republished rules to verify** |
+| E1 | Rules for the token and tests | done, ran here | `firebase/rules-test` (20 tests) |
+| E2 | Smoke tests, debug-only hook, CI emulator job, `docs/testing.md` | written, compile only | `app/src/androidTest/.../smoke`, `android-emulator.yml`. **Not run on an emulator or phone; the CI job has not run** |
+| E3 | Weekly summary, preview, names toggle, Sunday reminder | done | `WeeklySummary`, `WeeklySummaryTest` (incl. a clock-change case), `ui/WeeklyText.kt` |
+| D1 gap fixed | Daily summary event leaked the person's name with names off | fixed | `DailySummaryReceiver` |

@@ -67,6 +67,9 @@ fun HistoryScreen(vm: AppViewModel, onBack: () -> Unit) {
     val days by vm.historyDays.collectAsStateWithLifecycle()
     val scope by vm.scopePerson.collectAsStateWithLifecycle()
     var selected by remember { mutableStateOf(LocalDate.now()) }
+    val weekly by vm.weekly.collectAsStateWithLifecycle()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    weekly?.let { (name, summary) -> WeeklySharePreview(ctx, name, summary, onShare = vm::shareWeeklyText, onCancel = vm::closeWeeklyPreview) }
     LaunchedEffect(scope?.id, days) { vm.loadHistory(days) }
 
     LazyColumn(
@@ -102,7 +105,7 @@ fun HistoryScreen(vm: AppViewModel, onBack: () -> Unit) {
                         Muted(stringResource(R.string.pdf_med_counts, m.taken, m.missed, m.skipped))
                     }
                 }
-                item { SoftButton(stringResource(R.string.hist_share), { vm.shareWeeklySummary() }, Modifier.fillMaxWidth(), icon = Icons.Default.Share) }
+                item { SoftButton(stringResource(R.string.hist_share), { vm.openWeeklyPreview() }, Modifier.fillMaxWidth(), icon = Icons.Default.Share) }
             }
         }
     }

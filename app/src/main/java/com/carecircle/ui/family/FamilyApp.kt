@@ -1,5 +1,6 @@
 package com.carecircle.ui.family
 
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.layout.widthIn
@@ -416,6 +417,19 @@ private fun FamilySettings(vm: AppViewModel) {
                         colors = FilterChipDefaults.filterChipColors(selectedContainerColor = FamilyColors.Teal, selectedLabelColor = Color.White),
                     )
                 }
+            }
+        }
+        FCard(Modifier.fillMaxWidth()) {
+            val push by vm.pushEnabled.collectAsStateWithLifecycle()
+            Row(
+                Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(value = push, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = { vm.setPushEnabled(it) }),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.fam_push_title), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = FamilyColors.Ink)
+                    Text(stringResource(R.string.fam_push_text), Modifier.padding(top = 4.dp), color = FamilyColors.Muted, fontSize = 14.sp)
+                }
+                androidx.compose.material3.Switch(checked = push, onCheckedChange = null)
             }
         }
         FCard(Modifier.fillMaxWidth()) {

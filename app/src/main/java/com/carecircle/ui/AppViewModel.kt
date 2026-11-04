@@ -151,18 +151,35 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _history.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { repo.adherence(p.id, days) }
     }
 
-    /** Opens the share sheet with a short, translated 7-day summary. User-initiated only; nothing is sent by the app itself. */
-    fun shareWeeklySummary() = viewModelScope.launch {
+    private val _weekly = MutableStateFlow<Pair<String, com.carecircle.domain.WeeklySummary>?>(null)
+    /** The 7-day summary waiting in the preview dialog: person name and numbers. */
+    val weekly: StateFlow<Pair<String, com.carecircle.domain.WeeklySummary>?> = _weekly
+
+    fun openWeeklyPreview() = viewModelScope.launch {
         val p = scopePerson.value ?: return@launch
+        val (r, stock) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            repo.adherence(p.id, 7) to repo.medicines.all().filter { it.personId == p.id }.map {
+                com.carecircle.domain.StockMed(it.name, it.doseText, it.pillCount, it.pillsPerDose, Schedule.parseTimes(it.timesCsv).size)
+            }
+        }
+        _weekly.value = p.name to com.carecircle.domain.WeeklySummaries.compute(r, stock)
+    }
+
+    fun closeWeeklyPreview() { _weekly.value = null }
+
+    /** Opens the share sheet with the exact text the user just saw. User-initiated only; nothing is sent by the app itself. */
+    fun shareWeeklyText(text: String) {
         val base = getApplication<Application>()
-        val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { repo.adherence(p.id, 7) }
-        val pct = r.percent ?: return@launch
-        val ctx = com.carecircle.AppLocale.wrap(base)
-        val worst = r.perMedicine.firstOrNull()?.takeIf { it.missed > 0 }
-        val text = ctx.getString(R.string.msg_weekly, p.name, r.taken, r.decided, pct) +
-            (worst?.let { " " + ctx.getString(R.string.msg_weekly_most_missed, com.carecircle.domain.Messages.medicineLabel(it.name, it.doseText)) } ?: "")
         val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT, text)
-        base.startActivity(android.content.Intent.createChooser(send, ctx.getString(R.string.hist_share)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        base.startActivity(android.content.Intent.createChooser(send, base.getString(R.string.hist_share)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        _weekly.value = null
+    }
+
+    private val _weeklyReminder = MutableStateFlow(prefs.weeklyReminder)
+    val weeklyReminder: StateFlow<Boolean> = _weeklyReminder
+    fun setWeeklyReminder(on: Boolean) {
+        prefs.weeklyReminder = on; _weeklyReminder.value = on
+        ReminderScheduler.scheduleWeeklyReminder(getApplication())
     }
 
     /** Builds the doctor-visit PDF for the selected person, with 30 days of adherence, and opens the share sheet. */
@@ -439,6 +456,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setHighContrast(on: Boolean) { prefs.highContrast = on; _display.value = _display.value.copy(highContrast = on) }
     fun setSimpleMode(on: Boolean) { prefs.simpleMode = on; _display.value = _display.value.copy(simpleMode = on) }
 
+    // ---- Family phone: missed-dose alerts ----
+    private val _push = MutableStateFlow(prefs.pushEnabled)
+    val pushEnabled: StateFlow<Boolean> = _push
+    fun setPushEnabled(on: Boolean) = viewModelScope.launch {
+        prefs.pushEnabled = on; _push.value = on
+        com.carecircle.data.PushTokens.sync(getApplication()) // writes the token when on, removes it when off
+    }
+
     // ---- Family sync: names ----
     private val _shareNames = MutableStateFlow(prefs.shareNames)
     val shareNames: StateFlow<Boolean> = _shareNames
@@ -542,7 +567,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _followResult.value = null
         val r = CareSync.follow(getApplication(), code)
         _followResult.value = r
-        if (r is FollowResult.Ok) com.carecircle.reminder.FollowerWorker.ensure(getApplication())
+        if (r is FollowResult.Ok) {
+            com.carecircle.reminder.FollowerWorker.ensure(getApplication())
+            com.carecircle.data.PushTokens.sync(getApplication()) // push is on by default after adding a family member
+        }
     }
 
     fun unfollow(linkId: String) = viewModelScope.launch { CareSync.unfollow(getApplication(), linkId); _followResult.value = null }

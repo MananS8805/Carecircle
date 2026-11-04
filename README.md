@@ -27,6 +27,7 @@ Every version is a git tag (`v0.1` ... `v0.6`); see [CHANGELOG.md](CHANGELOG.md)
 | v1.5 | Widget states, refill history and monthly order, text size / high contrast / Simple mode |
 | v1.6 | First-run guide, Privacy page and Play Store pack, registry-driven backup / delete-all with optional password |
 | v1.7 | No names in family sync by default, release pipeline (R8, signing, CI), backend hardening, tested Firestore rules |
+| v1.8 | Missed-dose push to the family phone, weekly adherence summary, emulator smoke tests |
 
 ## Run the Android app
 
@@ -77,6 +78,7 @@ _Placeholder: add phone screenshots here (Today with the organ view, Medicines, 
 - `POST /api/policy-summary` body `{pages:[{page,text}]}` (max 40 pages, 200,000 characters, else 413). Returns `{summary, unverified, mode, disclaimer}`. Every item carries page, clause and a quote that was checked to appear on that page; anything that cannot be verified is dropped and listed in `unverified`. Without an LLM key `mode` is `extractive` (regex). Limit: 5 requests per minute per IP. The request and result are never stored or logged. Only call it after explicit consent in the app.
 
 - `POST /api/policy-question` body `{question (max 300 chars), clauses:[{page,clause,text}]}` (max 40 clauses). Returns `{answer, explanation, citations, confidence, mode, disclaimer}` where `answer` is one of `COVERED_PER_TEXT`, `EXCLUDED_PER_TEXT`, `WAITING_PERIOD`, `NOT_FOUND`, `UNCLEAR`. Citations whose quote is not verbatim in the supplied clauses are dropped; a verdict that loses all of them becomes `NOT_FOUND`. 5 per minute per IP. Nothing is stored or logged.
+- `POST /api/notify-missed` body `{linkId, slotId, slotLabel}` and nothing else, header `Authorization: Bearer <Firebase ID token>`. Wakes the family phone with a data-only push `{type, slotLabel, linkId}`. 401 bad token, 403 not your link or not claimed (one answer for all three), 409 no push token, 429 one per dose and six per hour per link, 503 when `FIREBASE_SERVICE_ACCOUNT_JSON` is not set. Stores and logs nothing.
 - `GET /api/health` `{ok, version, budgetUsedPct}`; open, no secrets. Past `DAILY_LLM_BUDGET_USD` (default 5) the LLM endpoints answer 503 `{error:"busy",retryAfterSeconds}` while cached medicine cards and interactions keep working. Each request writes one JSON log line (endpoint, status, latency, cache hit, token counts) and nothing else.
 
 ## Privacy

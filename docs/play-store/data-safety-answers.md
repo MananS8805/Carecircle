@@ -13,7 +13,7 @@ Draft to be checked against the Play Console form and by a person who knows the 
 | Photos and videos | Not collected | Strip and policy photos are read on the device |
 | Audio | Not collected by the app | Voice entry uses the system speech service; CareCircle receives text |
 | Location, contacts, financial info, messages | Not collected | Caregiver numbers stay on the phone |
-| Device or other IDs | Collected | Anonymous Firebase Auth ID, only when family sync is used |
+| Device or other IDs | Collected | Anonymous Firebase Auth ID and, for the family phone, a Firebase Cloud Messaging push token, only when family sync is used and push is on. Purpose: App functionality |
 | Advertising, analytics | None | |
 | Crash logs | None sent | The optional local crash log (when added) stays on the phone |
 

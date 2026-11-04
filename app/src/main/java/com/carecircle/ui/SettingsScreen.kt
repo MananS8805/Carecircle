@@ -89,6 +89,8 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () ->
             StatusLine(stringResource(R.string.onb_notif_title), status.notifications)
             if (android.os.Build.VERSION.SDK_INT >= 31) StatusLine(stringResource(R.string.onb_exact_title), status.exactAlarms)
             StatusLine(stringResource(R.string.onb_battery_title), status.batteryUnrestricted)
+            val weeklyOn by vm.weeklyReminder.collectAsStateWithLifecycle()
+            DisplaySwitch(stringResource(R.string.weekly_reminder), stringResource(R.string.weekly_reminder_hint), weeklyOn, vm::setWeeklyReminder)
             SoftButton(stringResource(R.string.health_open), onHealth, Modifier.padding(top = 10.dp))
             SoftButton(stringResource(R.string.settings_review_setup), { showSetup = true }, Modifier.padding(top = 8.dp))
             SoftButton(stringResource(R.string.guide_replay), { vm.replayGuide() }, Modifier.padding(top = 8.dp))

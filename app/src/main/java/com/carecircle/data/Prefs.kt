@@ -86,6 +86,26 @@ class Prefs(ctx: Context) {
         get() = sp.getLong("codeLockedUntil", 0L)
         set(v) = sp.edit().putLong("codeLockedUntil", v).apply()
 
+    /** Optional Sunday-evening reminder to share the weekly summary. The notification holds no health details. */
+    var weeklyReminder: Boolean
+        get() = sp.getBoolean("weeklyReminder", false)
+        set(v) = sp.edit().putBoolean("weeklyReminder", v).apply()
+
+    /** Family phone: missed-dose alerts on this phone. On after a family member is added, and the person can turn it off. */
+    var pushEnabled: Boolean
+        get() = sp.getBoolean("pushEnabled", true)
+        set(v) = sp.edit().putBoolean("pushEnabled", v).apply()
+
+    /** Family phone: alerts already shown today and yesterday (date, link, dose time). No names. */
+    var alertedSlots: String
+        get() = sp.getString("alertedSlots", "") ?: ""
+        set(v) = sp.edit().putString("alertedSlots", v).apply()
+
+    /** Parent phone: missed-dose pushes still to send (link, dose id, dose time, when). Kept for at most two hours. */
+    var pendingNotify: String
+        get() = sp.getString("pendingNotify", "") ?: ""
+        set(v) = sp.edit().putString("pendingNotify", v).apply()
+
     fun clearAll() = sp.edit().clear().apply()
 
     companion object {

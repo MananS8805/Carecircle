@@ -113,7 +113,7 @@ class DailySummaryReceiver : BroadcastReceiver() {
                     val total = r.taken + r.missed + r.skipped + r.pending
                     if (total == 0) continue
                     com.carecircle.data.CareSync.publishStatus(ctx, p.id)
-                    com.carecircle.data.CareSync.publish(ctx, p.id, com.carecircle.domain.SyncEvent(com.carecircle.domain.SyncType.SUMMARY, p.name, at = System.currentTimeMillis(), taken = r.taken, total = total))
+                    com.carecircle.data.CareSync.publish(ctx, p.id, com.carecircle.domain.SyncEvent(com.carecircle.domain.SyncType.SUMMARY, com.carecircle.domain.SyncPrivacy.personField(p.name, com.carecircle.data.Prefs(ctx).shareNames), at = System.currentTimeMillis(), taken = r.taken, total = total))
                     if (p.caregiverPhone.isBlank()) continue
                     val notTaken = r.lines.filter { it.outcome != com.carecircle.domain.DoseOutcome.TAKEN }.map { it.name }.distinct().take(3)
                     var text = lc.getString(R.string.msg_daily, p.name, r.taken, total)
@@ -181,6 +181,7 @@ class MissedDoseWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         )
         db.doses().markMissedHandled(id)
         DoseActions.publishMissed(applicationContext, dose, med) // automatic: no tap needed
+        com.carecircle.data.PushNotify.enqueueMissed(applicationContext, med.personId, dose.scheduledAt, med.id, Fmt.time(dose.scheduledAt, AppLocale.locale(applicationContext)))
         return Result.success()
     }
 }
@@ -204,3 +205,12 @@ private suspend fun MissedDoseWorker.notifySecondCaregiver(db: AppDb, dose: com.
 /** The person's name for notification titles, only when more than one person is tracked. */
 private suspend fun personLabel(db: AppDb, med: Medicine): String? =
     if (db.people().count() > 1) db.people().get(med.personId)?.name else null
+
+/** Sunday evening: a nudge to open the weekly summary. The text holds no health details. */
+class WeeklyReminderReceiver : BroadcastReceiver() {
+    override fun onReceive(ctx: Context, intent: Intent) {
+        val lc = AppLocale.wrap(ctx)
+        Notifier.plainAlert(ctx, 4_900_001, lc.getString(R.string.notif_weekly_title), lc.getString(R.string.notif_weekly_text))
+        ReminderScheduler.scheduleWeeklyReminder(ctx)
+    }
+}

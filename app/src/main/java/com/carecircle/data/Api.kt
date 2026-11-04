@@ -69,7 +69,11 @@ data class PolicyQuestionResponse(
     val disclaimer: String = "",
 )
 
+@Serializable data class NotifyMissedRequest(val linkId: String, val slotId: String, val slotLabel: String)
+@Serializable data class NotifyMissedResponse(val sent: Boolean = false, val reason: String = "")
+
 interface CareApi {
+    @POST("api/notify-missed") suspend fun notifyMissed(@retrofit2.http.Header("Authorization") auth: String, @Body req: NotifyMissedRequest): NotifyMissedResponse
     @POST("api/policy-question") suspend fun policyQuestion(@Body req: PolicyQuestionRequest): PolicyQuestionResponse
     @POST("api/policy-summary") suspend fun policySummary(@Body req: PolicyRequest): PolicyResponse
     @GET("api/interactions") suspend fun interactions(@Query("salts") salts: String): InteractionResponse

@@ -25,11 +25,13 @@ object Notifier {
     const val CH_DOSE = "doses"
     const val CH_ALERT = "alerts"
     const val CH_URGENT = "doses_urgent"
+    const val CH_CAREGIVER = "caregiver_alerts"
 
     fun ensureChannels(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CH_DOSE, ctx.getString(R.string.channel_doses), NotificationManager.IMPORTANCE_HIGH))
         nm.createNotificationChannel(NotificationChannel(CH_ALERT, ctx.getString(R.string.channel_alerts), NotificationManager.IMPORTANCE_HIGH))
+        nm.createNotificationChannel(NotificationChannel(CH_CAREGIVER, ctx.getString(R.string.channel_caregiver), NotificationManager.IMPORTANCE_HIGH))
         // Final reminder before the family is told: alarm sound and a strong vibration.
         nm.createNotificationChannel(
             NotificationChannel(CH_URGENT, ctx.getString(R.string.channel_urgent), NotificationManager.IMPORTANCE_HIGH).apply {
@@ -110,6 +112,20 @@ object Notifier {
             .setSmallIcon(R.drawable.ic_notif).setContentTitle(title).setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text)).setColor(0xFFF26A21.toInt())
             .setPriority(NotificationCompat.PRIORITY_HIGH).setContentIntent(openApp(ctx)).setAutoCancel(true).build()
+        NotificationManagerCompat.from(ctx).notify(id, n)
+    }
+
+    /** Family phone: "A dose was missed". Built from the dose time only; opens the status screen. */
+    @SuppressLint("MissingPermission") // canPost() checks POST_NOTIFICATIONS first
+    fun caregiverAlert(base: Context, id: Int, title: String, text: String) {
+        if (!canPost(base)) return
+        val ctx = AppLocale.wrap(base)
+        ensureChannels(ctx)
+        val n = NotificationCompat.Builder(ctx, CH_CAREGIVER)
+            .setSmallIcon(R.drawable.ic_notif).setContentTitle(title).setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text)).setColor(0xFFF26A21.toInt())
+            .setPriority(NotificationCompat.PRIORITY_HIGH).setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setContentIntent(openApp(ctx)).setAutoCancel(true).build()
         NotificationManagerCompat.from(ctx).notify(id, n)
     }
 

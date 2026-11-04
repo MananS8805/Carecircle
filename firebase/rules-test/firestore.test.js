@@ -78,6 +78,29 @@ describe("claiming", () => {
   });
 });
 
+describe("push token", () => {
+  beforeEach(() => seed(pairing({ caregiverUid: "carer" })));
+  it("the family phone writes only its token and the time on a link it claimed", async () => {
+    await assertSucceeds(updateDoc(doc(carer(), "pairings", CODE), { caregiverFcmToken: "tok", tokenUpdatedAt: Timestamp.now() }));
+    await assertFails(updateDoc(doc(carer(), "pairings", CODE), { caregiverFcmToken: "tok", ownerUid: "carer" }));
+    await assertFails(updateDoc(doc(carer(), "pairings", CODE), { caregiverFcmToken: 123 }));
+    await assertFails(updateDoc(doc(carer(), "pairings", CODE), { caregiverFcmToken: "x".repeat(500) }));
+  });
+  it("nobody else can write it", async () => {
+    await assertFails(updateDoc(doc(parent(), "pairings", CODE), { caregiverFcmToken: "tok" }));
+    await assertFails(updateDoc(doc(stranger(), "pairings", CODE), { caregiverFcmToken: "tok" }));
+  });
+  it("the family phone can remove it again", async () => {
+    await seed(pairing({ caregiverUid: "carer", caregiverFcmToken: "tok", tokenUpdatedAt: Timestamp.now() }));
+    const { deleteField } = await import("firebase/firestore");
+    await assertSucceeds(updateDoc(doc(carer(), "pairings", CODE), { caregiverFcmToken: deleteField(), tokenUpdatedAt: deleteField() }));
+  });
+  it("a revoked caregiver (link deleted) cannot write a token", async () => {
+    await env.withSecurityRulesDisabled((ctx) => deleteDoc(doc(ctx.firestore(), "pairings", CODE)));
+    await assertFails(updateDoc(doc(carer(), "pairings", CODE), { caregiverFcmToken: "tok" }));
+  });
+});
+
 describe("events and status", () => {
   beforeEach(() => seed(pairing({ caregiverUid: "carer" })));
 

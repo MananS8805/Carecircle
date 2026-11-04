@@ -15,3 +15,13 @@ By default the patient phone sends no person name and no medicine name: events c
 Test the rules: `cd firebase/rules-test && npm ci && npm test` (needs Java; it starts the Firestore emulator).
 
 Differences from the first design brief: the invite code is the pairing document id (get-only, no listing) rather than a hashed field, and it expires in 15 minutes rather than 24 hours. The per-day slot documents were not built; the family view uses events and the status document.
+
+## Push (v1.8)
+
+The family phone writes its Firebase Cloud Messaging token to `pairings/{code}.caregiverFcmToken` (with `tokenUpdatedAt`); the rules let it write only those two fields on a link it claimed. The parent phone calls `/api/notify-missed`; the server verifies the parent's ID token with the Firebase Admin SDK, checks the link, and sends a data-only push. Setting it up:
+
+1. Firebase console, Project settings, Service accounts: generate a private key. Put the JSON in the Vercel variable `FIREBASE_SERVICE_ACCOUNT_JSON` (never in the repository).
+2. **Publish the new `firestore.rules`** (they gained the push-token rule).
+3. Cloud Messaging needs no extra setup for data messages. Android 13 or later also needs the notification permission on the family phone.
+
+No Cloud Function and no Blaze plan are needed for this path; the Vercel backend does the sending.

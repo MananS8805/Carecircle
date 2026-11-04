@@ -108,3 +108,9 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - Family sync data minimisation: build shared fields only through `SyncPrivacy` (`domain/Sync.kt`); names go out only when `Prefs.shareNames` is on. Status writes are serialised by a mutex in `CareSync` so the last write is the newest state.
 - Version is `carecircle.versionCode` / `carecircle.versionName` in `gradle.properties`. A new permission must be added to `docs/play-store/permissions-justification.md` or `scripts/check-release.sh` fails.
 - Backend: use `authorized()` and `secure()` from `lib/http.ts` in every handler, and `withLog`. Rules changes: run `cd firebase/rules-test && npm test` (needs Java).
+
+## v1.8 notes
+- The family push is data-only: `{type, slotLabel, linkId}` and nothing else (`backend/lib/notifyMissed.ts` rejects any other field). `CaregiverMessagingService` builds the visible notification. The parent phone holds pending pushes in `Prefs.pendingNotify` for at most two hours (`PendingNotifies`).
+- New Firestore rule: a caregiver may update only `caregiverFcmToken` and `tokenUpdatedAt` on a link they claimed. Run `firebase/rules-test` after any rules change and republish the rules in the console.
+- Instrumented tests start from `DebugReset.reset()` (debug source set only), which deletes all data: never run them on a phone with records you care about. See `docs/testing.md`.
+- The weekly summary text is built by `ui/WeeklyText.kt` from `WeeklySummary` numbers; it never contains a condition tag.

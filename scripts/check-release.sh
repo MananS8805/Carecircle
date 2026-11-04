@@ -42,8 +42,8 @@ missing=$(comm -13 <(echo "$actual_short") <(echo "$documented_short") || true)
 if [ -f "$aab" ]; then
   leaks=$(unzip -l "$aab" | grep -iE 'google-services\.json|(^|/)\.env|\.jks|\.keystore|service-account' || true)
   [ -z "$leaks" ] && ok "no google-services.json, .env or keystore inside the bundle" || bad "secret-looking files in the bundle: $leaks"
-  # The debug reset hook must be absent from release (class name is fixed by phase E).
-  if unzip -p "$aab" 'base/dex/*.dex' 2>/dev/null | grep -aq 'DebugReset'; then bad "DebugReset hook found in a release dex"; else ok "no debug reset hook in release"; fi
+  # The debug-only reset hook must be absent. R8 renames classes in the dex, so look in the mapping file, which lists original names.
+  if [ -f "$mapping" ] && grep -q 'com\.carecircle\.DebugReset' "$mapping"; then bad "DebugReset (debug-only test hook) is in the release build"; else ok "no debug reset hook in release"; fi
 fi
 
 # google-services.json must never be tracked.

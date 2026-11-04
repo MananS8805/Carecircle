@@ -688,4 +688,27 @@
     <string name="sync_plain_missed">%1$s की खुराक छूट गई</string>
     <string name="sync_plain_skipped">%1$s की खुराक छोड़ी गई</string>
     <string name="sync_plain_summary">आज %2$d में से %1$d खुराकें ली गईं</string>
+    <string name="weekly_head">%1$s: पिछले 7 दिनों में %2$d%% खुराकें ली गईं (%4$d में से %3$d)।</string>
+    <string name="weekly_none">%1$s: इस हफ़्ते अभी तक कोई खुराक तय नहीं थी।</string>
+    <string name="weekly_partial">अभी तक सिर्फ़ %1$d दिनों में खुराकें हैं।</string>
+    <string name="weekly_best">सबसे अच्छा दिन: %1$s।</string>
+    <string name="weekly_worst">सबसे मुश्किल दिन: %1$s।</string>
+    <string name="weekly_streak">बिना छूटी खुराक का सबसे लंबा सिलसिला: %1$d दिन।</string>
+    <string name="weekly_low_names">कम पड़ रही हैं: %1$s।</string>
+    <string name="weekly_low_item">%1$s (%2$d दिन)</string>
+    <string name="weekly_more">और %1$d</string>
+    <string name="weekly_low_count">%1$d दवाएँ कम पड़ रही हैं।</string>
+    <string name="weekly_names_toggle">दवाओं के नाम शामिल करें</string>
+    <string name="weekly_preview_title">यह सारांश साझा करें?</string>
+    <string name="weekly_preview_note">यही ठीक वही है जो साझा होगा। CareCircle अपने आप कुछ नहीं भेजता।</string>
+    <string name="weekly_share">साझा करें</string>
+    <string name="weekly_reminder">साप्ताहिक सारांश रिमाइंडर</string>
+    <string name="weekly_reminder_hint">रविवार शाम को हफ़्ता साझा करने की याद। इसमें स्वास्थ्य की कोई जानकारी नहीं होती।</string>
+    <string name="notif_weekly_title">आपका साप्ताहिक सारांश तैयार है</string>
+    <string name="notif_weekly_text">देखने और साझा करने के लिए CareCircle खोलें।</string>
+    <string name="channel_caregiver">परिवार की सूचनाएँ</string>
+    <string name="notif_cg_title">एक खुराक छूट गई</string>
+    <string name="notif_cg_text">%1$s की खुराक छूट गई। आज की स्थिति देखने के लिए CareCircle खोलें।</string>
+    <string name="fam_push_title">छूटी खुराक की सूचना</string>
+    <string name="fam_push_text">CareCircle बंद होने पर भी खुराक छूटने पर इस फ़ोन पर सूचना पाएँ। सूचना में सिर्फ़ खुराक का समय होता है। जब चाहें बंद करें।</string>
 </resources>

@@ -11,6 +11,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
@@ -90,6 +91,32 @@ object CareSync {
         throw e
     } catch (e: Exception) {
         null
+    }
+
+    /** A fresh Firebase ID token for the server to verify, or null when not signed in or offline. */
+    suspend fun idToken(): String? {
+        return try {
+            if (uid() == null) return null
+            withTimeoutOrNull(NETWORK_MS) { FirebaseAuth.getInstance().currentUser?.getIdToken(false)?.awaitTask()?.token }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** Family phone: stores (or removes, with null) its push token on a link it follows. Never throws. */
+    suspend fun setCaregiverToken(linkId: String, token: String?) {
+        try {
+            uid() ?: return
+            val data: Map<String, Any> = if (token == null) mapOf("caregiverFcmToken" to FieldValue.delete(), "tokenUpdatedAt" to FieldValue.delete())
+            else mapOf("caregiverFcmToken" to token, "tokenUpdatedAt" to Timestamp.now())
+            withTimeoutOrNull(NETWORK_MS) { db.collection(PAIRINGS).document(linkId).update(data).awaitTask() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A missing link or no network just means no push for now.
+        }
     }
 
     // ---- patient side ----

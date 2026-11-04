@@ -688,4 +688,27 @@
     <string name="sync_plain_missed">%1$s ની માત્રા ચૂકી ગઈ</string>
     <string name="sync_plain_skipped">%1$s ની માત્રા છોડવામાં આવી</string>
     <string name="sync_plain_summary">આજે %2$d માંથી %1$d ડોઝ લેવાયા</string>
+    <string name="weekly_head">%1$s: છેલ્લા 7 દિવસમાં %2$d%% ડોઝ લેવાયા (%4$d માંથી %3$d).</string>
+    <string name="weekly_none">%1$s: આ અઠવાડિયે હજી કોઈ ડોઝ નક્કી નહોતો.</string>
+    <string name="weekly_partial">હજી ફક્ત %1$d દિવસમાં ડોઝ છે.</string>
+    <string name="weekly_best">શ્રેષ્ઠ દિવસ: %1$s.</string>
+    <string name="weekly_worst">સૌથી મુશ્કેલ દિવસ: %1$s.</string>
+    <string name="weekly_streak">ચૂક્યા વિના સૌથી લાંબો સિલસિલો: %1$d દિવસ.</string>
+    <string name="weekly_low_names">ઓછી પડી રહી છે: %1$s.</string>
+    <string name="weekly_low_item">%1$s (%2$d દિવસ)</string>
+    <string name="weekly_more">અને %1$d વધુ</string>
+    <string name="weekly_low_count">%1$d દવાઓ ઓછી પડી રહી છે.</string>
+    <string name="weekly_names_toggle">દવાઓના નામ સામેલ કરો</string>
+    <string name="weekly_preview_title">આ સારાંશ શેર કરવો?</string>
+    <string name="weekly_preview_note">આ જ બરાબર શેર થશે. CareCircle જાતે કંઈ મોકલતું નથી.</string>
+    <string name="weekly_share">શેર કરો</string>
+    <string name="weekly_reminder">સાપ્તાહિક સારાંશ રિમાઇન્ડર</string>
+    <string name="weekly_reminder_hint">રવિવારની સાંજે અઠવાડિયું શેર કરવાની યાદ. તેમાં આરોગ્યની કોઈ વિગત નથી.</string>
+    <string name="notif_weekly_title">તમારો સાપ્તાહિક સારાંશ તૈયાર છે</string>
+    <string name="notif_weekly_text">જોવા અને શેર કરવા CareCircle ખોલો.</string>
+    <string name="channel_caregiver">પરિવારની સૂચનાઓ</string>
+    <string name="notif_cg_title">એક ડોઝ ચૂકી ગયો</string>
+    <string name="notif_cg_text">%1$s નો ડોઝ ચૂકી ગયો. આજની સ્થિતિ જોવા CareCircle ખોલો.</string>
+    <string name="fam_push_title">ચૂકેલા ડોઝની સૂચના</string>
+    <string name="fam_push_text">CareCircle બંધ હોય ત્યારે પણ ડોઝ ચૂકાય તો આ ફોન પર સૂચના મેળવો. સૂચનામાં ફક્ત ડોઝનો સમય હોય છે. ગમે ત્યારે બંધ કરો.</string>
 </resources>

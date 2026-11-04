@@ -15,7 +15,7 @@ the Vercel dashboard by the person who owns the project.
 | `DAILY_LLM_BUDGET_USD` | recommended | Estimated daily spend cap (default 5). Past it the LLM endpoints answer 503 busy; cached cards keep working |
 | `LLM_PRICE_IN_PER_MTOK_USD`, `LLM_PRICE_OUT_PER_MTOK_USD` | optional | Prices used for the estimate (defaults 1 and 5). Set them to your model's real prices |
 | `ALLOWED_ORIGINS` | optional | Comma-separated browser origins that may call the API. Empty means no CORS header at all; the Android app does not need one |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | phase E | Used only by `/api/notify-missed` |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | for family push | Service-account key JSON, used only by `/api/notify-missed`. Without it that endpoint answers 503 and the rest is unaffected. Treat it like a password: rotate it in the Firebase console, never log it |
 
 Secrets live in Vercel project settings, never in the repository, `.env` files or app builds. The app key in the Android app is a
 speed bump, not a secret: anyone can extract it from the APK. The real protections are the rate limits, the daily budget and the

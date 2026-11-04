@@ -16,6 +16,7 @@ library fails the check until it is explained here.
 | `FOREGROUND_SERVICE` | Added by WorkManager for long background jobs. CareCircle starts no foreground service of its own |
 | `com.carecircle.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Added by AndroidX so receivers registered at run time stay private to the app |
 | `com.google.android.apps.aicore.service.BIND_SERVICE` | Added by the ML Kit GenAI library for the experimental on-device AI check (Settings). Nothing leaves the phone |
+| `com.google.android.c2dm.permission.RECEIVE` | Added by Firebase Cloud Messaging so the family phone can receive the missed-dose push. Not used unless family sync is on and the alerts switch is on |
 | `com.google.android.providers.gsf.permission.READ_GSERVICES` | Added by Google Play services libraries |
 
 Not requested: `RECORD_AUDIO` (voice entry uses the system speech service), contacts, location, storage.

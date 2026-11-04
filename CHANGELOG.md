@@ -5,6 +5,12 @@ Each version is a git tag. Informational only, not medical advice.
 ## Backend (not deployed)
 - `/api/policy-summary` without an LLM key now also reads the **Covered** and **Not covered** lists: the bullet or numbered lines under an Inclusions or Exclusions heading, up to the next heading, each with page, clause and an exact verified quote. Deploy with `npx vercel --prod` when ready.
 
+## v1.8
+- Missed-dose push to the family phone (Firebase Cloud Messaging): when a dose is missed, the parent phone asks `POST /api/notify-missed` (Firebase sign-in token, one push per dose, six per hour per link) and the family phone shows "A dose was missed" built locally from the dose time only. The push carries no names. The family phone registers its token on the link it follows (on by default, one switch to turn it off), the parent phone retries for up to two hours when offline. **The Firestore rules changed: publish `firebase/firestore.rules` again.**
+- Weekly adherence summary: a preview of the exact text with an "Include medicine names" switch (off), best and hardest day, longest run without a missed dose and what is running low. Optional Sunday-evening reminder with no health details in it.
+- Emulator smoke tests (`app/src/androidTest/.../smoke`) with a debug-only reset hook, a CI job (`android-emulator.yml`, API 34) and `docs/testing.md`.
+- Fixed: the 9 pm daily summary event no longer sends the person's name when names are off.
+
 ## v1.7
 - Family sync now shares no names by default: only taken / missed / skipped, dose times and daily counts. "Also share names" (off) adds the first name and medicine names. The family view shows "Dose due 8:00 AM taken" lines without names, and the family member can give the person a local label. Missed-then-taken is counted once as taken. A status older than two hours shows a warning. Five wrong codes lock code entry for 15 minutes.
 - Release pipeline: version in `gradle.properties`, R8 minify and shrink with narrow rules, unsigned-with-a-warning when no keystore, `scripts/check-release.sh`, `.github/workflows/android.yml` (checks on every push, signed bundle on `v*` tags), `docs/play-store/signing.md`.

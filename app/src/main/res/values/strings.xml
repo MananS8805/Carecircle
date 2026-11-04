@@ -713,4 +713,27 @@
     <string name="sync_plain_missed">Dose due %1$s was missed</string>
     <string name="sync_plain_skipped">Dose due %1$s was skipped</string>
     <string name="sync_plain_summary">%1$d of %2$d doses taken today</string>
+    <string name="weekly_head">%1$s: %2$d%% of doses taken in the last 7 days (%3$d of %4$d).</string>
+    <string name="weekly_none">%1$s: no doses have been due yet this week.</string>
+    <string name="weekly_partial">Only %1$d days have doses so far.</string>
+    <string name="weekly_best">Best day: %1$s.</string>
+    <string name="weekly_worst">Hardest day: %1$s.</string>
+    <string name="weekly_streak">Longest run without a missed dose: %1$d days.</string>
+    <string name="weekly_low_names">Running low: %1$s.</string>
+    <string name="weekly_low_item">%1$s (%2$d days)</string>
+    <string name="weekly_more">and %1$d more</string>
+    <string name="weekly_low_count">%1$d medicines are running low.</string>
+    <string name="weekly_names_toggle">Include medicine names</string>
+    <string name="weekly_preview_title">Share this summary?</string>
+    <string name="weekly_preview_note">This is exactly what will be shared. CareCircle sends nothing by itself.</string>
+    <string name="weekly_share">Share</string>
+    <string name="weekly_reminder">Weekly summary reminder</string>
+    <string name="weekly_reminder_hint">On Sunday evenings, a reminder to share the week. It holds no health details.</string>
+    <string name="notif_weekly_title">Your weekly summary is ready</string>
+    <string name="notif_weekly_text">Open CareCircle to review and share it.</string>
+    <string name="channel_caregiver">Family alerts</string>
+    <string name="notif_cg_title">A dose was missed</string>
+    <string name="notif_cg_text">Missed %1$s dose. Open CareCircle to see today\'s status.</string>
+    <string name="fam_push_title">Missed-dose alerts</string>
+    <string name="fam_push_text">Get an alert on this phone when a dose is missed, even when CareCircle is closed. The alert holds only the time of the dose. Turn it off any time.</string>
 </resources>
