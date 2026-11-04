@@ -80,6 +80,7 @@ fun InsuranceScreen(vm: AppViewModel) {
         when (val s = state) {
             InsuranceState.Idle -> {
                 item { Muted(stringResource(R.string.ins_intro)) }
+                if (saved.isNotEmpty()) item { AskPolicySection(vm) }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         BigButton(stringResource(R.string.ins_add_policy), { picker.launch(arrayOf("application/pdf", "image/*")) }, icon = Icons.Default.Description)

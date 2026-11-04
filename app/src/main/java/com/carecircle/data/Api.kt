@@ -54,7 +54,23 @@ data class PolicyResponse(
     val disclaimer: String = "",
 )
 
+@Serializable data class PolicyQuestionRequest(val question: String, val clauses: List<com.carecircle.domain.ClauseDto>)
+
+@Serializable
+data class CitationDto(val page: Int = 0, val clause: String? = null, val quote: String = "", val clauseRef: String = "", val excerpt: String = "")
+
+@Serializable
+data class PolicyQuestionResponse(
+    val answer: String = "UNCLEAR",
+    val explanation: String = "",
+    val citations: List<CitationDto> = emptyList(),
+    val confidence: Double = 0.0,
+    val mode: String = "",
+    val disclaimer: String = "",
+)
+
 interface CareApi {
+    @POST("api/policy-question") suspend fun policyQuestion(@Body req: PolicyQuestionRequest): PolicyQuestionResponse
     @POST("api/policy-summary") suspend fun policySummary(@Body req: PolicyRequest): PolicyResponse
     @GET("api/interactions") suspend fun interactions(@Query("salts") salts: String): InteractionResponse
     @GET("api/medicine-info") suspend fun medicineInfo(@Query("salt") salt: String): MedicineInfoResponse

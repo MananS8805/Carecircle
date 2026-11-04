@@ -7,7 +7,7 @@ import org.junit.Test
 
 class ReminderHealthTest {
     private val now = 10 * 24 * 3600_000L
-    private fun ok() = ReminderHealth(true, true, true, true, true, 2, now - 1000, now - 3 * 24 * 3600_000L, now)
+    private fun ok() = ReminderHealth(true, true, true, true, true, 2, now - 1000, now - 3 * 24 * 3600_000L, now, lastRescheduleAt = now - 1000, expectedAlarms = 2, armedAlarms = 2)
 
     @Test fun healthyWhenEverythingIsOn() {
         assertTrue(ok().issues.isEmpty()); assertFalse(ok().blocking)
@@ -38,5 +38,23 @@ class ReminderHealthTest {
 
     @Test fun channelOffBlocks() {
         assertTrue(ok().copy(channelsOn = false).blocking)
+    }
+
+    @Test fun staleRescheduleIsFlaggedOnlyWhenMedicinesExist() {
+        val stale = ok().copy(lastRescheduleAt = now - 40 * 3600_000L)
+        assertTrue(HealthIssue.NO_RECENT_RESCHEDULE in stale.issues)
+        assertTrue(HealthIssue.NO_RECENT_RESCHEDULE !in stale.copy(scheduledMedicines = 0).issues)
+        assertTrue(HealthIssue.NO_RECENT_RESCHEDULE !in ok().copy(lastRescheduleAt = now - 3600_000L).issues)
+    }
+
+    @Test fun alarmCountMismatchNeedsBothNumbers() {
+        val fresh = ok().copy(lastRescheduleAt = now)
+        assertTrue(HealthIssue.ALARM_COUNT_MISMATCH in fresh.copy(expectedAlarms = 3, armedAlarms = 2).issues)
+        assertTrue(HealthIssue.ALARM_COUNT_MISMATCH !in fresh.copy(expectedAlarms = 3, armedAlarms = 3).issues)
+        assertTrue(HealthIssue.ALARM_COUNT_MISMATCH !in fresh.copy(expectedAlarms = 3, armedAlarms = -1).issues)
+    }
+
+    @Test fun allGreenWhenEverythingIsFresh() {
+        assertTrue(ok().copy(lastRescheduleAt = now, expectedAlarms = 2, armedAlarms = 2).issues.isEmpty())
     }
 }

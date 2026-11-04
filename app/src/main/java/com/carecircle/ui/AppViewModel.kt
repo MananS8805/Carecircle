@@ -26,6 +26,16 @@ import java.time.ZonedDateTime
 enum class ReadFailure { PASSWORD, UNREADABLE, TOO_LITTLE_TEXT }
 enum class SendFailure { TOO_LARGE, RATE_LIMITED, OFFLINE, OTHER }
 
+/** "Ask about your policy". The question and clauses leave the phone only from [NeedConsent], and the consent is asked every time. */
+sealed interface AskState {
+    data object Idle : AskState
+    data class NeedConsent(val question: String, val clauseCount: Int) : AskState
+    data object Sending : AskState
+    data class Failed(val kind: AskFailure) : AskState
+    data class Done(val question: String, val response: PolicyQuestionResponse) : AskState
+}
+enum class AskFailure { BUSY, RATE_LIMITED, OFFLINE, TOO_LARGE, NO_POLICY, OTHER }
+
 /** Insurance flow. The OCR text lives only inside [NeedConsent] and is dropped on cancel, decline or send. */
 sealed interface InsuranceState {
     data object Idle : InsuranceState
@@ -358,6 +368,43 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         repo.deletePolicy(id)
         if ((_insurance.value as? InsuranceState.Result)?.savedId == id) _insurance.value = InsuranceState.Idle
     }
+
+    // ---- Ask about your policy ----
+    private val _ask = MutableStateFlow<AskState>(AskState.Idle)
+    val ask: StateFlow<AskState> = _ask
+    private val _askPrefill = MutableStateFlow<String?>(null)
+    /** A question handed over from a medicine's page; the Insurance screen takes it once. */
+    val askPrefill: StateFlow<String?> = _askPrefill
+
+    fun prefillAsk(question: String) { _askPrefill.value = question }
+    fun takeAskPrefill() { _askPrefill.value = null }
+
+    fun askPolicy(question: String) = viewModelScope.launch {
+        val person = scopePerson.value ?: return@launch
+        val clauses = repo.latestPolicy(person.id)?.summary?.let(com.carecircle.domain.ClaimAnswer::clausesFrom).orEmpty()
+        _ask.value = when {
+            !com.carecircle.domain.ClaimAnswer.validQuestion(question) -> AskState.Idle
+            clauses.isEmpty() -> AskState.Failed(AskFailure.NO_POLICY)
+            else -> AskState.NeedConsent(question.trim(), clauses.size)
+        }
+    }
+
+    fun confirmAsk() = viewModelScope.launch {
+        val s = _ask.value as? AskState.NeedConsent ?: return@launch
+        val person = scopePerson.value ?: return@launch
+        val clauses = repo.latestPolicy(person.id)?.summary?.let(com.carecircle.domain.ClaimAnswer::clausesFrom).orEmpty()
+        _ask.value = AskState.Sending
+        _ask.value = when (val r = repo.policyQuestion(s.question, clauses)) {
+            is QuestionResult.Ok -> AskState.Done(s.question, r.response)
+            QuestionResult.Busy -> AskState.Failed(AskFailure.BUSY)
+            QuestionResult.RateLimited -> AskState.Failed(AskFailure.RATE_LIMITED)
+            QuestionResult.Offline -> AskState.Failed(AskFailure.OFFLINE)
+            QuestionResult.TooLarge -> AskState.Failed(AskFailure.TOO_LARGE)
+            QuestionResult.Error -> AskState.Failed(AskFailure.OTHER)
+        }
+    }
+
+    fun resetAsk() { _ask.value = AskState.Idle }
 
     // ---- App mode: patient app or family view ----
     private val _mode = MutableStateFlow(prefs.appMode.ifEmpty { if (prefs.onboardingDone) Prefs.MODE_PATIENT else "" })

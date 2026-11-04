@@ -24,7 +24,8 @@ class MainActivity : AppCompatActivity() {
             CareCircleTheme {
                 val vm: AppViewModel = viewModel()
                 LaunchedEffect(Unit) {
-                    ReminderScheduler.scheduleAll(applicationContext)
+                    ReminderScheduler.rescheduleAll(applicationContext, "app_open")
+                    com.carecircle.reminder.RescheduleWorker.ensurePeriodic(applicationContext)
                     vm.refreshStatuses()
                 }
                 val mode by vm.appMode.collectAsStateWithLifecycle()

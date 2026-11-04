@@ -231,7 +231,7 @@ class BackupService(private val ctx: Context) {
         db.symptoms().insertAll(file.symptoms.map { SymptomLog(medicineId = it.medicineId, loggedAt = it.loggedAt, symptom = it.symptom, severity = it.severity, note = it.note) })
         db.policies().insertAll(file.policySummaries.map { PolicySummaryEntity(savedAt = it.savedAt, json = it.json, personId = it.personId) })
         prefs.selectedPersonId = Prefs.UNSET
-        ReminderScheduler.scheduleAll(ctx)
+        ReminderScheduler.rescheduleAll(ctx, "restore")
         ReminderScheduler.scheduleAppointments(ctx)
     }
 

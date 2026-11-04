@@ -140,6 +140,11 @@ fun DetailScreen(vm: AppViewModel, id: Long, onEdit: (Long) -> Unit, onBack: () 
             }
         }
         if (!m.conditionTag.isNullOrBlank() && policyLoaded) item { PolicyCard(m.conditionTag!!, policy, onOpenInsurance) }
+        if (!m.conditionTag.isNullOrBlank() && policy != null) item {
+            SoftButton(stringResource(R.string.ask_check_condition), {
+                vm.prefillAsk(ctx.getString(R.string.ask_prefill, m.conditionTag!!)); onOpenInsurance()
+            }, Modifier.fillMaxWidth())
+        }
         item { Text(stringResource(R.string.info_title), style = MaterialTheme.typography.titleLarge) }
         when {
             m.salt.isBlank() -> item { NoticeCard(stringResource(R.string.info_need_name), stringResource(R.string.info_edit_name)) { onEdit(m.id) } }

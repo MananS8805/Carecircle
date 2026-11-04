@@ -87,3 +87,8 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 ## v1.3 notes
 - `domain/Vitals.kt` and `domain/Appointments.kt` are pure and tested. Vitals are never interpreted (no normal/abnormal wording); keep it that way unless a clinician reviews the wording.
 - Appointment reminders use request code `8_000_000 + id`; `ReminderScheduler.scheduleAppointments` runs from `scheduleAll` (boot) and after a restore.
+
+## v1.4 notes
+- Everything that changes alarms goes through `ReminderScheduler.rescheduleAll(ctx, reason)` (logged in `Prefs.rescheduleLog`) or `RescheduleWorker.enqueue`. Do not call `scheduleAll` directly.
+- Policy Q&A: `domain/ClaimAnswer.kt` is the phone-side second check; the server (`backend/lib/policyQuestion.ts`) verifies quotes first. Never show a covered or not-covered verdict without a verified source clause.
+- Backend: all LLM calls go through `lib/llm.ts` so spend is recorded; `lib/log.ts` can only write its fixed field list. The catch-up plan and its status live in `docs/catchup-status.md`.

@@ -30,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +52,7 @@ import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 /** Reads what the phone allows. Called again whenever the screen comes back from system settings. */
-fun readHealth(ctx: Context, scheduled: Int, firstAdded: Long): ReminderHealth {
+fun readHealth(ctx: Context, scheduled: Int, firstAdded: Long, expected: Int = -1): ReminderHealth {
     val nm = ctx.getSystemService(NotificationManager::class.java)
     val status = readReminderStatus(ctx)
     val channelsOn = listOf(Notifier.CH_DOSE, Notifier.CH_URGENT).all { nm.getNotificationChannel(it)?.importance != NotificationManager.IMPORTANCE_NONE }
@@ -60,6 +61,8 @@ fun readHealth(ctx: Context, scheduled: Int, firstAdded: Long): ReminderHealth {
         doNotDisturbOff = nm.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALL,
         channelsOn = channelsOn, scheduledMedicines = scheduled, lastReminderAt = Prefs(ctx).lastReminderAt,
         firstMedicineAddedAt = firstAdded, now = System.currentTimeMillis(),
+        lastRescheduleAt = Prefs(ctx).rescheduleLog.firstOrNull()?.at ?: 0L, expectedAlarms = expected,
+        armedAlarms = Prefs(ctx).rescheduleLog.firstOrNull()?.alarms ?: -1,
     )
 }
 
@@ -69,9 +72,10 @@ fun HealthScreen(vm: AppViewModel, onBack: () -> Unit) {
     val ctx = LocalContext.current
     var health by remember { mutableStateOf<ReminderHealth?>(null) }
     var testSent by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     suspend fun reload() {
         val (count, first) = vm.healthInputs()
-        health = readHealth(ctx, count, first)
+        health = readHealth(ctx, count, first, com.carecircle.reminder.ReminderScheduler.expectedAlarms(ctx))
     }
     LaunchedEffect(Unit) { Notifier.ensureChannels(ctx); reload() }
     val owner = LocalLifecycleOwner.current
@@ -110,6 +114,15 @@ fun HealthScreen(vm: AppViewModel, onBack: () -> Unit) {
             item { Check(!HealthIssue.DO_NOT_DISTURB.inList(h), R.string.health_dnd, R.string.health_why_dnd, blocking = false) { open(ctx, Intent(Settings.ACTION_ZEN_MODE_PRIORITY_SETTINGS)) } }
             item { Check(!HealthIssue.NOTHING_SCHEDULED.inList(h), R.string.health_medicines, R.string.health_why_medicines, blocking = false, action = null) {} }
             if (HealthIssue.NEVER_FIRED.inList(h)) item { Check(false, R.string.health_fired, R.string.health_why_fired, blocking = false, action = null) {} }
+            if (HealthIssue.NO_RECENT_RESCHEDULE.inList(h)) item { Check(false, R.string.health_resched, R.string.health_why_resched, blocking = false, action = "fix") { scope.launch { com.carecircle.reminder.ReminderScheduler.rescheduleAll(ctx, "manual"); reload() } } }
+            if (HealthIssue.ALARM_COUNT_MISMATCH.inList(h)) item { Check(false, R.string.health_mismatch, R.string.health_why_mismatch, blocking = false, action = "fix") { scope.launch { com.carecircle.reminder.ReminderScheduler.rescheduleAll(ctx, "manual"); reload() } } }
+            item { Text(stringResource(R.string.health_log_title), style = MaterialTheme.typography.titleLarge) }
+            val log = Prefs(ctx).rescheduleLog
+            if (log.isEmpty()) item { Muted(stringResource(R.string.health_log_empty)) }
+            items(log.size) { i ->
+                val e = log[i]
+                Muted(stringResource(R.string.health_log_line, java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(java.util.Date(e.at)), e.reason, e.alarms))
+            }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     BigButton(stringResource(R.string.health_test), {
@@ -142,7 +155,7 @@ private fun Check(ok: Boolean, titleRes: Int, whyRes: Int, blocking: Boolean, ac
             Column(Modifier.weight(1f)) {
                 Text(stringResource(titleRes), style = MaterialTheme.typography.titleMedium)
                 Muted(stringResource(whyRes))
-                if (!ok && action != null) SoftButton(stringResource(R.string.onb_open_settings), onFix, Modifier.padding(top = 8.dp))
+                if (!ok && action != null) SoftButton(stringResource(if (action == "fix") R.string.health_fix_now else R.string.onb_open_settings), onFix, Modifier.padding(top = 8.dp))
             }
         }
     }

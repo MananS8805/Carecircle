@@ -2,6 +2,7 @@ import { parseIngredients } from "./normalize.js";
 import { US_NAMES, fetchLabel } from "./sources.js";
 import { TtlCache } from "./cache.js";
 import { allow } from "./ratelimit.js";
+import { withLog } from "./log.js";
 
 type Env = { APP_KEY?: string };
 type F = typeof fetch;
@@ -76,7 +77,11 @@ export function parseNames(salts: string): { names: string[]; group: Map<string,
   return { names, group };
 }
 
-export async function handleInteractions(req: Request, env: Env = process.env as Env, f: F = fetch): Promise<Response> {
+export function handleInteractions(req: Request, env: Env = process.env as Env, f: F = fetch): Promise<Response> {
+  return withLog("interactions", () => run(req, env, f));
+}
+
+async function run(req: Request, env: Env, f: F): Promise<Response> {
   if (env.APP_KEY && req.headers.get("x-app-key") !== env.APP_KEY) return json(401, { error: "unauthorized" });
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";

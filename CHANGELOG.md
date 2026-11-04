@@ -5,6 +5,11 @@ Each version is a git tag. Informational only, not medical advice.
 ## Backend (not deployed)
 - `/api/policy-summary` without an LLM key now also reads the **Covered** and **Not covered** lists: the bullet or numbered lines under an Inclusions or Exclusions heading, up to the next heading, each with page, clause and an exact verified quote. Deploy with `npx vercel --prod` when ready.
 
+## v1.4
+- Reminder reliability: boot, app update, time change, time-zone change and exact-alarm permission changes all re-arm every alarm through one idempotent WorkManager job, plus a 12-hour safety net. Doses missed while the phone was off are recorded as missed. The reminders health check gains "not refreshed lately" and "reminder count mismatch" checks and a 20-entry refresh log.
+- Ask about your policy: a question answered from the clauses saved with your policy summary, always with a consent screen, source clauses and a fixed disclaimer. No answer reads as covered or not covered without a verified quote. New backend endpoint `/api/policy-question`.
+- Backend: daily LLM spend cap (503 busy past it, cached cards keep working), one JSON log line per request (no bodies or names), open `/health`.
+
 ## v1.3.1
 - Widget Taken button also appears 30 minutes before a dose. Taken now updates the family's event and today-ring in parallel (a receiver only has ~10 s), and old-event cleanup moved out of that path.
 - Family sync screen: "Send update to family now" shows whether the family copy was reached.

@@ -30,6 +30,16 @@ sealed interface PolicyResult {
     data object Error : PolicyResult
 }
 
+sealed interface QuestionResult {
+    data class Ok(val response: PolicyQuestionResponse) : QuestionResult
+    data object TooLarge : QuestionResult
+    data object RateLimited : QuestionResult
+    /** The server has used up its daily budget; try again later. */
+    data object Busy : QuestionResult
+    data object Offline : QuestionResult
+    data object Error : QuestionResult
+}
+
 sealed interface CardResult {
     data class Ok(val response: MedicineInfoResponse, val fromCache: Boolean, val fetchedAt: Long = System.currentTimeMillis()) : CardResult
     /** The server found nothing official for these names (HTTP 404/422 or an empty answer). */
@@ -67,6 +77,24 @@ class Repository(ctx: Context) {
         PolicyResult.Offline
     } catch (e: Exception) {
         PolicyResult.Error
+    }
+
+    /** Sends one question and the saved clause quotes, only after the consent screen. Nothing is logged or kept. */
+    suspend fun policyQuestion(question: String, clauses: List<com.carecircle.domain.ClauseDto>): QuestionResult = try {
+        QuestionResult.Ok(ApiFactory.api.policyQuestion(PolicyQuestionRequest(question.trim(), clauses)))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: HttpException) {
+        when (e.code()) {
+            413 -> QuestionResult.TooLarge
+            429 -> QuestionResult.RateLimited
+            503 -> QuestionResult.Busy
+            else -> QuestionResult.Error
+        }
+    } catch (e: java.io.IOException) {
+        QuestionResult.Offline
+    } catch (e: Exception) {
+        QuestionResult.Error
     }
 
     suspend fun savePolicy(personId: Long, r: PolicyResponse, now: Long = System.currentTimeMillis()) {

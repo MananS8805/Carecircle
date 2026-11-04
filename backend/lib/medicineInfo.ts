@@ -2,17 +2,24 @@ import { parseIngredients } from "./normalize.js";
 import { buildSources, fetchLabel, fetchMedlinePlus, resolveRxcui } from "./sources.js";
 import { assembleCard, buildPrompt, extractiveCard, summarizeWithLlm, type LlmEnv } from "./summarize.js";
 import { TtlCache } from "./cache.js";
+import { approxTokens, overBudget, recordSpend, type BudgetEnv } from "./budget.js";
+import { pickProvider } from "./summarize.js";
+import { withLog } from "./log.js";
 import { allow } from "./ratelimit.js";
 import type { MedicineCard } from "./types.js";
 
-type Env = LlmEnv & { APP_KEY?: string };
+type Env = LlmEnv & BudgetEnv & { APP_KEY?: string };
 const cache = new TtlCache<{ cards: MedicineCard[]; unresolved: string[] }>(6 * 60 * 60 * 1000);
 export function clearCache() { (cache as any).m.clear(); }
 
 const json = (status: number, body: unknown, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...extra } });
 
-export async function handleMedicineInfo(req: Request, env: Env = process.env as Env, f: typeof fetch = fetch): Promise<Response> {
+export function handleMedicineInfo(req: Request, env: Env = process.env as Env, f: typeof fetch = fetch): Promise<Response> {
+  return withLog("medicine-info", (usage) => run(req, env, f, usage));
+}
+
+async function run(req: Request, env: Env, f: typeof fetch, usage: { inTokens: number; outTokens: number; cacheHit: boolean }): Promise<Response> {
   if (env.APP_KEY && req.headers.get("x-app-key") !== env.APP_KEY) return json(401, { error: "unauthorized" });
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
@@ -26,8 +33,11 @@ export async function handleMedicineInfo(req: Request, env: Env = process.env as
 
   const key = ingredients.join("|");
   const hit = cache.get(key);
+  if (hit) usage.cacheHit = true;
   if (hit) return json(200, hit, { "x-cache": "HIT", "cache-control": "public, s-maxage=86400" });
 
+  // Past the daily cap the LLM rewrite is skipped, so cards still work from the plain label text.
+  const llmEnv: Env = (await overBudget(env)) ? { ...env, GEMINI_API_KEY: undefined, ANTHROPIC_API_KEY: undefined } : env;
   const cards: MedicineCard[] = [];
   const unresolved: string[] = [];
   for (const generic of ingredients) {
@@ -36,7 +46,13 @@ export async function handleMedicineInfo(req: Request, env: Env = process.env as
     if (!label && !medline) { unresolved.push(generic); continue; }
     const sections = label ?? {};
     const sources = buildSources(rxcui, medline, !!label);
-    const llm = await summarizeWithLlm(buildPrompt(generic, sections, medline?.text), env, f);
+    const prompt = buildPrompt(generic, sections, medline?.text);
+    const llm = await summarizeWithLlm(prompt, llmEnv, f);
+    if (pickProvider(llmEnv)) {
+      const inT = approxTokens(prompt.length), outT = llm ? approxTokens(JSON.stringify(llm).length) : 0;
+      usage.inTokens += inT; usage.outTokens += outT;
+      await recordSpend(env, inT, outT);
+    }
     const body = llm ?? extractiveCard(generic, sections, medline?.text);
     cards.push(assembleCard(generic, rxcui, body, sources, llm ? "llm" : "extract"));
   }

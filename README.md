@@ -22,6 +22,8 @@ Every version is a git tag (`v0.1` ... `v0.6`); see [CHANGELOG.md](CHANGELOG.md)
 | v0.4 | Insurance policy summary with clause citations, CameraX strip scanner |
 | v0.5 | Multiple people with separate data, Hindi and Gujarati UI with in-app switch, CI and release signing config |
 | v0.6 | Condition tags with cited policy notes, voice entry of medicines, adherence history and PDF report |
+| v0.7 to v1.3.1 | Medicine card extras, escalation, Firebase caregiver sync, family app, safety flags, reminders health check, widget, vitals and appointments (see CHANGELOG) |
+| v1.4 | Reminder reliability (re-arm on reboot / time change, safety net), cited policy Q&A, backend spend cap and `/health` |
 
 ## Run the Android app
 
@@ -70,6 +72,9 @@ _Placeholder: add phone screenshots here (Today with the organ view, Medicines, 
 - `GET /api/medicine-info?salt=...` plain-English card from official sources (RxNorm, openFDA label, MedlinePlus).
 - `GET /api/interactions?salts=a,b,c` (max 8 names): label sentences that mention another of your medicines, each with a source link; honest empty state otherwise.
 - `POST /api/policy-summary` body `{pages:[{page,text}]}` (max 40 pages, 200,000 characters, else 413). Returns `{summary, unverified, mode, disclaimer}`. Every item carries page, clause and a quote that was checked to appear on that page; anything that cannot be verified is dropped and listed in `unverified`. Without an LLM key `mode` is `extractive` (regex). Limit: 5 requests per minute per IP. The request and result are never stored or logged. Only call it after explicit consent in the app.
+
+- `POST /api/policy-question` body `{question (max 300 chars), clauses:[{page,clause,text}]}` (max 40 clauses). Returns `{answer, explanation, citations, confidence, mode, disclaimer}` where `answer` is one of `COVERED_PER_TEXT`, `EXCLUDED_PER_TEXT`, `WAITING_PERIOD`, `NOT_FOUND`, `UNCLEAR`. Citations whose quote is not verbatim in the supplied clauses are dropped; a verdict that loses all of them becomes `NOT_FOUND`. 5 per minute per IP. Nothing is stored or logged.
+- `GET /api/health` `{ok, version, budgetUsedPct}`; open, no secrets. Past `DAILY_LLM_BUDGET_USD` (default 5) the LLM endpoints answer 503 `{error:"busy",retryAfterSeconds}` while cached medicine cards and interactions keep working. Each request writes one JSON log line (endpoint, status, latency, cache hit, token counts) and nothing else.
 
 ## Privacy
 

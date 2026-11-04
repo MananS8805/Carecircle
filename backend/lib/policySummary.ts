@@ -1,6 +1,9 @@
 import { allow } from "./ratelimit.js";
+import { busyResponse, overBudget } from "./budget.js";
+import { callAnthropicText, type LlmCallEnv } from "./llm.js";
+import { withLog } from "./log.js";
 
-type Env = { ANTHROPIC_API_KEY?: string; LLM_MODEL?: string; APP_KEY?: string };
+type Env = LlmCallEnv & { APP_KEY?: string };
 type F = typeof fetch;
 
 export const MAX_PAGES = 40;
@@ -120,22 +123,6 @@ export function parseJson(text: string): unknown | null {
   try { return JSON.parse(m[0]); } catch { return null; }
 }
 
-async function callLlm(prompt: string, env: Env, f: F): Promise<string | null> {
-  if (!env.ANTHROPIC_API_KEY) return null;
-  try {
-    const r = await f("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: env.LLM_MODEL ?? "claude-haiku-4-5", max_tokens: 4000, temperature: 0, messages: [{ role: "user", content: prompt }] }),
-      signal: AbortSignal.timeout(25000),
-    });
-    if (!r.ok) return null;
-    const j: any = await r.json();
-    const t = j?.content?.[0]?.text;
-    return typeof t === "string" ? t : null;
-  } catch { return null; }
-}
-
 // ---- deterministic fallback -------------------------------------------------------------------------------
 
 const AMOUNT = String.raw`(?:rs\.?|inr|₹)\s*[\d,]+(?:\.\d+)?(?:\s*(?:lakhs?|lacs?|crores?))?|\d+(?:\.\d+)?\s*(?:lakhs?|lacs?|crores?)`;
@@ -241,7 +228,11 @@ function parseBody(text: string): Page[] | "bad" | "toolarge" {
 }
 
 /** The request body and the result are never stored, cached or logged, and never echoed in errors. */
-export async function handlePolicySummary(req: Request, env: Env = process.env as Env, f: F = fetch): Promise<Response> {
+export function handlePolicySummary(req: Request, env: Env = process.env as Env, f: F = fetch): Promise<Response> {
+  return withLog("policy-summary", (usage) => run(req, env, f, usage));
+}
+
+async function run(req: Request, env: Env, f: F, usage: { inTokens: number; outTokens: number }): Promise<Response> {
   if (env.APP_KEY && req.headers.get("x-app-key") !== env.APP_KEY) return json(401, { error: "unauthorized" });
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
   if (!allow(`policy|${ip}`, LIMIT)) return json(429, { error: "rate_limited" }, { "retry-after": "60" });
@@ -258,10 +249,12 @@ export async function handlePolicySummary(req: Request, env: Env = process.env a
   let mode: "llm" | "extractive" = "extractive";
   let raw: unknown = null;
   if (env.ANTHROPIC_API_KEY) {
+    if (await overBudget(env)) return busyResponse();
     const prompt = buildPrompt(pages);
     for (let attempt = 0; attempt < 2 && raw === null; attempt++) {
-      const t = await callLlm(prompt, env, f);
-      const parsed = t ? parseJson(t) : null;
+      const out = await callAnthropicText(prompt, env, f, { maxTokens: 4000, timeoutMs: 25000 });
+      if (out) { usage.inTokens += out.inTokens; usage.outTokens += out.outTokens; }
+      const parsed = out ? parseJson(out.text) : null;
       if (parsed && typeof parsed === "object") raw = parsed;
     }
     if (raw !== null) mode = "llm";

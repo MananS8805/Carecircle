@@ -44,20 +44,33 @@ object ReminderScheduler {
     }
 
     /** One alarm per medicine (the next dose). The receiver re-arms the following one. */
-    suspend fun scheduleFor(ctx: Context, medId: Long, now: ZonedDateTime = ZonedDateTime.now(ZoneId.systemDefault())) {
+    suspend fun scheduleFor(ctx: Context, medId: Long, now: ZonedDateTime = ZonedDateTime.now(ZoneId.systemDefault())): Boolean {
         val med = AppDb.get(ctx).medicines().get(medId)
         val am = ctx.getSystemService(AlarmManager::class.java)
-        if (med == null || !med.active) { cancel(ctx, medId); return }
-        val next = Schedule.nextDose(Schedule.parseTimes(med.timesCsv), now) ?: run { cancel(ctx, medId); return }
+        if (med == null || !med.active) { cancel(ctx, medId); return false }
+        val next = Schedule.nextDose(Schedule.parseTimes(med.timesCsv), now) ?: run { cancel(ctx, medId); return false }
         val at = next.toInstant().toEpochMilli()
         arm(am, at, pi(ctx, medId, at))
+        return true
     }
 
-    suspend fun scheduleAll(ctx: Context) {
+    /** Re-arms everything and returns how many dose alarms are set. */
+    suspend fun scheduleAll(ctx: Context): Int {
         Notifier.ensureChannels(ctx)
         scheduleDailySummary(ctx)
         scheduleAppointments(ctx)
-        AppDb.get(ctx).medicines().all().forEach { scheduleFor(ctx, it.id) }
+        return AppDb.get(ctx).medicines().all().count { scheduleFor(ctx, it.id) }
+    }
+
+    /** Alarms every active medicine should have right now; compared with what the last re-arm set. */
+    suspend fun expectedAlarms(ctx: Context): Int =
+        AppDb.get(ctx).medicines().all().count { it.active && Schedule.parseTimes(it.timesCsv).isNotEmpty() }
+
+    /** [scheduleAll] plus a line in the 20-entry log shown on the reminders health check. */
+    suspend fun rescheduleAll(ctx: Context, reason: String): Int {
+        val armed = scheduleAll(ctx)
+        com.carecircle.data.Prefs(ctx).logReschedule(System.currentTimeMillis(), reason, armed)
+        return armed
     }
 
     fun cancel(ctx: Context, medId: Long) {

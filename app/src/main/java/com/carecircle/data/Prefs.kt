@@ -30,12 +30,28 @@ class Prefs(ctx: Context) {
         get() = sp.getLong("lastReminderAt", 0L)
         set(v) = sp.edit().putLong("lastReminderAt", v).apply()
 
+    /** Newest first, at most [LOG_MAX] lines of time, reason and alarm count. Holds no health data. */
+    val rescheduleLog: List<RescheduleEntry>
+        get() = (sp.getString("rescheduleLog", "") ?: "").lines().mapNotNull { l ->
+            val p = l.split("|")
+            if (p.size == 3) RescheduleEntry(p[0].toLongOrNull() ?: return@mapNotNull null, p[1], p[2].toIntOrNull() ?: 0) else null
+        }
+
+    fun logReschedule(at: Long, reason: String, alarms: Int) {
+        val line = "$at|${reason.filter { it.isLetterOrDigit() || it == '_' }.takeLast(40)}|$alarms"
+        val old = (sp.getString("rescheduleLog", "") ?: "").lines().filter { it.isNotBlank() }
+        sp.edit().putString("rescheduleLog", (listOf(line) + old).take(LOG_MAX).joinToString("\n")).apply()
+    }
+
     fun clearAll() = sp.edit().clear().apply()
 
     companion object {
+        const val LOG_MAX = 20
         const val MODE_PATIENT = "patient"
         const val MODE_FAMILY = "family"
         const val UNSET = -2L
         const val ALL_PEOPLE = -1L
     }
 }
+
+data class RescheduleEntry(val at: Long, val reason: String, val alarms: Int)

@@ -154,10 +154,8 @@ class AppointmentReceiver : BroadcastReceiver() {
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
-        val pending = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
-            try { ReminderScheduler.scheduleAll(ctx) } finally { pending.finish() }
-        }
+        // Through WorkManager so the work outlives the receiver; the unique job makes repeated broadcasts harmless.
+        RescheduleWorker.enqueue(ctx, intent.action?.substringAfterLast('.')?.lowercase() ?: "unknown")
     }
 }
 
