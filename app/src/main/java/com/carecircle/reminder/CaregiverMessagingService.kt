@@ -5,6 +5,7 @@ import com.carecircle.AppLocale
 import com.carecircle.data.AppDb
 import com.carecircle.data.Prefs
 import com.carecircle.data.PushTokens
+import com.carecircle.domain.Acks
 import com.carecircle.domain.AlertDecision
 import com.carecircle.domain.CaregiverAlert
 import com.carecircle.domain.HeldAlert
@@ -39,17 +40,20 @@ class CaregiverMessagingService : FirebaseMessagingService() {
         val alerted = CaregiverAlert.decode(prefs.alertedSlots)
         if (!CaregiverAlert.shouldNotify(prefs.pushEnabled, followed, linkId, key, alerted)) return
         prefs.alertedSlots = CaregiverAlert.encode(CaregiverAlert.remember(alerted, key, today))
+        com.carecircle.data.DiagLog.log(this, com.carecircle.domain.DiagCode.PUSH_RECEIVED)
         // Quiet hours and snooze hold the alert for one digest; a push that arrives far too late is dropped.
         when (QuietHours.shouldShow(System.currentTimeMillis(), ZoneId.systemDefault(), QuietDigest.settings(this), message.sentTime)) {
-            AlertDecision.DROP -> return
+            AlertDecision.DROP -> { com.carecircle.data.DiagLog.log(this, com.carecircle.domain.DiagCode.PUSH_DROPPED); return }
             AlertDecision.HOLD -> {
                 prefs.heldAlerts = HeldAlerts.encode(HeldAlerts.add(HeldAlerts.decode(prefs.heldAlerts), HeldAlert(today, label, linkId)))
                 QuietDigest.scheduleRelease(this)
+                com.carecircle.data.DiagLog.log(this, com.carecircle.domain.DiagCode.PUSH_HELD)
                 return
             }
             AlertDecision.SHOW -> {}
         }
         val lc = AppLocale.wrap(this)
-        Notifier.caregiverAlert(this, key.hashCode(), lc.getString(R.string.notif_cg_title), lc.getString(R.string.notif_cg_text, label))
+        val slot = message.data["slotId"]?.takeIf { Acks.validSlotId(it) }
+        Notifier.caregiverAlert(this, key.hashCode(), lc.getString(R.string.notif_cg_title), lc.getString(R.string.notif_cg_text, label), slot?.let { AckTarget(linkId, it) })
     }
 }

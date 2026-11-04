@@ -29,6 +29,7 @@ Every version is a git tag (`v0.1` ... `v0.6`); see [CHANGELOG.md](CHANGELOG.md)
 | v1.7 | No names in family sync by default, release pipeline (R8, signing, CI), backend hardening, tested Firestore rules |
 | v1.8 | Missed-dose push to the family phone, weekly adherence summary, emulator smoke tests |
 | v1.9 | Up to three family members per person, quiet hours and snooze on the family phone, cropped live strip scanner |
+| v2.0 | Mark as handled for family members, diagnostics screen with an opt-in local crash log |
 
 ## Run the Android app
 

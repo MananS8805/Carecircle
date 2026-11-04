@@ -81,7 +81,7 @@ async function run(req: Request, env: Env, injected?: NotifyDeps): Promise<Respo
     return json(429, { error: "rate_limited" }, { "retry-after": "600" });
   }
 
-  const result = await deps.sendData(link.caregiverFcmToken, { type: "missed", slotLabel: body.slotLabel, linkId: body.linkId }).catch(() => "failed" as const);
+  const result = await deps.sendData(link.caregiverFcmToken, { type: "missed", slotLabel: body.slotLabel, linkId: body.linkId, slotId: body.slotId }).catch(() => "failed" as const);
   if (result === "unregistered") {
     await deps.clearToken(body.linkId).catch(() => undefined);
     return json(200, { sent: false, reason: "unregistered" });

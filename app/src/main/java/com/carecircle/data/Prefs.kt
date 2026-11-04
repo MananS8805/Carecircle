@@ -129,6 +129,26 @@ class Prefs(ctx: Context) {
         get() = sp.getString("heldAlerts", "") ?: ""
         set(v) = sp.edit().putString("heldAlerts", v).apply()
 
+    /** Family phone: dose-time keys this phone has marked as handled (newest 14 days). No names. */
+    var ackedSlots: String
+        get() = sp.getString("ackedSlots", "") ?: ""
+        set(v) = sp.edit().putString("ackedSlots", v).apply()
+
+    /** Parent phone: handled dose-time keys per person, merged from every link, so a status write never forgets one. */
+    var handledCache: String
+        get() = sp.getString("handledCache", "") ?: ""
+        set(v) = sp.edit().putString("handledCache", v).apply()
+
+    /** When a status last reached the server from this phone (epoch millis), for the diagnostics screen. */
+    var lastSyncAt: Long
+        get() = sp.getLong("lastSyncAt", 0L)
+        set(v) = sp.edit().putLong("lastSyncAt", v).apply()
+
+    /** Opt-in, off by default: keep a local crash log (exception class and top frames) on this phone. */
+    var crashLogEnabled: Boolean
+        get() = sp.getBoolean("crashLogEnabled", false)
+        set(v) = sp.edit().putBoolean("crashLogEnabled", v).apply()
+
     fun clearAll() = sp.edit().clear().apply()
 
     companion object {

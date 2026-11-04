@@ -5,6 +5,11 @@ Each version is a git tag. Informational only, not medical advice.
 ## Backend (not deployed)
 - `/api/policy-summary` without an LLM key now also reads the **Covered** and **Not covered** lists: the bullet or numbered lines under an Inclusions or Exclusions heading, up to the next heading, each with page, clause and an exact verified quote. Deploy with `npx vercel --prod` when ready.
 
+## v2.0
+- "Mark as handled": a family member taps a button on the missed-dose alert (it works without opening the app) or on the family screen. The parent phone merges the acknowledgements from all links and shows "Handled by a family member" to everyone, without saying who. Acknowledgements are one note per dose time, a second tap does nothing, a removed family member cannot write one, and they are tidied after 14 days. The push now also carries the dose time as `slotId`; two medicines due at the same minute share one alert. **Publish the new `firestore.rules` again.**
+- Diagnostics (Settings, and the family Settings): app and device, Firebase and sync state, reminder permissions, the last 50 events. Events are codes from a fixed list, never text. An optional local crash log (off) keeps the error type and top five frames. Copy, share or clear it. A debug-only crash button exists only in debug builds.
+- The policy question card (verdict with icon and text, source clauses, never "likely covered" without a verified quote) was already finished in v1.4.
+
 ## v1.9
 - Up to three people can see one person's status, each with their own link, push and a name only this phone knows (rename, remove with confirmation, "Add another person" disabled at three, a pending code counts). A family member whose link was removed sees "You no longer have access" and the link is cleared. Room migration 11 to 12 (link label).
 - Quiet hours and snooze on the family phone: a switch with two times (they may cross midnight; start equal to end is refused) and Snooze for 1 hour, 8 hours or until tomorrow morning. Missed-dose alerts arriving then are held and come out as ONE digest when the quiet ends; turning quiet hours or the snooze off shows it at once, and a banner on the family home recovers alerts after a force-stop.

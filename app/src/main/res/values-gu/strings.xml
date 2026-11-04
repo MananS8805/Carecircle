@@ -743,4 +743,17 @@
     <string name="scan_cam_settings">ઍપ સેટિંગ્સ ખોલો</string>
     <string name="scan_cam_unavailable">લાઇવ કૅમેરા શરૂ થઈ શક્યો નથી. તમે ફોનની કૅમેરા ઍપ વાપરી શકો છો.</string>
     <string name="scan_cam_system">કૅમેરા ઍપ વાપરો</string>
+    <string name="ack_action">સંભાળી લીધું ગણો</string>
+    <string name="ack_handled_chip">પરિવારના કોઈ સભ્યએ સંભાળી લીધું</string>
+    <string name="ack_done_title">સંભાળેલ તરીકે ચિહ્નિત</string>
+    <string name="ack_done_text">પરિવાર જોઈ શકે છે કે આ ચૂકેલા ડોઝનું ધ્યાન રખાયું છે.</string>
+    <string name="diag_title">ડાયગ્નોસ્ટિક્સ</string>
+    <string name="diag_note">આ રિપોર્ટમાં દવાના નામ, લોકો, ડોઝ, નોંધ કે આરોગ્યનું કોઈ લખાણ નથી. તમે કૉપિ કે શેર કરો ત્યારે જ તે ફોનની બહાર જાય છે.</string>
+    <string name="diag_crash_log">સ્થાનિક ક્રેશ લૉગ રાખો</string>
+    <string name="diag_crash_log_hint">ડિફૉલ્ટ રૂપે બંધ. ઍપ ક્રેશ થાય તો તે ભૂલનો પ્રકાર અને સ્થળ નોંધે છે, સ્ક્રીન પર શું હતું તે નહીં. આગલી શરૂઆતથી લાગુ.</string>
+    <string name="diag_copy">રિપોર્ટ કૉપિ કરો</string>
+    <string name="diag_copied">કૉપિ થયું.</string>
+    <string name="diag_share">રિપોર્ટ શેર કરો</string>
+    <string name="diag_clear">લૉગ સાફ કરો</string>
+    <string name="diag_refresh">તાજું કરો</string>
 </resources>

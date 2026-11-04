@@ -21,6 +21,9 @@ import com.carecircle.domain.Escalation
 import com.carecircle.domain.FoodTiming
 import com.carecircle.ui.labelRes
 
+/** Which missed dose the "Mark as handled" button on a family alert refers to. */
+data class AckTarget(val linkId: String, val slotId: String)
+
 object Notifier {
     const val CH_DOSE = "doses"
     const val CH_ALERT = "alerts"
@@ -117,16 +120,23 @@ object Notifier {
 
     /** Family phone: "A dose was missed". Built from the dose time only; opens the status screen. */
     @SuppressLint("MissingPermission") // canPost() checks POST_NOTIFICATIONS first
-    fun caregiverAlert(base: Context, id: Int, title: String, text: String) {
+    fun caregiverAlert(base: Context, id: Int, title: String, text: String, ack: AckTarget? = null) {
         if (!canPost(base)) return
         val ctx = AppLocale.wrap(base)
         ensureChannels(ctx)
-        val n = NotificationCompat.Builder(ctx, CH_CAREGIVER)
+        val builder = NotificationCompat.Builder(ctx, CH_CAREGIVER)
             .setSmallIcon(R.drawable.ic_notif).setContentTitle(title).setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text)).setColor(0xFFF26A21.toInt())
             .setPriority(NotificationCompat.PRIORITY_HIGH).setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setContentIntent(openApp(ctx)).setAutoCancel(true).build()
-        NotificationManagerCompat.from(ctx).notify(id, n)
+            .setContentIntent(openApp(ctx)).setAutoCancel(true)
+        if (ack != null) {
+            val pi = PendingIntent.getBroadcast(
+                ctx, id, Intent(ctx, AckReceiver::class.java).putExtra(AckReceiver.EXTRA_LINK, ack.linkId).putExtra(AckReceiver.EXTRA_SLOT, ack.slotId).putExtra(AckReceiver.EXTRA_NOTIF, id),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            builder.addAction(0, ctx.getString(R.string.ack_action), pi)
+        }
+        NotificationManagerCompat.from(ctx).notify(id, builder.build())
     }
 
     fun cancelDose(ctx: Context, doseId: Long) = NotificationManagerCompat.from(ctx).cancel(notifId(doseId))

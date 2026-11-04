@@ -26,6 +26,7 @@ class FollowerWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
         if (!CareSync.isConfigured(ctx)) return Result.success()
         val dao = AppDb.get(ctx).sync()
         val lc = AppLocale.wrap(ctx)
+        CareSync.mergeAcks(ctx) // parent phone: acknowledgements from family members
         for (f in dao.following()) {
             val events = CareSync.fetchSince(ctx, f.linkId, f.lastSeenAt) ?: continue
             for (e in events.filter { it.type == SyncType.MISSED || it.type == SyncType.SUMMARY }) {

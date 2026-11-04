@@ -1,5 +1,6 @@
 package com.carecircle.ui.family
 
+import com.carecircle.ui.DiagnosticsScreen
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -112,7 +113,8 @@ fun FamilyApp(vm: AppViewModel) {
                 composable("fhome") { FamilyHome(vm, onOpen = { nav.navigate("fpatient/$it") }, onAdd = { nav.navigate("fadd") }) }
                 composable("fpatient/{id}") { e -> PatientScreen(vm, e.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }) }
                 composable("fadd") { AddMember(vm, onDone = { nav.navigate("fhome") { popUpTo("fhome") } }) }
-                composable("fsettings") { FamilySettings(vm) }
+                composable("fsettings") { FamilySettings(vm, onDiagnostics = { nav.navigate("fdiag") }) }
+                composable("fdiag") { DiagnosticsScreen(vm, onBack = { nav.popBackStack() }) }
             }
         }
     }
@@ -234,6 +236,7 @@ private fun PatientScreen(vm: AppViewModel, linkId: String, onBack: () -> Unit) 
     val eventsFlow = remember(linkId) { vm.events(linkId) }
     val status by statusFlow.collectAsStateWithLifecycle(null)
     val events by eventsFlow.collectAsStateWithLifecycle(emptyList())
+    val acked by vm.ackedKeys.collectAsStateWithLifecycle()
     var ringFlip by remember { mutableStateOf(false) }
     var organIdx by remember { mutableIntStateOf(0) }
     var showMeds by remember { mutableStateOf(false) }
@@ -342,7 +345,11 @@ private fun PatientScreen(vm: AppViewModel, linkId: String, onBack: () -> Unit) 
         }
         item { Text(stringResource(R.string.fam_timeline), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = FamilyColors.Ink) }
         if (events.isEmpty()) item { Text(stringResource(R.string.family_events_none), color = FamilyColors.Muted) }
-        items(events.take(30), key = { it.id }) { e -> TimelineRow(e, ctx) }
+        items(events.take(30), key = { it.id }) { e ->
+            val canHandle = e.type == SyncType.MISSED && e.scheduledAt > 0
+            val handled = canHandle && (com.carecircle.domain.Acks.isHandled(status?.handled.orEmpty(), e.scheduledAt) || com.carecircle.domain.Acks.slotKey(e.scheduledAt) in acked)
+            TimelineRow(e, ctx, handled = handled, onHandle = if (canHandle && !handled) ({ vm.markHandled(linkId, e.scheduledAt) }) else null)
+        }
         item { TextButton(onClick = { confirmStop = true }) { Text(stringResource(R.string.family_stop_following), color = FamilyColors.Bad) } }
     }
     if (renaming) AlertDialog(
@@ -364,13 +371,15 @@ private fun PatientScreen(vm: AppViewModel, linkId: String, onBack: () -> Unit) 
 }
 
 @Composable
-private fun TimelineRow(e: SyncEventDoc, ctx: android.content.Context) {
+private fun TimelineRow(e: SyncEventDoc, ctx: android.content.Context, handled: Boolean = false, onHandle: (() -> Unit)? = null) {
     val dot = when (e.type) { SyncType.TAKEN -> FamilyColors.Good; SyncType.MISSED -> FamilyColors.Bad; SyncType.SKIPPED -> FamilyColors.Muted; SyncType.SUMMARY -> FamilyColors.Teal }
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(FamilyColors.Surface).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(12.dp).clip(CircleShape).background(dot))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(describeEvent(ctx, e), color = FamilyColors.Ink, fontSize = 15.sp)
+            Text(describeEvent(ctx, e), color = if (handled) FamilyColors.Muted else FamilyColors.Ink, fontSize = 15.sp)
+            if (handled) FChip(stringResource(R.string.ack_handled_chip), FamilyColors.TealSoft, FamilyColors.Teal, Modifier.padding(top = 4.dp))
+            if (onHandle != null) TextButton(onClick = onHandle, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.ack_action), color = FamilyColors.Teal) }
             val day = java.time.Instant.ofEpochMilli(e.at).atZone(ZoneId.systemDefault()).toLocalDate()
             Text(day.format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)), color = FamilyColors.Muted, fontSize = 12.sp)
         }
@@ -415,7 +424,7 @@ private fun AddMember(vm: AppViewModel, onDone: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FamilySettings(vm: AppViewModel) {
+private fun FamilySettings(vm: AppViewModel, onDiagnostics: () -> Unit) {
     val ctx = LocalContext.current
     var lang by remember { mutableStateOf(vm.prefs.language) }
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -459,6 +468,11 @@ private fun FamilySettings(vm: AppViewModel) {
             Text(stringResource(R.string.fam_settings_switch), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = FamilyColors.Ink)
             Text(stringResource(R.string.fam_settings_switch_hint), Modifier.padding(vertical = 6.dp), color = FamilyColors.Muted, fontSize = 15.sp)
             FButton(stringResource(R.string.fam_settings_switch), { vm.setMode(Prefs.MODE_PATIENT) })
+        }
+        FCard(Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.diag_title), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = FamilyColors.Ink)
+            Text(stringResource(R.string.diag_note), Modifier.padding(vertical = 6.dp), color = FamilyColors.Muted, fontSize = 15.sp)
+            FButton(stringResource(R.string.diag_title), onDiagnostics)
         }
         Text(stringResource(R.string.fam_about), color = FamilyColors.Muted, fontSize = 13.sp)
     }

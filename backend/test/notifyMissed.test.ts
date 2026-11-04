@@ -65,12 +65,12 @@ describe("authorisation", () => {
 });
 
 describe("sending", () => {
-  it("sends a data-only message with exactly type, slotLabel and linkId", async () => {
+  it("sends a data-only message with exactly type, slotLabel, linkId and slotId", async () => {
     const d = deps();
     const res = await handleNotifyMissed(post(ok()), {}, d);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ sent: true });
-    expect(d.sent).toEqual([{ token: "tok-1", data: { type: "missed", slotLabel: "8:00 AM", linkId: LINK } }]);
+    expect(d.sent).toEqual([{ token: "tok-1", data: { type: "missed", slotLabel: "8:00 AM", linkId: LINK, slotId: "slot-1" } }]);
   });
 
   it("allows one push per slot and six per hour per link", async () => {

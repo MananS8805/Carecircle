@@ -44,6 +44,7 @@ if [ -f "$aab" ]; then
   [ -z "$leaks" ] && ok "no google-services.json, .env or keystore inside the bundle" || bad "secret-looking files in the bundle: $leaks"
   # The debug-only reset hook must be absent. R8 renames classes in the dex, so look in the mapping file, which lists original names.
   if [ -f "$mapping" ] && grep -q 'com\.carecircle\.DebugReset' "$mapping"; then bad "DebugReset (debug-only test hook) is in the release build"; else ok "no debug reset hook in release"; fi
+  if unzip -p "$aab" 'base/dex/*.dex' 2>/dev/null | grep -aq 'Deliberate crash from the debug menu'; then bad "the debug crash button is in the release build"; else ok "no debug crash button in release"; fi
 fi
 
 # google-services.json must never be tracked.

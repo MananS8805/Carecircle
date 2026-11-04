@@ -84,7 +84,8 @@ fun CareCircleApp(vm: AppViewModel) {
                         onOpenInsurance = { nav.navigate("insurance") { launchSingleTop = true; popUpTo("today") } },
                     )
                 }
-                composable("settings") { SettingsScreen(vm, onManagePeople = { nav.navigate("people") }, onFamily = { nav.navigate("family") }, onHealth = { nav.navigate("health") }, onPrivacy = { nav.navigate("privacy") }) }
+                composable("settings") { SettingsScreen(vm, onManagePeople = { nav.navigate("people") }, onFamily = { nav.navigate("family") }, onHealth = { nav.navigate("health") }, onPrivacy = { nav.navigate("privacy") }, onDiagnostics = { nav.navigate("diagnostics") }) }
+                composable("diagnostics") { DiagnosticsScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("privacy") { PrivacyScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("family") { FamilyScreen(vm, onBack = { nav.popBackStack() }) }
                 composable("health") { HealthScreen(vm, onBack = { nav.popBackStack() }) }

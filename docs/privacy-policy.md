@@ -31,8 +31,13 @@ are not kept or uploaded. If the live camera cannot start, the phone's camera ap
 | `POST /api/policy-question` | You ask about your policy, after a consent screen shown every time | Your question and the saved clause quotes (page, clause number, quote) | CareCircle server, which may use an AI provider. Not stored, not logged |
 | Family sync (Firebase) | Only if you create a code to share a person, or enter a code to follow someone | An anonymous sign-in. By default only: taken / missed / skipped, the time of each dose and daily counts. A first name and medicine names are sent only if you turn on "Also share names". Entering five wrong codes locks code entry for 15 minutes | Google Firebase (Authentication and Firestore). Stopping sharing deletes it |
 | `POST /api/notify-missed` and push | Only while family sync is on, when a dose is missed on the shared phone | From the shared phone: the link code, a dose id and the dose time (for example "8:00 AM"), with a Firebase sign-in token. To the family phone: a data-only push with the type, the dose time and the link code. The family phone writes its push token to the link so it can be reached, and can turn this off | CareCircle server (Firebase Admin) and Google Firebase Cloud Messaging. Nothing is stored or logged by the server; no names or medicine names are included |
+| Mark as handled | Only if a family member taps it | From the family phone: one note named by the dose time, with the word "caregiver" and the server time. The parent phone merges the notes and shows "Handled by a family member" to all family members, never who | Google Firebase (Firestore). Deleted after 14 days or when sharing stops |
 | Voice entry | You tap the microphone button | Nothing from CareCircle. Your phone's speech service listens and may process audio online under its own policy. CareCircle only receives the text | Your phone's speech service |
 | WhatsApp, SMS and sharing | You tap a message or share button | A message you can read and edit first | The app you pick. CareCircle never sends it by itself |
+
+## Diagnostics
+
+Settings > Diagnostics shows a report of app and device details, whether sync is set up, the reminder permissions and the last 50 events (codes such as "status sent", never text). It stays on the phone. It leaves only if you tap Copy or Share. An optional crash log (off by default) records the error type and where it happened, not what was on screen. Delete all my data removes it.
 
 ## What the server logs
 

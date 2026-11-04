@@ -58,3 +58,34 @@ Baseline before starting (2026-11-04): backend 39 tests and typecheck green; And
 | F1 | Legacy single-link migration | not needed | there was never a single-link Prefs value |
 | F2 | Quiet hours, snooze, one overnight digest | done | `QuietHours`, `QuietHoursTest` (cross-midnight, snooze chain), `QuietDigest`. **Needs a family phone to verify the digest and the timing** |
 | F3 | Live scanner: crop to the guide, 2048 px, torch, tap to focus, 64 dp capture, cancel, photo picker, settings button, fallback camera | done | the CameraX scanner already existed; `CropMath` + `CropMathTest`. **The live behaviour (focus, crop alignment) needs a phone** |
+| G1 | Acknowledgements: notification button, status button, merge into every link, rules | done in code | `Acks`, `AcksTest`, `AckReceiver`, `CareSync.mergeAcks`, rules + 6 rules tests (ran here). Differences: the key is `UTC-day_doseTimeMillis` (the push carries `slotId` = dose time); the family phone cannot read acks, it sees them through the parent's status. **Needs two phones and republished rules to verify the whole loop** |
+| G2 | Claim card, verdict chip, citations, confidence | done earlier (A2) | `ClaimAnswer`, `AskPolicy.kt`, `policyQuestion.ts` and their tests |
+| G3 | Diagnostics screen, opt-in crash log, enum-only events | done | `Diagnostics.kt`, `DiagLog.kt`, `DiagnosticsScreen.kt`, `DiagLogTest` (incl. a source scan). Debug-only crash button in `src/debug`, empty twin in `src/release` |
+
+## What was verified, and how
+
+| Check | Result |
+|---|---|
+| `cd backend && npm ci && npm test && npm run typecheck && npm run build:privacy` | green (84 backend tests) |
+| `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease :app:bundleRelease` | green |
+| `scripts/check-release.sh` | passes locally (permissions documented, no secrets, no debug hooks in release) |
+| Firestore rules against the emulator (`firebase/rules-test`) | 28 tests pass |
+| Builds with no `google-services.json` and no signing keys | yes, debug and unsigned release |
+
+## What needs a phone, an emulator or a real Firebase project (not done)
+
+- Running `./gradlew :app:connectedDebugAndroidTest` (smoke tests, `AccessibilityTest`, `MigrationTest` through every version). This wipes the app's data on that device.
+- The CI emulator job and the release job have never run on GitHub.
+- Family push and "mark as handled" end to end: two phones, a service account in Vercel (`FIREBASE_SERVICE_ACCOUNT_JSON`) and the republished `firestore.rules`.
+- R8: a release build has not been started on a phone.
+- The widget, the live scanner crop and focus, TalkBack on every screen, Extra large text in Hindi and Gujarati.
+- Hindi and Gujarati text for everything added since v1.3 is machine-drafted and needs a native speaker.
+- Legal review of `docs/privacy-policy.md` and the Data safety answers; `SUPPORT_EMAIL` and `PRIVACY_URL` are blank.
+- Nothing in this catch-up was deployed to Vercel.
+
+## Where the work deliberately differs from the brief
+
+1. The Firebase sync keeps its first design (pairing codes as document ids, events plus a status document) instead of the brief's `links/{linkId}/days` slots and hashed codes; names are off by default as the brief requires.
+2. The widget stays on RemoteViews, not Glance (no new dependency, same states).
+3. A family phone can still follow several people.
+4. Versions are v1.4 to v2.0 because the brief's v0.7 to v1.3 tags already existed.

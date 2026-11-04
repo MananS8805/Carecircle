@@ -212,7 +212,7 @@ private fun CameraPreview(
                 val preview = Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
                 provider!!.unbindAll()
                 camera = provider!!.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture)
-            }.onFailure { onCannotStart() }
+            }.onFailure { com.carecircle.data.DiagLog.log(ctx, com.carecircle.domain.DiagCode.CAMERA_FAILED, it); onCannotStart() }
         }, ContextCompat.getMainExecutor(ctx))
         onDispose {
             runCatching { camera?.cameraControl?.enableTorch(false) }

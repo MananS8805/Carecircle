@@ -39,6 +39,7 @@
         <receiver android:name=".reminder.SnoozeReceiver" android:exported="false" />
         <receiver android:name=".reminder.DailySummaryReceiver" android:exported="false" />
         <receiver android:name=".reminder.WeeklyReminderReceiver" android:exported="false" />
+        <receiver android:name=".reminder.AckReceiver" android:exported="false" />
         <service android:name=".reminder.CaregiverMessagingService" android:exported="false">
             <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
         </service>

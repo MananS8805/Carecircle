@@ -768,4 +768,17 @@
     <string name="scan_cam_settings">Open app settings</string>
     <string name="scan_cam_unavailable">The live camera could not start. You can use the phone\'s camera app instead.</string>
     <string name="scan_cam_system">Use the camera app</string>
+    <string name="ack_action">Mark as handled</string>
+    <string name="ack_handled_chip">Handled by a family member</string>
+    <string name="ack_done_title">Marked as handled</string>
+    <string name="ack_done_text">The family can see that this missed dose is dealt with.</string>
+    <string name="diag_title">Diagnostics</string>
+    <string name="diag_note">This report holds no medicine names, people, doses, notes or other health text. It leaves the phone only if you copy or share it.</string>
+    <string name="diag_crash_log">Keep a local crash log</string>
+    <string name="diag_crash_log_hint">Off by default. If the app crashes, it records the error type and where, not what was on screen. Applies from the next start.</string>
+    <string name="diag_copy">Copy report</string>
+    <string name="diag_copied">Copied.</string>
+    <string name="diag_share">Share report</string>
+    <string name="diag_clear">Clear the log</string>
+    <string name="diag_refresh">Refresh</string>
 </resources>

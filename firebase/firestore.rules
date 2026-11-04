@@ -48,12 +48,26 @@ service cloud.firestore {
         allow delete: if isOwner(pairing());
       }
 
+      // "Mark as handled": a family phone creates one note per missed dose time; only the parent reads and tidies them.
+      match /acks/{slotKey} {
+        function pairingK() { return get(/databases/$(database)/documents/pairings/$(linkId)).data; }
+        allow read: if isOwner(pairingK());
+        allow create: if isCaregiver(pairingK())
+          && slotKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{10,14}$')
+          && request.resource.data.keys().hasOnly(['at', 'byRole'])
+          && request.resource.data.byRole == 'caregiver'
+          && request.resource.data.at == request.time;
+        allow update: if false; // a second tap is a no-op
+        allow delete: if isOwner(pairingK());
+      }
+
       // "Today" summary: written by the patient phone, read by both sides.
       match /status/{doc} {
         function pairingS() { return get(/databases/$(database)/documents/pairings/$(linkId)).data; }
         allow read: if isOwner(pairingS()) || isCaregiver(pairingS());
         allow create, update: if isOwner(pairingS())
-          && request.resource.data.keys().hasOnly(['day', 'taken', 'total', 'missed', 'skipped', 'nextAt', 'nextMedicine', 'updatedAt']);
+          && request.resource.data.keys().hasOnly(['day', 'taken', 'total', 'missed', 'skipped', 'nextAt', 'nextMedicine', 'updatedAt', 'handledSlots'])
+          && (!('handledSlots' in request.resource.data) || (request.resource.data.handledSlots is list && request.resource.data.handledSlots.size() <= 200));
         allow delete: if isOwner(pairingS());
       }
     }

@@ -209,6 +209,7 @@ class BackupService(private val ctx: Context) {
         )
         val bytes = BackupCodec.encode(file).toByteArray(Charsets.UTF_8)
         out.use { it.write(if (password != null) BackupCrypto.encrypt(bytes, password) else bytes) }
+        DiagLog.log(ctx, com.carecircle.domain.DiagCode.BACKUP_EXPORTED)
     }
 
     suspend fun read(input: InputStream, password: String? = null): BackupParse = withContext(Dispatchers.IO) {
@@ -271,6 +272,7 @@ class BackupService(private val ctx: Context) {
         }
         prefs.selectedPersonId = Prefs.UNSET
         ReminderScheduler.rescheduleAll(ctx, "restore") // also refreshes the widget
+        DiagLog.log(ctx, com.carecircle.domain.DiagCode.RESTORE_DONE)
         ReminderScheduler.scheduleAppointments(ctx)
     }
 
@@ -285,6 +287,7 @@ class BackupService(private val ctx: Context) {
         db.openHelper.writableDatabase.let { sdb -> UserDataRegistry.wipeList(StoreKind.ROOM_TABLE).forEach { sdb.execSQL("DELETE FROM $it") } }
         UserDataRegistry.wipeList(StoreKind.PREFS_KEY).forEach { prefs.remove(it) }
         if (UserDataRegistry.wipeList(StoreKind.CACHE_FILES).isNotEmpty()) ctx.cacheDir.listFiles()?.forEach { it.deleteRecursively() }
+        if (UserDataRegistry.wipeList(StoreKind.PRIVATE_FILE).isNotEmpty()) DiagLog.clear(ctx)
         db.people().insert(Person(id = 1, name = Persons.DEFAULT_NAME)) // there is always at least one person
         if (UserDataRegistry.wipeList(StoreKind.WIDGET).isNotEmpty()) com.carecircle.reminder.DoseWidget.refreshAll(ctx)
         summary

@@ -119,3 +119,8 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - Sharing limits and labels live in `domain/ParentLinks.kt` (3 per person, pending counts). `SyncLink.label` is local only. A family phone still follows several people (the brief's "one claimed link per caregiver" was not applied).
 - Quiet hours and snooze: `domain/QuietHours.kt`; held alerts are stored in `Prefs.heldAlerts` (day, link, dose time) and released by `QuietDigest` (one WorkManager job). Everything about them is on the family phone only.
 - The scanner reads only the framed part: change the guide in `CropMath` (one place), never in the composable.
+
+## v2.0 notes
+- Acknowledgements: `domain/Acks.kt`. The key is the UTC day plus the dose time, the same on every phone. Parents write `handledSlots` into every link's status; `HandledCache` keeps it per person. Rules: caregiver may only create an ack note, never update it; only the parent reads and deletes.
+- `DiagLog.log(ctx, DiagCode, error?)` takes a code, never a string, and `DiagLogTest` scans the sources for string arguments. Add an event by adding an enum entry. Debug-only things live in `src/debug`, with an empty twin in `src/release`; `scripts/check-release.sh` checks the release build for both.
+- `docs/catchup-status.md` is the honest list of what is verified and what needs a phone.

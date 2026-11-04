@@ -24,6 +24,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         Notifier.ensureChannels(this)
+        com.carecircle.data.DiagLog.installCrashHandlerIfEnabled(this)
+        com.carecircle.data.DiagLog.log(this, com.carecircle.domain.DiagCode.APP_OPEN)
         com.carecircle.reminder.FollowerWorker.ensure(this)
         setContent {
             val vm: AppViewModel = viewModel()

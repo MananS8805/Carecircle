@@ -30,8 +30,9 @@ object PushNotify {
         val prefs = Prefs(ctx)
         var list = PendingNotifies.prune(PendingNotifies.decode(prefs.pendingNotify), System.currentTimeMillis())
         val now = System.currentTimeMillis()
-        for (l in links) list = PendingNotifies.add(list, PendingNotify(l.linkId, "$doseScheduledAt-$medicineId", timeLabel.take(20), now))
+        for (l in links) list = PendingNotifies.add(list, PendingNotify(l.linkId, com.carecircle.domain.Acks.slotId(doseScheduledAt), timeLabel.take(20), now))
         prefs.pendingNotify = PendingNotifies.encode(list)
+        DiagLog.log(ctx, com.carecircle.domain.DiagCode.PUSH_REQUESTED)
         if (flush(ctx)) scheduleRetry(ctx)
     }
 
@@ -46,10 +47,12 @@ object PushNotify {
             if (outcome == Outcome.DONE) list = PendingNotifies.remove(list, e)
         }
         prefs.pendingNotify = PendingNotifies.encode(list)
+        if (pushFailed) { pushFailed = false; DiagLog.log(ctx, com.carecircle.domain.DiagCode.PUSH_FAILED) }
         return list.isNotEmpty()
     }
 
     private enum class Outcome { DONE, RETRY }
+    @Volatile private var pushFailed = false
 
     private suspend fun send(idToken: String, e: PendingNotify): Outcome = try {
         ApiFactory.api.notifyMissed("Bearer $idToken", NotifyMissedRequest(e.linkId, e.slotId, e.slotLabel))
@@ -63,7 +66,7 @@ object PushNotify {
         }
     } catch (ex: Exception) {
         Outcome.RETRY // offline
-    }
+    }.also { if (it == Outcome.RETRY) pushFailed = true }
 
     fun scheduleRetry(ctx: Context) {
         WorkManager.getInstance(ctx).enqueueUniqueWork(
@@ -92,5 +95,6 @@ object PushTokens {
             withTimeoutOrNull(15_000) { FirebaseMessaging.getInstance().token.awaitTask() }
         } catch (e: CancellationException) { throw e } catch (e: Exception) { null } ?: return
         links.forEach { CareSync.setCaregiverToken(it, token) }
+        DiagLog.log(ctx, com.carecircle.domain.DiagCode.TOKEN_SAVED)
     }
 }

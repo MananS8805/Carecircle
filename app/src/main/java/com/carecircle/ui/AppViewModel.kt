@@ -456,6 +456,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setHighContrast(on: Boolean) { prefs.highContrast = on; _display.value = _display.value.copy(highContrast = on) }
     fun setSimpleMode(on: Boolean) { prefs.simpleMode = on; _display.value = _display.value.copy(simpleMode = on) }
 
+    // ---- Family phone: mark as handled ----
+    private val _acked = MutableStateFlow(prefs.ackedSlots.lines().filter { it.isNotBlank() }.toSet())
+    val ackedKeys: StateFlow<Set<String>> = _acked
+
+    /** Marks the missed dose at [scheduledAt] as handled for everyone. A second call is a no-op. */
+    fun markHandled(linkId: String, scheduledAt: Long) = viewModelScope.launch {
+        val key = com.carecircle.domain.Acks.slotKey(scheduledAt)
+        if (key in _acked.value) return@launch
+        _acked.value = _acked.value + key // shown at once; the write is queued if offline
+        prefs.ackedSlots = com.carecircle.domain.Acks.pruneOld(_acked.value, java.time.LocalDate.now(java.time.ZoneOffset.UTC)).joinToString("\n")
+        CareSync.writeAck(linkId, key)
+    }
+
     // ---- Family phone: quiet hours and snooze ----
     private val _quiet = MutableStateFlow(com.carecircle.reminder.QuietDigest.settings(app))
     val quiet: StateFlow<com.carecircle.domain.QuietSettings> = _quiet
@@ -628,6 +641,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Brings the family ring for today up to date when the app opens. */
     fun refreshStatuses() = viewModelScope.launch {
+        CareSync.mergeAcks(getApplication())
         repo.sync.links().map { it.personId }.distinct().forEach { CareSync.publishStatus(getApplication(), it, tidy = true) }
     }
 

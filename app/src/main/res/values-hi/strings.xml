@@ -743,4 +743,17 @@
     <string name="scan_cam_settings">ऐप सेटिंग्स खोलें</string>
     <string name="scan_cam_unavailable">लाइव कैमरा शुरू नहीं हो सका। आप फ़ोन के कैमरा ऐप का उपयोग कर सकते हैं।</string>
     <string name="scan_cam_system">कैमरा ऐप इस्तेमाल करें</string>
+    <string name="ack_action">संभाल लिया मानें</string>
+    <string name="ack_handled_chip">परिवार के किसी सदस्य ने संभाल लिया</string>
+    <string name="ack_done_title">संभाला हुआ चिह्नित</string>
+    <string name="ack_done_text">परिवार देख सकता है कि इस छूटी खुराक का ध्यान रखा गया है।</string>
+    <string name="diag_title">डायग्नोस्टिक्स</string>
+    <string name="diag_note">इस रिपोर्ट में दवाओं के नाम, लोग, खुराक, नोट या स्वास्थ्य का कोई पाठ नहीं होता। यह फ़ोन से तभी बाहर जाती है जब आप कॉपी या शेयर करें।</string>
+    <string name="diag_crash_log">स्थानीय क्रैश लॉग रखें</string>
+    <string name="diag_crash_log_hint">डिफ़ॉल्ट रूप से बंद। ऐप क्रैश हो तो यह त्रुटि का प्रकार और जगह दर्ज करता है, स्क्रीन पर क्या था यह नहीं। अगली शुरुआत से लागू।</string>
+    <string name="diag_copy">रिपोर्ट कॉपी करें</string>
+    <string name="diag_copied">कॉपी हो गया।</string>
+    <string name="diag_share">रिपोर्ट शेयर करें</string>
+    <string name="diag_clear">लॉग साफ़ करें</string>
+    <string name="diag_refresh">ताज़ा करें</string>
 </resources>

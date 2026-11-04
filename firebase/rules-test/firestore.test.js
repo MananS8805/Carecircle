@@ -2,7 +2,7 @@
 // Not part of the default Gradle or backend test runs. Written against firebase/firestore.rules; if the rules change, run this.
 import { readFileSync } from "node:fs";
 import { assertFails, assertSucceeds, initializeTestEnvironment } from "@firebase/rules-unit-testing";
-import { Timestamp, collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from "firebase/firestore";
+import { Timestamp, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
 let env;
@@ -159,5 +159,47 @@ describe("events and status", () => {
     await seed(event(), ["pairings", CODE, "events", "taken-1"]);
     await assertFails(deleteDoc(doc(carer(), "pairings", CODE, "events", "taken-1")));
     await assertSucceeds(deleteDoc(doc(parent(), "pairings", CODE, "events", "taken-1")));
+  });
+});
+
+describe("acknowledgements", () => {
+  const KEY = "2026-11-04_1793775600000";
+  const ack = (extra = {}) => ({ at: serverTimestamp(), byRole: "caregiver", ...extra });
+  beforeEach(() => seed(pairing({ caregiverUid: "carer" })));
+
+  it("the caregiver creates one note per dose time", async () => {
+    await assertSucceeds(setDoc(doc(carer(), "pairings", CODE, "acks", KEY), ack()));
+  });
+  it("a second tap cannot change it (no update)", async () => {
+    await assertSucceeds(setDoc(doc(carer(), "pairings", CODE, "acks", KEY), ack()));
+    await assertFails(setDoc(doc(carer(), "pairings", CODE, "acks", KEY), ack()));
+    await assertFails(updateDoc(doc(carer(), "pairings", CODE, "acks", KEY), { byRole: "caregiver" }));
+  });
+  it("only the claimed caregiver can create one: not the parent, a stranger or a revoked caregiver", async () => {
+    await assertFails(setDoc(doc(parent(), "pairings", CODE, "acks", KEY), ack()));
+    await assertFails(setDoc(doc(stranger(), "pairings", CODE, "acks", KEY), ack()));
+    await env.withSecurityRulesDisabled((ctx) => deleteDoc(doc(ctx.firestore(), "pairings", CODE)));
+    await assertFails(setDoc(doc(carer(), "pairings", CODE, "acks", KEY), ack()));
+  });
+  it("it must look exactly right: key shape, fields, role and the server time", async () => {
+    await assertFails(setDoc(doc(carer(), "pairings", CODE, "acks", "not-a-key"), ack()));
+    await assertFails(setDoc(doc(carer(), "pairings", CODE, "acks", KEY), ack({ note: "x" })));
+    await assertFails(setDoc(doc(carer(), "pairings", CODE, "acks", KEY), ack({ byRole: "parent" })));
+    await assertFails(setDoc(doc(carer(), "pairings", CODE, "acks", KEY), ack({ at: Timestamp.fromMillis(5) })));
+  });
+  it("the parent reads and tidies them, the caregiver and strangers cannot read", async () => {
+    await seed({ at: Timestamp.now(), byRole: "caregiver" }, ["pairings", CODE, "acks", KEY]);
+    await assertSucceeds(getDoc(doc(parent(), "pairings", CODE, "acks", KEY)));
+    await assertSucceeds(getDocs(collection(parent(), "pairings", CODE, "acks")));
+    await assertFails(getDoc(doc(carer(), "pairings", CODE, "acks", KEY)));
+    await assertFails(getDoc(doc(stranger(), "pairings", CODE, "acks", KEY)));
+    await assertFails(deleteDoc(doc(carer(), "pairings", CODE, "acks", KEY)));
+    await assertSucceeds(deleteDoc(doc(parent(), "pairings", CODE, "acks", KEY)));
+  });
+  it("the status can carry the handled list, up to 200, and nothing else new", async () => {
+    const status = { day: 1, taken: 0, total: 1, missed: 1, skipped: 0, nextAt: 0, nextMedicine: "", updatedAt: 5, handledSlots: [KEY] };
+    await assertSucceeds(setDoc(doc(parent(), "pairings", CODE, "status", "current"), status));
+    await assertFails(setDoc(doc(parent(), "pairings", CODE, "status", "current"), { ...status, handledSlots: Array(201).fill(KEY) }));
+    await assertFails(setDoc(doc(parent(), "pairings", CODE, "status", "current"), { ...status, handledSlots: "nope" }));
   });
 });

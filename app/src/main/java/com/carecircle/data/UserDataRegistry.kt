@@ -1,7 +1,7 @@
 package com.carecircle.data
 
 /** What kind of place a piece of user data lives in. [BackupService] knows how to wipe each kind. */
-enum class StoreKind { ROOM_TABLE, PREFS_KEY, ALARMS, NOTIFICATIONS, BACKGROUND_WORK, WIDGET, CACHE_FILES }
+enum class StoreKind { ROOM_TABLE, PREFS_KEY, ALARMS, NOTIFICATIONS, BACKGROUND_WORK, WIDGET, CACHE_FILES, PRIVATE_FILE }
 
 /**
  * One place the app keeps something about the user.
@@ -55,6 +55,10 @@ object UserDataRegistry {
         pref("textSize", "Text size", wipe = false),
         pref("highContrast", "High contrast", wipe = false),
         pref("simpleMode", "Simple mode", wipe = false),
+        pref("crashLogEnabled", "Keep a local crash log"),
+        pref("ackedSlots", "Family phone: doses this phone marked as handled"),
+        pref("handledCache", "Parent phone: handled doses merged from every link"),
+        pref("lastSyncAt", "When a status last reached the server"),
         pref("quietEnabled", "Family phone: quiet hours on"),
         pref("quietStart", "Family phone: quiet hours start"),
         pref("quietEnd", "Family phone: quiet hours end"),
@@ -76,6 +80,7 @@ object UserDataRegistry {
         UserDataStore("background_work", StoreKind.BACKGROUND_WORK, "Scheduled background jobs", false, false, true),
         UserDataStore("widget", StoreKind.WIDGET, "Home-screen widget contents", false, false, true),
         UserDataStore("cache_files", StoreKind.CACHE_FILES, "Temporary files in the cache folder", false, false, true),
+        UserDataStore("diag_log", StoreKind.PRIVATE_FILE, "Local diagnostics log (event codes only, at most 50 events)", false, false, true),
     )
 
     fun of(kind: StoreKind) = stores.filter { it.kind == kind }

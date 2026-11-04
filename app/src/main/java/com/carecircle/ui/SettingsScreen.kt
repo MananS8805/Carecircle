@@ -54,7 +54,7 @@ import com.carecircle.ui.theme.SoftButton
 import com.carecircle.ui.theme.SoftCard
 
 @Composable
-fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () -> Unit, onHealth: () -> Unit, onPrivacy: () -> Unit) {
+fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () -> Unit, onHealth: () -> Unit, onPrivacy: () -> Unit, onDiagnostics: () -> Unit) {
     val people by vm.people.collectAsStateWithLifecycle()
     val status by rememberReminderStatus()
     var showSetup by remember { mutableStateOf(false) }
@@ -95,6 +95,7 @@ fun SettingsScreen(vm: AppViewModel, onManagePeople: () -> Unit, onFamily: () ->
             SoftButton(stringResource(R.string.settings_review_setup), { showSetup = true }, Modifier.padding(top = 8.dp))
             SoftButton(stringResource(R.string.guide_replay), { vm.replayGuide() }, Modifier.padding(top = 8.dp))
             SoftButton(stringResource(R.string.privacy_title), onPrivacy, Modifier.padding(top = 8.dp))
+            SoftButton(stringResource(R.string.diag_title), onDiagnostics, Modifier.padding(top = 8.dp))
         }
 
         DataCard(vm)

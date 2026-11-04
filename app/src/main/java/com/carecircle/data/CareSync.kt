@@ -1,7 +1,9 @@
 package com.carecircle.data
 
 import android.content.Context
+import com.carecircle.domain.Acks
 import com.carecircle.domain.CodeLockout
+import com.carecircle.domain.HandledCache
 import com.carecircle.domain.PairingCode
 import com.carecircle.domain.SyncPrivacy
 import com.carecircle.domain.SyncEvent
@@ -43,6 +45,8 @@ data class SyncEventDoc(
 data class StatusDoc(
     val day: Long, val taken: Int, val total: Int, val missed: Int, val skipped: Int,
     val nextAt: Long, val nextMedicine: String, val updatedAt: Long,
+    /** Dose-time keys a family member marked as handled (see [com.carecircle.domain.Acks]). */
+    val handled: List<String> = emptyList(),
 )
 
 sealed interface PairResult {
@@ -77,6 +81,7 @@ object CareSync {
     private const val PAIRINGS = "pairings"
     private const val EVENTS = "events"
     private const val STATUS = "status"
+    private const val ACKS = "acks"
     private const val RETAIN_DAYS = 14L
     private const val NETWORK_MS = 15_000L
 
@@ -212,6 +217,7 @@ object CareSync {
                 "day" to java.time.LocalDate.now().toEpochDay(), "taken" to r.taken,
                 "total" to (r.taken + r.missed + r.skipped + r.pending), "missed" to r.missed, "skipped" to r.skipped,
                 "nextAt" to (next?.scheduledAt ?: 0L), "nextMedicine" to SyncPrivacy.nextMedicineField(next?.name.orEmpty(), Prefs(ctx).shareNames), "updatedAt" to now,
+                "handledSlots" to HandledCache.decode(Prefs(ctx).handledCache)[personId].orEmpty().let { Acks.handledSlots(it, java.time.LocalDate.now(java.time.ZoneOffset.UTC)) },
             )
             var ok = true
             for (l in links) {
@@ -219,13 +225,15 @@ object CareSync {
                     db.collection(PAIRINGS).document(l.linkId).collection(STATUS).document("current").set(body).awaitTask()
                     true
                 }
-                if (sent != true) ok = false
+                if (sent != true) ok = false else Prefs(ctx).lastSyncAt = now
                 if (tidy) prune(db.collection(PAIRINGS).document(l.linkId).collection(EVENTS))
             }
+            if (ok) DiagLog.log(ctx, com.carecircle.domain.DiagCode.STATUS_SENT) else DiagLog.log(ctx, com.carecircle.domain.DiagCode.STATUS_FAILED)
             return ok
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            DiagLog.log(ctx, com.carecircle.domain.DiagCode.STATUS_FAILED, e)
             return false // Never break reminders because sync failed.
         }
     }
@@ -254,6 +262,69 @@ object CareSync {
             // Best effort; the local record is removed regardless so this phone stops sending.
         }
         AppDb.get(ctx).sync().deleteLink(linkId)
+    }
+
+    // ---- acknowledgements: "mark as handled" ----
+
+    /**
+     * Family phone: tells the others this missed dose is handled. Returns true when done or when nothing more can be done
+     * (already marked, or the link is gone). Offline, Firestore keeps the write and sends it later, so a timeout is also fine.
+     */
+    suspend fun writeAck(linkId: String, key: String): Boolean {
+        if (!Acks.validKey(key)) return false
+        return try {
+            uid() ?: return false
+            val ref = db.collection(PAIRINGS).document(linkId).collection(ACKS).document(key)
+            withTimeoutOrNull(NETWORK_MS) { ref.set(mapOf("at" to FieldValue.serverTimestamp(), "byRole" to "caregiver")).awaitTask() }
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: FirebaseFirestoreException) {
+            e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED // already marked, or the link was removed: not worth retrying
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** Parent phone: every acknowledgement on one link, or null when it could not be read. */
+    private suspend fun fetchAcks(linkId: String): List<String>? = try {
+        withTimeout(NETWORK_MS) { db.collection(PAIRINGS).document(linkId).collection(ACKS).get().awaitTask().documents.map { it.id } }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
+
+    /**
+     * Parent phone: merges the acknowledgements of all of a person's links and, when something is new, rewrites the status so
+     * every family member sees the dose as handled, without learning who handled it. Old acknowledgements are tidied away.
+     */
+    suspend fun mergeAcks(ctx: Context) {
+        if (!isConfigured(ctx)) return
+        try {
+            val prefs = Prefs(ctx)
+            val sync = AppDb.get(ctx).sync()
+            val today = java.time.LocalDate.now(java.time.ZoneOffset.UTC)
+            var cache = HandledCache.decode(prefs.handledCache)
+            for ((personId, links) in sync.links().groupBy { it.personId }) {
+                val fresh = links.mapNotNull { fetchAcks(it.linkId) }.flatten()
+                val merged = Acks.mergeAcks(listOf(cache[personId].orEmpty(), fresh))
+                val kept = Acks.handledSlots(merged, today)
+                if (kept.toSet() != cache[personId].orEmpty().toSet()) {
+                    cache = HandledCache.with(cache - personId, personId, kept, today)
+                    prefs.handledCache = HandledCache.encode(cache)
+                    publishStatus(ctx, personId)
+                }
+                // Tidy: remove what is older than the window from the server too.
+                for (l in links) fetchAcks(l.linkId).orEmpty().filter { it !in kept }.forEach { id ->
+                    withTimeoutOrNull(4_000) { db.collection(PAIRINGS).document(l.linkId).collection(ACKS).document(id).delete().awaitTask() }
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Best effort; the next run tries again.
+        }
     }
 
     // ---- family side ----
@@ -329,6 +400,7 @@ object CareSync {
                         day = snap.getLong("day") ?: 0L, taken = (snap.getLong("taken") ?: 0L).toInt(), total = (snap.getLong("total") ?: 0L).toInt(),
                         missed = (snap.getLong("missed") ?: 0L).toInt(), skipped = (snap.getLong("skipped") ?: 0L).toInt(),
                         nextAt = snap.getLong("nextAt") ?: 0L, nextMedicine = snap.getString("nextMedicine").orEmpty(), updatedAt = snap.getLong("updatedAt") ?: 0L,
+                        handled = (snap.get("handledSlots") as? List<*>)?.filterIsInstance<String>().orEmpty(),
                     ),
                 )
             }

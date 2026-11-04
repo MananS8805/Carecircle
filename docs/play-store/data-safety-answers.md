@@ -15,7 +15,7 @@ Draft to be checked against the Play Console form and by a person who knows the 
 | Location, contacts, financial info, messages | Not collected | Caregiver numbers stay on the phone |
 | Device or other IDs | Collected | Anonymous Firebase Auth ID and, for the family phone, a Firebase Cloud Messaging push token, only when family sync is used and push is on. Purpose: App functionality |
 | Advertising, analytics | None | |
-| Crash logs | None sent | The optional local crash log (when added) stays on the phone |
+| Crash logs and diagnostics | None sent | The optional local crash log and the diagnostics report stay on the phone unless the user copies or shares them |
 
 Data processed ephemerally (not stored, not logged) by the CareCircle server: insurance text, policy questions. Mark as
 "processed ephemerally" where the form allows it.
