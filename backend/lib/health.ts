@@ -1,7 +1,7 @@
 import { budgetUsedPct, type BudgetEnv } from "./budget.js";
 import { secure, type HttpEnv } from "./http.js";
 
-export const VERSION = "1.8.0";
+export const VERSION = "1.9.0";
 
 export async function handleHealth(env: BudgetEnv & HttpEnv = process.env as BudgetEnv): Promise<Response> {
   const body = { ok: true, version: VERSION, budgetUsedPct: await budgetUsedPct(env) };

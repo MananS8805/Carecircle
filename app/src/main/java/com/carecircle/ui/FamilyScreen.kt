@@ -61,6 +61,9 @@ fun FamilyScreen(vm: AppViewModel, onBack: () -> Unit) {
     val followResult by vm.followResult.collectAsStateWithLifecycle()
     val shareNames by vm.shareNames.collectAsStateWithLifecycle()
     var consentFor by remember { mutableStateOf<Person?>(null) }
+    var renaming by remember { mutableStateOf<SyncLink?>(null) }
+    var removing by remember { mutableStateOf<SyncLink?>(null) }
+    val parentLinks by vm.parentLinks.collectAsStateWithLifecycle()
     var code by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(links.size) { vm.refreshLinkStates() }
 
@@ -101,8 +104,15 @@ fun FamilyScreen(vm: AppViewModel, onBack: () -> Unit) {
         items(people, key = { "p-${it.id}" }) { p ->
             SoftCard(Modifier.fillMaxWidth()) {
                 Text(displayName(p, people), style = MaterialTheme.typography.titleMedium)
-                links.filter { it.personId == p.id }.forEach { l -> LinkRow(l, states[l.linkId] ?: LinkState.UNKNOWN, vm) }
-                SoftButton(stringResource(R.string.family_share_button, p.name), { consentFor = p }, Modifier.padding(top = 10.dp))
+                val mine = links.filter { it.personId == p.id }
+                if (mine.isNotEmpty()) Text(stringResource(R.string.family_who_title), Modifier.padding(top = 8.dp), style = MaterialTheme.typography.titleMedium)
+                mine.forEach { l -> LinkRow(l, states[l.linkId] ?: LinkState.UNKNOWN, onRename = { renaming = l }, onRemove = { removing = l }) }
+                val canAdd = com.carecircle.domain.ParentLinks.canAddLink(parentLinks, p.id)
+                SoftButton(
+                    stringResource(if (mine.isEmpty()) R.string.family_share_button else R.string.family_add_another, p.name), { consentFor = p },
+                    Modifier.padding(top = 10.dp), enabled = canAdd,
+                )
+                if (!canAdd) Muted(stringResource(R.string.family_limit, p.name), Modifier.padding(top = 4.dp))
             }
         }
 
@@ -118,6 +128,38 @@ fun FamilyScreen(vm: AppViewModel, onBack: () -> Unit) {
         }
         if (following.isEmpty()) item { Muted(stringResource(R.string.family_following_none)) }
         items(following, key = { "f-${it.linkId}" }) { f -> FollowedCard(f, vm) }
+    }
+
+    removing?.let { l ->
+        AlertDialog(
+            onDismissRequest = { removing = null },
+            title = { Text(stringResource(R.string.family_remove_title, l.label.ifBlank { PairingCode.display(l.linkId) })) },
+            text = { Text(stringResource(R.string.family_remove_text)) },
+            confirmButton = { TextButton(onClick = { removing = null; vm.unlink(l.linkId) }) { Text(stringResource(R.string.family_unlink), color = Palette.Bad) } },
+            dismissButton = { TextButton(onClick = { removing = null }) { Text(stringResource(R.string.action_cancel)) } },
+            containerColor = Palette.Surface,
+        )
+    }
+    renaming?.let { l ->
+        var text by remember(l.linkId) { mutableStateOf(l.label) }
+        val err by vm.labelError.collectAsStateWithLifecycle()
+        AlertDialog(
+            onDismissRequest = { renaming = null; vm.clearLabelError() },
+            title = { Text(stringResource(R.string.family_rename)) },
+            text = {
+                androidx.compose.foundation.layout.Column {
+                    AppField(text, { text = it.take(com.carecircle.domain.ParentLinks.MAX_LABEL + 1); vm.clearLabelError() }, stringResource(R.string.family_label_hint), isError = err != null)
+                    err?.let { Text(stringResource(when (it) {
+                        com.carecircle.domain.LabelCheck.EMPTY -> R.string.family_label_empty
+                        com.carecircle.domain.LabelCheck.TOO_LONG -> R.string.family_label_long
+                        else -> R.string.family_label_dup
+                    }), color = Palette.Bad) }
+                }
+            },
+            confirmButton = { TextButton(onClick = { vm.renameLink(l.linkId, text) { renaming = null } }) { Text(stringResource(R.string.action_done)) } },
+            dismissButton = { TextButton(onClick = { renaming = null; vm.clearLabelError() }) { Text(stringResource(R.string.action_cancel)) } },
+            containerColor = Palette.Surface,
+        )
     }
 
     consentFor?.let { p ->
@@ -185,9 +227,10 @@ private fun followMessage(r: FollowResult): String = when (r) {
 }
 
 @Composable
-private fun LinkRow(l: SyncLink, state: LinkState, vm: AppViewModel) {
+private fun LinkRow(l: SyncLink, state: LinkState, onRename: () -> Unit, onRemove: () -> Unit) {
     androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
-        Text(stringResource(R.string.family_code_label) + " " + PairingCode.display(l.linkId), style = MaterialTheme.typography.bodyLarge)
+        Text(l.label.ifBlank { stringResource(R.string.family_code_label) + " " + PairingCode.display(l.linkId) }, style = MaterialTheme.typography.titleMedium)
+        if (state == LinkState.WAITING) Text(stringResource(R.string.family_code_label) + " " + PairingCode.display(l.linkId), style = MaterialTheme.typography.bodyLarge)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             val (label, bg, fg) = when (state) {
                 LinkState.LINKED -> Triple(stringResource(R.string.family_state_linked), Palette.GoodSoft, Palette.Good)
@@ -197,7 +240,8 @@ private fun LinkRow(l: SyncLink, state: LinkState, vm: AppViewModel) {
             }
             Pill(label, bg, fg)
             androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-            TextButton(onClick = { vm.unlink(l.linkId) }) { Text(stringResource(R.string.family_unlink), color = Palette.Bad) }
+            TextButton(onClick = onRename, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.family_rename)) }
+            TextButton(onClick = onRemove, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.family_unlink), color = Palette.Bad) }
         }
     }
 }

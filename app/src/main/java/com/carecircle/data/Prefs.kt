@@ -106,6 +106,29 @@ class Prefs(ctx: Context) {
         get() = sp.getString("pendingNotify", "") ?: ""
         set(v) = sp.edit().putString("pendingNotify", v).apply()
 
+    /** Family phone: quiet hours. Off by default; start and end are "HH:mm". */
+    var quietEnabled: Boolean
+        get() = sp.getBoolean("quietEnabled", false)
+        set(v) = sp.edit().putBoolean("quietEnabled", v).apply()
+
+    var quietStart: String
+        get() = sp.getString("quietStart", "22:00") ?: "22:00"
+        set(v) = sp.edit().putString("quietStart", v).apply()
+
+    var quietEnd: String
+        get() = sp.getString("quietEnd", "07:00") ?: "07:00"
+        set(v) = sp.edit().putString("quietEnd", v).apply()
+
+    /** Family phone: alerts are held until this time (epoch millis), 0 = no snooze. */
+    var snoozeUntil: Long
+        get() = sp.getLong("snoozeUntil", 0L)
+        set(v) = sp.edit().putLong("snoozeUntil", v).apply()
+
+    /** Family phone: alerts held for the digest (day, link, dose time; at most 20). No names. */
+    var heldAlerts: String
+        get() = sp.getString("heldAlerts", "") ?: ""
+        set(v) = sp.edit().putString("heldAlerts", v).apply()
+
     fun clearAll() = sp.edit().clear().apply()
 
     companion object {

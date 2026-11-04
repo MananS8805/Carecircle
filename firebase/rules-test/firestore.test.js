@@ -78,6 +78,31 @@ describe("claiming", () => {
   });
 });
 
+describe("several caregivers for one parent", () => {
+  const CODE2 = "WXYZ6789";
+  it("each link has its own caregiver, events and token, and none can read the others", async () => {
+    await seed(pairing({ caregiverUid: "carer" }));
+    await seed(pairing({ caregiverUid: "second" }), ["pairings", CODE2]);
+    await seed(event(), ["pairings", CODE, "events", "taken-1"]);
+    await seed(event(), ["pairings", CODE2, "events", "taken-1"]);
+    const second = env.authenticatedContext("second").firestore();
+    await assertSucceeds(getDoc(doc(carer(), "pairings", CODE, "events", "taken-1")));
+    await assertFails(getDoc(doc(carer(), "pairings", CODE2, "events", "taken-1")));
+    await assertSucceeds(getDoc(doc(second, "pairings", CODE2, "events", "taken-1")));
+    await assertFails(getDoc(doc(second, "pairings", CODE, "events", "taken-1")));
+    await assertSucceeds(updateDoc(doc(second, "pairings", CODE2), { caregiverFcmToken: "tok-2" }));
+    await assertFails(updateDoc(doc(second, "pairings", CODE), { caregiverFcmToken: "tok-2" }));
+  });
+  it("removing one link leaves the other working", async () => {
+    await seed(pairing({ caregiverUid: "carer" }));
+    await seed(pairing({ caregiverUid: "second" }), ["pairings", CODE2]);
+    await seed(event(), ["pairings", CODE2, "events", "taken-1"]);
+    await assertSucceeds(deleteDoc(doc(parent(), "pairings", CODE)));
+    const second = env.authenticatedContext("second").firestore();
+    await assertSucceeds(getDoc(doc(second, "pairings", CODE2, "events", "taken-1")));
+  });
+});
+
 describe("push token", () => {
   beforeEach(() => seed(pairing({ caregiverUid: "carer" })));
   it("the family phone writes only its token and the time on a link it claimed", async () => {

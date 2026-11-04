@@ -155,6 +155,8 @@ data class SyncLink(
     @PrimaryKey val linkId: String,
     val personId: Long,
     val createdAt: Long,
+    /** A name only this phone knows (up to 20 characters), never uploaded. */
+    @ColumnInfo(defaultValue = "") val label: String = "",
 )
 
 /** This phone follows someone else's dose status (a code entered here). */
@@ -248,6 +250,7 @@ interface SyncDao {
     @Query("SELECT * FROM sync_link ORDER BY createdAt DESC") suspend fun links(): List<SyncLink>
     @Query("SELECT * FROM sync_link WHERE personId = :personId") suspend fun linksFor(personId: Long): List<SyncLink>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putLink(l: SyncLink)
+    @Query("UPDATE sync_link SET label = :label WHERE linkId = :linkId") suspend fun setLabel(linkId: String, label: String)
     @Query("DELETE FROM sync_link WHERE linkId = :linkId") suspend fun deleteLink(linkId: String)
 
     @Query("SELECT * FROM following ORDER BY addedAt") fun observeFollowing(): Flow<List<Following>>
@@ -381,7 +384,14 @@ object Migrations {
         }
     }
 
-    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7, M7_8, M8_9, M9_10, M10_11)
+    /** A local label for each family member this phone shares with. */
+    val M11_12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE sync_link ADD COLUMN label TEXT NOT NULL DEFAULT ''")
+        }
+    }
+
+    fun all(ctx: Context): Array<Migration> = arrayOf(M1_2, M2_3, m3to4(ctx), M4_5, M5_6, M6_7, M7_8, M8_9, M9_10, M10_11, M11_12)
 }
 
 object Persons {
@@ -392,7 +402,7 @@ object Persons {
 
 @Database(
     entities = [Person::class, Medicine::class, DoseEvent::class, InfoCardEntity::class, InteractionCacheEntity::class, PolicySummaryEntity::class, SymptomLog::class, SyncLink::class, Following::class, Allergy::class, VitalLog::class, Appointment::class, RefillEvent::class],
-    version = 11, exportSchema = true,
+    version = 12, exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun people(): PersonDao

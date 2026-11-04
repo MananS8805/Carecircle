@@ -38,6 +38,8 @@ class MainActivity : AppCompatActivity() {
                         ReminderScheduler.rescheduleAll(applicationContext, "app_open")
                         com.carecircle.reminder.RescheduleWorker.ensurePeriodic(applicationContext)
                         vm.refreshStatuses()
+                        vm.checkAccess()
+                        vm.refreshHeld()
                     }
                     val mode by vm.appMode.collectAsStateWithLifecycle()
                     when (mode) {

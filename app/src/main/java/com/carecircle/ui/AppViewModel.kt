@@ -456,6 +456,37 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setHighContrast(on: Boolean) { prefs.highContrast = on; _display.value = _display.value.copy(highContrast = on) }
     fun setSimpleMode(on: Boolean) { prefs.simpleMode = on; _display.value = _display.value.copy(simpleMode = on) }
 
+    // ---- Family phone: quiet hours and snooze ----
+    private val _quiet = MutableStateFlow(com.carecircle.reminder.QuietDigest.settings(app))
+    val quiet: StateFlow<com.carecircle.domain.QuietSettings> = _quiet
+    private val _held = MutableStateFlow(0)
+    /** Alerts waiting although the quiet period is over (for the Status banner, for example after a force-stop). */
+    val heldWaiting: StateFlow<Int> = _held
+
+    private fun quietChanged() {
+        val ctx = getApplication<Application>()
+        _quiet.value = com.carecircle.reminder.QuietDigest.settings(ctx)
+        // Turning quiet hours or the snooze off with alerts held shows the digest straight away.
+        com.carecircle.reminder.QuietDigest.flushIfDue(ctx)
+        _held.value = com.carecircle.reminder.QuietDigest.waitingCount(ctx)
+    }
+
+    fun setQuietEnabled(on: Boolean) { prefs.quietEnabled = on; quietChanged() }
+
+    /** Saves a range only when start and end differ; returns false (and saves nothing) otherwise. */
+    fun setQuietRange(start: java.time.LocalTime, end: java.time.LocalTime): Boolean {
+        if (!com.carecircle.domain.QuietHours.validRange(start, end)) return false
+        prefs.quietStart = start.toString(); prefs.quietEnd = end.toString(); quietChanged(); return true
+    }
+
+    fun snooze(choice: com.carecircle.domain.SnoozeChoice?) {
+        prefs.snoozeUntil = choice?.let { com.carecircle.domain.QuietHours.snoozeUntil(it, System.currentTimeMillis(), java.time.ZoneId.systemDefault()) } ?: 0L
+        quietChanged()
+    }
+
+    fun refreshHeld() { _held.value = com.carecircle.reminder.QuietDigest.waitingCount(getApplication()) }
+    fun dismissHeld() { prefs.heldAlerts = ""; _held.value = 0 }
+
     // ---- Family phone: missed-dose alerts ----
     private val _push = MutableStateFlow(prefs.pushEnabled)
     val pushEnabled: StateFlow<Boolean> = _push
@@ -529,6 +560,48 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _followResult = MutableStateFlow<FollowResult?>(null)
     val followResult: StateFlow<FollowResult?> = _followResult
 
+    /** Everyone this phone shares with, with a status from the last check. The labels never leave the phone. */
+    val parentLinks: StateFlow<List<com.carecircle.domain.ParentLink>> =
+        combine(syncLinks, linkStates) { links, states ->
+            links.map { l ->
+                com.carecircle.domain.ParentLink(
+                    l.linkId, l.personId, l.label, createdAt = l.createdAt,
+                    status = when (states[l.linkId] ?: LinkState.UNKNOWN) {
+                        LinkState.WAITING -> com.carecircle.domain.LinkStatus.PENDING
+                        LinkState.LINKED -> com.carecircle.domain.LinkStatus.ACTIVE
+                        LinkState.GONE -> com.carecircle.domain.LinkStatus.REVOKED
+                        LinkState.UNKNOWN -> com.carecircle.domain.LinkStatus.UNKNOWN
+                    },
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _labelError = MutableStateFlow<com.carecircle.domain.LabelCheck?>(null)
+    val labelError: StateFlow<com.carecircle.domain.LabelCheck?> = _labelError
+
+    fun renameLink(linkId: String, newLabel: String, onDone: () -> Unit) = viewModelScope.launch {
+        val link = syncLinks.value.firstOrNull { it.linkId == linkId } ?: return@launch
+        val others = syncLinks.value.filter { it.personId == link.personId && it.linkId != linkId }.map { it.label }
+        val check = com.carecircle.domain.ParentLinks.checkLabel(newLabel, others)
+        _labelError.value = check.takeIf { it != com.carecircle.domain.LabelCheck.OK }
+        if (check == com.carecircle.domain.LabelCheck.OK) { repo.sync.setLabel(linkId, newLabel.trim()); onDone() }
+    }
+
+    fun clearLabelError() { _labelError.value = null }
+
+    private val _lostAccess = MutableStateFlow<List<String>>(emptyList())
+    /** Family phone: people whose link was ended by the other side. Shown once, then forgotten. */
+    val lostAccess: StateFlow<List<String>> = _lostAccess
+    fun dismissLostAccess() { _lostAccess.value = emptyList() }
+
+    /** Family phone: a removed link is gone on the server. Forget it here (this also stops its push token) and say so. */
+    fun checkAccess() = viewModelScope.launch {
+        val gone = repo.sync.following().filter { CareSync.linkState(it.linkId) == LinkState.GONE }
+        if (gone.isEmpty()) return@launch
+        gone.forEach { repo.sync.deleteFollowing(it.linkId) }
+        _lostAccess.value = gone.map { it.personName.ifBlank { getApplication<Application>().getString(R.string.family_member_fallback) } }
+    }
+
     fun refreshLinkStates() = viewModelScope.launch {
         _linkStates.value = syncLinks.value.associate { it.linkId to CareSync.linkState(it.linkId) }
     }
@@ -536,9 +609,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Called only after the consent dialog. */
     fun createPairing(personId: Long) = viewModelScope.launch {
         val p = personOf(personId) ?: return@launch
+        if (!com.carecircle.domain.ParentLinks.canAddLink(parentLinks.value, personId)) return@launch
         _pairing.value = PairingUi.Creating
         _pairing.value = when (val r = CareSync.createPairing(getApplication(), personId, com.carecircle.domain.SyncPrivacy.personField(p.name, prefs.shareNames))) {
-            is PairResult.Ok -> PairingUi.Code(r.code, p.name)
+            is PairResult.Ok -> {
+                val app = getApplication<Application>()
+                val existing = repo.sync.linksFor(personId).filter { it.linkId != r.code }.map { it.label }
+                val n = com.carecircle.domain.ParentLinks.nextDefaultNumber(existing) { app.getString(R.string.cg_default_label, it) }
+                repo.sync.setLabel(r.code, app.getString(R.string.cg_default_label, n))
+                PairingUi.Code(r.code, p.name)
+            }
             PairResult.Offline -> PairingUi.Failed(offline = true)
             else -> PairingUi.Failed(offline = false)
         }

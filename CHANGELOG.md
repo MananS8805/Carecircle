@@ -5,6 +5,11 @@ Each version is a git tag. Informational only, not medical advice.
 ## Backend (not deployed)
 - `/api/policy-summary` without an LLM key now also reads the **Covered** and **Not covered** lists: the bullet or numbered lines under an Inclusions or Exclusions heading, up to the next heading, each with page, clause and an exact verified quote. Deploy with `npx vercel --prod` when ready.
 
+## v1.9
+- Up to three people can see one person's status, each with their own link, push and a name only this phone knows (rename, remove with confirmation, "Add another person" disabled at three, a pending code counts). A family member whose link was removed sees "You no longer have access" and the link is cleared. Room migration 11 to 12 (link label).
+- Quiet hours and snooze on the family phone: a switch with two times (they may cross midnight; start equal to end is refused) and Snooze for 1 hour, 8 hours or until tomorrow morning. Missed-dose alerts arriving then are held and come out as ONE digest when the quiet ends; turning quiet hours or the snooze off shows it at once, and a banner on the family home recovers alerts after a force-stop.
+- Strip scanner: only the part inside the framing guide is read (the guide is mapped into the picture with `CropMath`), the longest side is limited to 2048 px, tap to focus, 64 dp Capture button, Cancel, the system photo picker, a Settings button after "don't ask again", and the phone's camera app as a fallback whose temporary file is deleted right after reading.
+
 ## v1.8
 - Missed-dose push to the family phone (Firebase Cloud Messaging): when a dose is missed, the parent phone asks `POST /api/notify-missed` (Firebase sign-in token, one push per dose, six per hour per link) and the family phone shows "A dose was missed" built locally from the dose time only. The push carries no names. The family phone registers its token on the link it follows (on by default, one switch to turn it off), the parent phone retries for up to two hours when offline. **The Firestore rules changed: publish `firebase/firestore.rules` again.**
 - Weekly adherence summary: a preview of the exact text with an "Include medicine names" switch (off), best and hardest day, longest run without a missed dose and what is running low. Optional Sunday-evening reminder with no health details in it.

@@ -15,6 +15,17 @@ class MigrationTest {
     )
 
     @Test
+    fun migrate11To12AddsLinkLabelsKeepingLinks() {
+        helper.createDatabase("mig1112", 11).apply {
+            execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")
+            execSQL("INSERT INTO sync_link (linkId, personId, createdAt) VALUES ('ABCD2345', 1, 5)")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate("mig1112", 12, true, Migrations.M11_12)
+        db.query("SELECT linkId, label FROM sync_link").use { it.moveToFirst(); assertEquals("ABCD2345", it.getString(0)); assertEquals("", it.getString(1)) }
+    }
+
+    @Test
     fun migrate10To11AddsRefillEventsKeepingMedicines() {
         helper.createDatabase("mig1011", 10).apply {
             execSQL("INSERT INTO person (id, name, caregiverPhone, pharmacyPhone, sortOrder) VALUES (1, 'Me', '', '', 0)")

@@ -157,6 +157,8 @@ private fun moodColors(mood: Mood): Pair<Color, Color> = when (mood) {
 @Composable
 private fun FamilyHome(vm: AppViewModel, onOpen: (String) -> Unit, onAdd: () -> Unit) {
     val following by vm.following.collectAsStateWithLifecycle()
+    val lost by vm.lostAccess.collectAsStateWithLifecycle()
+    val held by vm.heldWaiting.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
     var notifOk by remember { mutableStateOf(readReminderStatus(ctx).notifications) }
     val perm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { notifOk = it }
@@ -167,6 +169,19 @@ private fun FamilyHome(vm: AppViewModel, onOpen: (String) -> Unit, onAdd: () -> 
                 Text(stringResource(R.string.fam_notifications_hint), color = FamilyColors.Ink, fontSize = 15.sp)
                 Spacer(Modifier.height(10.dp))
                 FButton(stringResource(R.string.onb_allow), { perm.launch(Manifest.permission.POST_NOTIFICATIONS) })
+            }
+        }
+        if (held > 0) item {
+            FCard(Modifier.fillMaxWidth(), tint = FamilyColors.WarnSoft) {
+                Text(if (held == 1) stringResource(R.string.digest_one) else stringResource(R.string.digest_many, held), color = FamilyColors.Ink, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.digest_text), Modifier.padding(top = 4.dp), color = FamilyColors.Muted, fontSize = 14.sp)
+                TextButton(onClick = vm::dismissHeld) { Text(stringResource(R.string.action_done), color = FamilyColors.Teal) }
+            }
+        }
+        if (lost.isNotEmpty()) item {
+            FCard(Modifier.fillMaxWidth(), tint = FamilyColors.WarnSoft) {
+                lost.forEach { Text(stringResource(R.string.family_access_lost, it), color = FamilyColors.Ink, fontSize = 16.sp) }
+                TextButton(onClick = vm::dismissLostAccess) { Text(stringResource(R.string.action_done), color = FamilyColors.Teal) }
             }
         }
         if (following.isEmpty()) item {
@@ -432,6 +447,7 @@ private fun FamilySettings(vm: AppViewModel) {
                 androidx.compose.material3.Switch(checked = push, onCheckedChange = null)
             }
         }
+        QuietCard(vm)
         FCard(Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.fam_notifications), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = FamilyColors.Ink)
             Text(stringResource(R.string.fam_notifications_hint), Modifier.padding(vertical = 6.dp), color = FamilyColors.Muted, fontSize = 15.sp)
@@ -445,5 +461,62 @@ private fun FamilySettings(vm: AppViewModel) {
             FButton(stringResource(R.string.fam_settings_switch), { vm.setMode(Prefs.MODE_PATIENT) })
         }
         Text(stringResource(R.string.fam_about), color = FamilyColors.Muted, fontSize = 13.sp)
+    }
+}
+
+/** Quiet hours (a switch and two times) and a snooze menu. Held alerts come out as one digest when the quiet ends. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun QuietCard(vm: AppViewModel) {
+    val q by vm.quiet.collectAsStateWithLifecycle()
+    var picking by remember { mutableStateOf<Boolean?>(null) } // true = start, false = end
+    var rangeError by remember { mutableStateOf(false) }
+    val timeFmt = java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT)
+    FCard(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(value = q.enabled, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = { vm.setQuietEnabled(it) }),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.quiet_title), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = FamilyColors.Ink)
+                Text(stringResource(R.string.quiet_text), Modifier.padding(top = 4.dp), color = FamilyColors.Muted, fontSize = 14.sp)
+            }
+            androidx.compose.material3.Switch(checked = q.enabled, onCheckedChange = null)
+        }
+        if (q.enabled) Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FButton(stringResource(R.string.quiet_from, q.start.format(timeFmt)), { picking = true }, Modifier.weight(1f))
+            FButton(stringResource(R.string.quiet_to, q.end.format(timeFmt)), { picking = false }, Modifier.weight(1f))
+        }
+        if (rangeError) Text(stringResource(R.string.quiet_range_error), Modifier.padding(top = 6.dp), color = FamilyColors.Bad, fontSize = 14.sp)
+
+        Text(stringResource(R.string.snooze_title), Modifier.padding(top = 14.dp), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = FamilyColors.Ink)
+        val now = System.currentTimeMillis()
+        if (q.snoozeUntil > now) {
+            Text(stringResource(R.string.snooze_until, java.time.Instant.ofEpochMilli(q.snoozeUntil).atZone(ZoneId.systemDefault()).format(timeFmt)), Modifier.padding(top = 4.dp), color = FamilyColors.Muted, fontSize = 14.sp)
+            FButton(stringResource(R.string.snooze_cancel), { vm.snooze(null) }, Modifier.padding(top = 8.dp))
+        } else FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = false, onClick = { vm.snooze(com.carecircle.domain.SnoozeChoice.ONE_HOUR) }, label = { Text(stringResource(R.string.snooze_1h)) }, modifier = Modifier.heightIn(min = 48.dp), shape = CircleShape)
+            FilterChip(selected = false, onClick = { vm.snooze(com.carecircle.domain.SnoozeChoice.EIGHT_HOURS) }, label = { Text(stringResource(R.string.snooze_8h)) }, modifier = Modifier.heightIn(min = 48.dp), shape = CircleShape)
+            FilterChip(selected = false, onClick = { vm.snooze(com.carecircle.domain.SnoozeChoice.TOMORROW_MORNING) }, label = { Text(stringResource(R.string.snooze_morning)) }, modifier = Modifier.heightIn(min = 48.dp), shape = CircleShape)
+        }
+    }
+    picking?.let { isStart ->
+        val initial = if (isStart) q.start else q.end
+        val state = androidx.compose.material3.rememberTimePickerState(initial.hour, initial.minute, is24Hour = android.text.format.DateFormat.is24HourFormat(androidx.compose.ui.platform.LocalContext.current))
+        AlertDialog(
+            onDismissRequest = { picking = null },
+            title = { Text(stringResource(if (isStart) R.string.quiet_start_title else R.string.quiet_end_title)) },
+            text = { androidx.compose.material3.TimePicker(state = state) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val t = java.time.LocalTime.of(state.hour, state.minute)
+                    val ok = if (isStart) vm.setQuietRange(t, q.end) else vm.setQuietRange(q.start, t)
+                    rangeError = !ok
+                    picking = null
+                }) { Text(stringResource(R.string.action_done), color = FamilyColors.Teal) }
+            },
+            dismissButton = { TextButton(onClick = { picking = null }) { Text(stringResource(R.string.action_cancel)) } },
+            containerColor = FamilyColors.Surface,
+        )
     }
 }

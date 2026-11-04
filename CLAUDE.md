@@ -114,3 +114,8 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - New Firestore rule: a caregiver may update only `caregiverFcmToken` and `tokenUpdatedAt` on a link they claimed. Run `firebase/rules-test` after any rules change and republish the rules in the console.
 - Instrumented tests start from `DebugReset.reset()` (debug source set only), which deletes all data: never run them on a phone with records you care about. See `docs/testing.md`.
 - The weekly summary text is built by `ui/WeeklyText.kt` from `WeeklySummary` numbers; it never contains a condition tag.
+
+## v1.9 notes
+- Sharing limits and labels live in `domain/ParentLinks.kt` (3 per person, pending counts). `SyncLink.label` is local only. A family phone still follows several people (the brief's "one claimed link per caregiver" was not applied).
+- Quiet hours and snooze: `domain/QuietHours.kt`; held alerts are stored in `Prefs.heldAlerts` (day, link, dose time) and released by `QuietDigest` (one WorkManager job). Everything about them is on the family phone only.
+- The scanner reads only the framed part: change the guide in `CropMath` (one place), never in the composable.

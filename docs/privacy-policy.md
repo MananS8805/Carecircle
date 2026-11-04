@@ -19,7 +19,7 @@ CareCircle is informational. It is not medical advice and it is not an insurance
 People and their names, medicines, doses and dose history, side-effect diary, allergies, health readings (blood pressure,
 sugar, pulse, weight, temperature), appointments, refill history, saved insurance summaries, caregiver and pharmacy phone
 numbers, settings, and the reminder refresh log. Photos of medicine strips and of insurance papers are read on the phone and
-are not kept or uploaded.
+are not kept or uploaded. If the live camera cannot start, the phone's camera app writes one temporary picture that is read and deleted at once.
 
 ## What can leave your phone, and when
 

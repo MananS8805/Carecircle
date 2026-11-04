@@ -52,3 +52,9 @@ Baseline before starting (2026-11-04): backend 39 tests and typecheck green; And
 | E2 | Smoke tests, debug-only hook, CI emulator job, `docs/testing.md` | written, compile only | `app/src/androidTest/.../smoke`, `android-emulator.yml`. **Not run on an emulator or phone; the CI job has not run** |
 | E3 | Weekly summary, preview, names toggle, Sunday reminder | done | `WeeklySummary`, `WeeklySummaryTest` (incl. a clock-change case), `ui/WeeklyText.kt` |
 | D1 gap fixed | Daily summary event leaked the person's name with names off | fixed | `DailySummaryReceiver` |
+| F1 | Up to 3 caregivers per parent, labels, remove, limit, per-link push | done, **different storage** | links live in the Room table `sync_link` (with a new local `label`), not a Prefs JSON list; `ParentLinks`, `ParentLinksTest`, migration 11 to 12. The Firestore schema needed no change, rules tested for two links |
+| F1 | "A caregiver supports one claimed link" | **not applied** | the family app already follows several people and that was kept |
+| F1 | Removed caregiver sees "no longer have access" and clears the link | done | `vm.checkAccess`, banner on the family home |
+| F1 | Legacy single-link migration | not needed | there was never a single-link Prefs value |
+| F2 | Quiet hours, snooze, one overnight digest | done | `QuietHours`, `QuietHoursTest` (cross-midnight, snooze chain), `QuietDigest`. **Needs a family phone to verify the digest and the timing** |
+| F3 | Live scanner: crop to the guide, 2048 px, torch, tap to focus, 64 dp capture, cancel, photo picker, settings button, fallback camera | done | the CameraX scanner already existed; `CropMath` + `CropMathTest`. **The live behaviour (focus, crop alignment) needs a phone** |
