@@ -36,3 +36,13 @@ Baseline before starting (2026-11-04): backend 39 tests and typecheck green; And
 | C3 | `UserDataRegistry` drives export, restore, delete-all | done | `data/UserDataRegistry.kt`, `UserDataRegistryTest` |
 | C3 | Password-protected backups | done | `data/BackupCrypto.kt`, `BackupCryptoTest`. UI not run on a device |
 | C3 | Transactional restore with preview, delete-all summary | done | `BackupService.restore` uses `withTransaction`; the SQL-in-transaction path **needs a device check** |
+| D1 | Anonymous auth, consent screen, invite code, single use, expiry | done, **different from the brief** | existing `pairings/{code}` design: the code is the document id (no listing, so no hash needed), 15-minute expiry (brief: 24 h), 8-character alphabet as briefed |
+| D1 | No names or medicine names by default, separate switch | done | `SyncPrivacy`, `Prefs.shareNames`, `SyncPrivacyAndLockoutTest` |
+| D1 | Brute-force limit: 5 wrong codes, 15 minutes | done | `CodeLockout`, tests |
+| D1 | `links/{linkId}/days` slot documents, `buildDaySnapshot` | **not built** | the family view uses events plus the status document; `FamilyView.merge` makes taken win over a stale missed |
+| D1 | Stale warning over 2 h, unlink either side | done | `FamilyView.isStale`; unlink existed |
+| D1 | `BuildConfig.SYNC_AVAILABLE` | equivalent | `CareSync.isConfigured` (no `google-services.json` means "not set up"); both builds verified without the file |
+| D1 | Rules tests with the emulator | done, ran here | `firebase/rules-test`, 16 tests pass |
+| D2 | Signing from env or properties, R8, version in gradle.properties | done | `app/build.gradle.kts`, `proguard-rules.pro`. R8 build succeeds; **a release build has not been run on a phone** |
+| D2 | `check-release.sh`, `android.yml`, `signing.md` | done | `scripts/check-release.sh` passes locally; the workflow has not run on GitHub |
+| D3 | Key rotation, headers, body limit, CORS, `/health`, loadtest, docs | done | `lib/http.ts`, `hardening.test.ts` (71 backend tests), `docs/backend-production.md`. The loadtest script was not run against a deployment |

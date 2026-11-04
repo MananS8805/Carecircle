@@ -2,14 +2,14 @@ import { allow } from "./ratelimit.js";
 import { busyResponse, overBudget } from "./budget.js";
 import { callAnthropicText, type LlmCallEnv } from "./llm.js";
 import { withLog } from "./log.js";
+import { authorized, secure, MAX_BODY_BYTES as BODY_LIMIT, byteLength, type HttpEnv } from "./http.js";
 
-type Env = LlmCallEnv & { APP_KEY?: string };
+type Env = LlmCallEnv & HttpEnv;
 type F = typeof fetch;
 
 export const MAX_PAGES = 40;
-export const MAX_CHARS = 200_000;
+export const MAX_CHARS = 150_000;
 export const DISCLAIMER = "Informational only. Verify with your insurer.";
-const MAX_BODY_BYTES = 1_000_000;
 const LIMIT = { capacity: 5, refillPerSec: 5 / 60 }; // 5 requests per minute per IP
 
 export interface Item { value: string; page: number; clause: string | null; quote: string }
@@ -229,18 +229,18 @@ function parseBody(text: string): Page[] | "bad" | "toolarge" {
 
 /** The request body and the result are never stored, cached or logged, and never echoed in errors. */
 export function handlePolicySummary(req: Request, env: Env = process.env as Env, f: F = fetch): Promise<Response> {
-  return withLog("policy-summary", (usage) => run(req, env, f, usage));
+  return withLog("policy-summary", async (usage) => secure(await run(req, env, f, usage), req, env));
 }
 
 async function run(req: Request, env: Env, f: F, usage: { inTokens: number; outTokens: number }): Promise<Response> {
-  if (env.APP_KEY && req.headers.get("x-app-key") !== env.APP_KEY) return json(401, { error: "unauthorized" });
+  if (!authorized(req, env)) return json(401, { error: "unauthorized" });
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
   if (!allow(`policy|${ip}`, LIMIT)) return json(429, { error: "rate_limited" }, { "retry-after": "60" });
 
   const declared = Number(req.headers.get("content-length") ?? 0);
-  if (declared > MAX_BODY_BYTES) return json(413, { error: "too_large" });
+  if (declared > BODY_LIMIT) return json(413, { error: "too_large" });
   const text = await req.text();
-  if (text.length > MAX_BODY_BYTES) return json(413, { error: "too_large" });
+  if (byteLength(text) > BODY_LIMIT) return json(413, { error: "too_large" });
 
   const pages = parseBody(text);
   if (pages === "bad") return json(400, { error: "expected {pages:[{page:number,text:string}]}" });

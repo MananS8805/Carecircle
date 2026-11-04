@@ -45,3 +45,33 @@ object PairingCode {
     /** Groups for reading aloud: ABCD-2345. */
     fun display(code: String): String = if (code.length == LENGTH) code.substring(0, 4) + "-" + code.substring(4) else code
 }
+
+/**
+ * What goes into the shared fields. By default no person name and no medicine name leave the phone: the "medicine" field of an
+ * event then carries only the time of the dose. The user can switch names on, with a separate switch.
+ */
+object SyncPrivacy {
+    fun personField(name: String, shareNames: Boolean): String = if (shareNames) name.trim().take(40) else ""
+    fun medicineField(label: String, timeLabel: String, shareNames: Boolean): String = (if (shareNames) label else timeLabel).take(80)
+    fun nextMedicineField(name: String, shareNames: Boolean): String = if (shareNames) name.take(80) else ""
+}
+
+/** Five wrong codes in a row lock code entry for 15 minutes on this phone. Pure, so the rule is tested. */
+object CodeLockout {
+    const val MAX_FAILS = 5
+    const val LOCK_MS = 15 * 60_000L
+
+    data class State(val fails: Int = 0, val lockedUntil: Long = 0)
+
+    fun isLocked(s: State, now: Long) = now < s.lockedUntil
+
+    /** After a wrong code. The fifth one starts the lock and resets the count. */
+    fun afterFailure(s: State, now: Long): State {
+        val fails = (if (now >= s.lockedUntil && s.lockedUntil != 0L) 0 else s.fails) + 1
+        return if (fails >= MAX_FAILS) State(0, now + LOCK_MS) else State(fails, 0)
+    }
+
+    fun afterSuccess() = State()
+
+    fun minutesLeft(s: State, now: Long): Int = (((s.lockedUntil - now).coerceAtLeast(0) + 59_999) / 60_000).toInt()
+}

@@ -1,5 +1,7 @@
 package com.carecircle.ui
 
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.heightIn
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -57,6 +59,7 @@ fun FamilyScreen(vm: AppViewModel, onBack: () -> Unit) {
     val states by vm.linkStates.collectAsStateWithLifecycle()
     val pairing by vm.pairing.collectAsStateWithLifecycle()
     val followResult by vm.followResult.collectAsStateWithLifecycle()
+    val shareNames by vm.shareNames.collectAsStateWithLifecycle()
     var consentFor by remember { mutableStateOf<Person?>(null) }
     var code by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(links.size) { vm.refreshLinkStates() }
@@ -74,6 +77,20 @@ fun FamilyScreen(vm: AppViewModel, onBack: () -> Unit) {
         }
 
         item { Text(stringResource(R.string.family_share_title), style = MaterialTheme.typography.titleLarge) }
+        item {
+            SoftCard(Modifier.fillMaxWidth()) {
+                androidx.compose.foundation.layout.Row(
+                    Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(value = shareNames, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = vm::setShareNames),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.family_share_names), style = MaterialTheme.typography.titleMedium)
+                        Muted(stringResource(if (shareNames) R.string.family_share_names_on else R.string.family_share_names_off))
+                    }
+                    androidx.compose.material3.Switch(checked = shareNames, onCheckedChange = null)
+                }
+            }
+        }
         if (links.isNotEmpty()) item {
             val sent by vm.syncNow.collectAsStateWithLifecycle()
             SoftCard(Modifier.fillMaxWidth()) {
@@ -109,7 +126,7 @@ fun FamilyScreen(vm: AppViewModel, onBack: () -> Unit) {
             title = { Text(stringResource(R.string.family_consent_title)) },
             text = {
                 androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.family_consent_what, p.name))
+                    Text(if (shareNames) stringResource(R.string.family_consent_what, p.name) else stringResource(R.string.family_consent_what_minimal))
                     Text(stringResource(R.string.family_consent_who))
                     Text(stringResource(R.string.family_consent_where))
                 }
@@ -164,6 +181,7 @@ private fun followMessage(r: FollowResult): String = when (r) {
     FollowResult.NotConfigured -> stringResource(R.string.family_not_configured)
     FollowResult.Offline -> stringResource(R.string.family_err_offline)
     FollowResult.Error -> stringResource(R.string.family_err_error)
+    is FollowResult.Locked -> stringResource(R.string.family_err_locked, r.minutes)
 }
 
 @Composable

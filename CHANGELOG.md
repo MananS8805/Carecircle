@@ -5,6 +5,12 @@ Each version is a git tag. Informational only, not medical advice.
 ## Backend (not deployed)
 - `/api/policy-summary` without an LLM key now also reads the **Covered** and **Not covered** lists: the bullet or numbered lines under an Inclusions or Exclusions heading, up to the next heading, each with page, clause and an exact verified quote. Deploy with `npx vercel --prod` when ready.
 
+## v1.7
+- Family sync now shares no names by default: only taken / missed / skipped, dose times and daily counts. "Also share names" (off) adds the first name and medicine names. The family view shows "Dose due 8:00 AM taken" lines without names, and the family member can give the person a local label. Missed-then-taken is counted once as taken. A status older than two hours shows a warning. Five wrong codes lock code entry for 15 minutes.
+- Release pipeline: version in `gradle.properties`, R8 minify and shrink with narrow rules, unsigned-with-a-warning when no keystore, `scripts/check-release.sh`, `.github/workflows/android.yml` (checks on every push, signed bundle on `v*` tags), `docs/play-store/signing.md`.
+- Backend hardening: `APP_KEY` plus `APP_KEY_NEXT` rotation with constant-time comparison, security headers, no CORS unless listed, 200 KB body limit counted in bytes, `docs/backend-production.md`, `npm run loadtest`.
+- Firestore rules tested against the emulator (`firebase/rules-test`, 16 tests).
+
 ## v1.6
 - First-run guide: five skippable steps (language and privacy with restore-a-backup, first person, first medicine by scan / voice / typing, permissions with a test reminder, summary with an add-widget button). It resumes after the app is killed and never duplicates the first person. People who already use CareCircle see a dismissible "What is new" card instead. "Replay setup guide" in Settings.
 - Privacy page (Settings and the guide) that matches the real network calls, plus `docs/privacy-policy.md`, `backend/public/privacy.html` (`npm run build:privacy`) and the Play Store pack in `docs/play-store/`. A test fails if an endpoint is missing from the policy.

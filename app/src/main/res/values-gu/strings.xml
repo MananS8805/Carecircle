@@ -652,7 +652,7 @@
     <string name="privacy_leave_cards">દવા કાર્ડ: કાર્ડ ખોલતાં ફક્ત જેનેરિક ઘટકનું નામ. સર્વર જાહેર સ્રોત વાંચે છે અને લેબલનું લખાણ ફરી લખવા AI પ્રદાતાનો ઉપયોગ કરી શકે છે.</string>
     <string name="privacy_leave_policy">વીમા પૉલિસી: પાનાંઓમાંથી વાંચેલું લખાણ, ફક્ત દર વખતે દેખાતી સંમતિ સ્ક્રીન પછી. સાચવાતું નથી.</string>
     <string name="privacy_leave_question">પૉલિસીનો પ્રશ્ન: તમારો પ્રશ્ન અને સાચવેલા કલમ અવતરણ, ફક્ત દર વખતે દેખાતી સંમતિ સ્ક્રીન પછી. સાચવાતું નથી.</string>
-    <string name="privacy_leave_sync">ફેમિલી સિંક: ફક્ત જો તમે કોઈને શેર કરો કે ફૉલો કરો. પહેલું નામ, દવાનું નામ અને ડોઝ, લીધી/ચૂકી/છોડી, સમય અને રોજની ગણતરી Google Firebase ને જાય છે. બંધ કરતાં ભૂંસાઈ જાય છે.</string>
+    <string name="privacy_leave_sync">ફેમિલી સિંક: ફક્ત જો તમે કોઈને શેર કરો કે ફૉલો કરો. સામાન્ય રીતે તે ફક્ત જણાવે છે કે દરેક ડોઝ લીધો, ચૂક્યો કે છોડ્યો, ડોઝનો સમય અને રોજની ગણતરી, Google Firebase ને. પહેલું નામ અને દવાઓના નામ ત્યારે જ જાય છે જ્યારે તમે \"નામ પણ શેર કરો\" ચાલુ કરો. બંધ કરતાં ભૂંસાઈ જાય છે.</string>
     <string name="privacy_leave_voice">અવાજથી દાખલ કરવું: તમારા ફોનની પોતાની સ્પીચ સેવા સાંભળે છે અને ઑડિયો ઑનલાઇન પ્રોસેસ કરી શકે છે. CareCircle ને ફક્ત લખાણ મળે છે.</string>
     <string name="privacy_leave_messages">WhatsApp અને શેર: એવો સંદેશ જે તમે પહેલા વાંચી અને બદલી શકો. CareCircle તેને જાતે ક્યારેય મોકલતું નથી.</string>
     <string name="privacy_never_title">ક્યારેય મોકલાતું નથી</string>
@@ -676,4 +676,16 @@
     <string name="backup_wrong_password">ખોટો પાસવર્ડ, અથવા ફાઇલ બદલાઈ છે.</string>
     <string name="backup_unlock">ખોલો</string>
     <string name="delete_summary">%1$d લોકો, %2$d દવાઓ, %3$d ડોઝ રેકોર્ડ અને %4$d અન્ય રેકોર્ડ દૂર થયા. એલાર્મ, નોટિફિકેશન અને કૅશ સાફ થયા. સેટઅપ માર્ગદર્શિકા ફરી શરૂ થશે.</string>
+    <string name="family_consent_what_minimal">શું શેર થાય છે: દરેક ડોઝ લીધો, ચૂક્યો કે છોડ્યો, દરેક ડોઝનો સમય અને રોજનો સરવાળો. કોઈ નામ નહીં, દવાના નામ નહીં, નોંધ, વીમા વિગતો કે ફોન નંબર નહીં.</string>
+    <string name="family_share_names">નામ પણ શેર કરો</string>
+    <string name="family_share_names_off">બંધ: ફક્ત સમય અને ગણતરી શેર થાય છે.</string>
+    <string name="family_share_names_on">ચાલુ: પહેલું નામ અને દવાઓના નામ પણ શેર થાય છે.</string>
+    <string name="family_err_locked">ખૂબ વધારે ખોટા કોડ. %1$d મિનિટ પછી ફરી પ્રયાસ કરો.</string>
+    <string name="fam_next_time">આગળનો ડોઝ %1$s વાગ્યે</string>
+    <string name="fam_stale">2 કલાકથી વધુ સમયથી કોઈ અપડેટ નથી. ફોન બંધ કે ઑફલાઇન હોઈ શકે.</string>
+    <string name="fam_rename">આ વ્યક્તિને નામ આપો</string>
+    <string name="sync_plain_taken">%1$s ની માત્રા %2$s વાગ્યે લેવાઈ</string>
+    <string name="sync_plain_missed">%1$s ની માત્રા ચૂકી ગઈ</string>
+    <string name="sync_plain_skipped">%1$s ની માત્રા છોડવામાં આવી</string>
+    <string name="sync_plain_summary">આજે %2$d માંથી %1$d ડોઝ લેવાયા</string>
 </resources>

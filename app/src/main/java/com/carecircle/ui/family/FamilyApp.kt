@@ -200,7 +200,7 @@ private fun PatientCard(f: Following, vm: AppViewModel, onClick: () -> Unit) {
                 FChip(moodLabel(mood, missed), soft, color, Modifier.padding(top = 6.dp))
                 val s = status
                 if (fresh && s != null) Text(
-                    if (s.nextAt > 0) stringResource(R.string.fam_next, s.nextMedicine, Fmt.time(s.nextAt)) else stringResource(R.string.fam_none_next),
+                    if (s.nextAt > 0) (if (s.nextMedicine.isBlank()) stringResource(R.string.fam_next_time, Fmt.time(s.nextAt)) else stringResource(R.string.fam_next, s.nextMedicine, Fmt.time(s.nextAt))) else stringResource(R.string.fam_none_next),
                     Modifier.padding(top = 6.dp), fontSize = 14.sp, color = FamilyColors.Muted, maxLines = 1,
                 )
             }
@@ -223,6 +223,8 @@ private fun PatientScreen(vm: AppViewModel, linkId: String, onBack: () -> Unit) 
     var showMeds by remember { mutableStateOf(false) }
     var pickedDay by remember { mutableStateOf<LocalDate?>(null) }
     var confirmStop by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
 
     val fresh = status?.day == LocalDate.now().toEpochDay()
     val taken = if (fresh) status?.taken ?: 0 else 0
@@ -231,7 +233,7 @@ private fun PatientScreen(vm: AppViewModel, linkId: String, onBack: () -> Unit) 
     val mood = FamilyView.mood(taken, total, missed, fresh)
     val (color, soft) = moodColors(mood)
     val zone = ZoneId.systemDefault()
-    val familyEvents = events.map { FamilyEvent(it.type, it.at, it.medicine) }
+    val familyEvents = events.map { FamilyEvent(it.type, it.at, it.medicine, it.scheduledAt) }
     val days = FamilyView.days(familyEvents, LocalDate.now(), 14, zone)
     val organs = FamilyView.organs(events.filter { it.type != SyncType.SUMMARY }.map { it.medicine })
     val organ = organs[organIdx.coerceIn(0, organs.lastIndex)]
@@ -261,7 +263,11 @@ private fun PatientScreen(vm: AppViewModel, linkId: String, onBack: () -> Unit) 
                 Text(stringResource(R.string.fam_ring_tap), Modifier.padding(top = 8.dp), fontSize = 13.sp, color = FamilyColors.Muted)
                 status?.takeIf { it.updatedAt > 0 }?.let {
                     Text(stringResource(R.string.fam_updated, Fmt.time(it.updatedAt)), fontSize = 12.sp, color = FamilyColors.Muted)
+                    if (fresh && taken < total && FamilyView.isStale(it.updatedAt, System.currentTimeMillis())) {
+                        Text(stringResource(R.string.fam_stale), Modifier.padding(top = 4.dp), fontSize = 13.sp, color = FamilyColors.Bad)
+                    }
                 }
+                TextButton(onClick = { renaming = true }) { Text(stringResource(R.string.fam_rename), color = FamilyColors.Teal) }
             }
         }
         item {
@@ -323,6 +329,14 @@ private fun PatientScreen(vm: AppViewModel, linkId: String, onBack: () -> Unit) 
         items(events.take(30), key = { it.id }) { e -> TimelineRow(e, ctx) }
         item { TextButton(onClick = { confirmStop = true }) { Text(stringResource(R.string.family_stop_following), color = FamilyColors.Bad) } }
     }
+    if (renaming) AlertDialog(
+        onDismissRequest = { renaming = false },
+        title = { Text(stringResource(R.string.fam_rename)) },
+        text = { OutlinedTextField(newName, { newName = it.take(40) }, singleLine = true, label = { Text(stringResource(R.string.guide_person_name)) }) },
+        confirmButton = { TextButton(onClick = { vm.renameFollowing(linkId, newName); renaming = false }, enabled = newName.isNotBlank()) { Text(stringResource(R.string.action_done), color = FamilyColors.Teal) } },
+        dismissButton = { TextButton(onClick = { renaming = false }) { Text(stringResource(R.string.action_cancel)) } },
+        containerColor = FamilyColors.Surface,
+    )
     if (confirmStop) AlertDialog(
         onDismissRequest = { confirmStop = false },
         title = { Text(stringResource(R.string.fam_stop_title, name)) },
@@ -373,6 +387,7 @@ private fun AddMember(vm: AppViewModel, onDone: () -> Unit) {
                         FollowResult.NotConfigured -> stringResource(R.string.family_not_configured)
                         FollowResult.Offline -> stringResource(R.string.family_err_offline)
                         FollowResult.Error -> stringResource(R.string.family_err_error)
+                        is FollowResult.Locked -> stringResource(R.string.family_err_locked, r.minutes)
                     },
                     Modifier.padding(top = 10.dp), color = if (ok) FamilyColors.Good else FamilyColors.Bad, fontSize = 15.sp,
                 )

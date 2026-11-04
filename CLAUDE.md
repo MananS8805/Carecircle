@@ -103,3 +103,8 @@ Week 2: cloud LLM summaries hardening, interaction check, insurance policy summa
 - From now on every new network call must be added to `docs/privacy-policy.md`, `ui/PrivacyScreen.kt` (+ strings in en/hi/gu) and `docs/play-store/data-safety-answers.md`. `PrivacyDocsTest` and `backend/test/privacy.test.ts` check the endpoint names.
 - Backup files can be encrypted (`data/BackupCrypto.kt`). The password is held in memory for one call and never stored or logged.
 - The first-run guide state is `domain/Onboarding.kt`; steps are saved in `Prefs.guideStep`. `Palette` colours must stay getters (see v1.5).
+
+## v1.7 notes
+- Family sync data minimisation: build shared fields only through `SyncPrivacy` (`domain/Sync.kt`); names go out only when `Prefs.shareNames` is on. Status writes are serialised by a mutex in `CareSync` so the last write is the newest state.
+- Version is `carecircle.versionCode` / `carecircle.versionName` in `gradle.properties`. A new permission must be added to `docs/play-store/permissions-justification.md` or `scripts/check-release.sh` fails.
+- Backend: use `authorized()` and `secure()` from `lib/http.ts` in every handler, and `withLog`. Rules changes: run `cd firebase/rules-test && npm test` (needs Java).

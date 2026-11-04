@@ -2,16 +2,16 @@ import { allow } from "./ratelimit.js";
 import { busyResponse, overBudget } from "./budget.js";
 import { callAnthropicText, type LlmCallEnv } from "./llm.js";
 import { withLog } from "./log.js";
+import { authorized, secure, MAX_BODY_BYTES as BODY_LIMIT, byteLength, type HttpEnv } from "./http.js";
 import { quoteVerified, type Page } from "./policySummary.js";
 
-type Env = LlmCallEnv & { APP_KEY?: string };
+type Env = LlmCallEnv & HttpEnv;
 type F = typeof fetch;
 
 export const MAX_QUESTION_CHARS = 300;
 export const MAX_CLAUSES = 40;
 export const MAX_CLAUSE_CHARS = 2_000;
 export const MAX_TOTAL_CHARS = 60_000;
-const MAX_BODY_BYTES = 200_000;
 const LIMIT = { capacity: 5, refillPerSec: 5 / 60 }; // 5 questions per minute per IP
 
 export const ANSWERS = ["COVERED_PER_TEXT", "EXCLUDED_PER_TEXT", "WAITING_PERIOD", "NOT_FOUND", "UNCLEAR"] as const;
@@ -121,13 +121,17 @@ function parseJson(text: string): unknown | null {
 
 /** Nothing here is stored, cached by question text or logged; errors never echo the question or the policy text. */
 export function handlePolicyQuestion(req: Request, env: Env = process.env as Env, f: F = fetch): Promise<Response> {
-  return withLog("policy-question", async (usage) => {
-    if (env.APP_KEY && req.headers.get("x-app-key") !== env.APP_KEY) return json(401, { error: "unauthorized" });
+  return withLog("policy-question", async (usage) => secure(await inner(req, env, f, usage), req, env));
+}
+
+async function inner(req: Request, env: Env, f: F, usage: { inTokens: number; outTokens: number }): Promise<Response> {
+  {
+    if (!authorized(req, env)) return json(401, { error: "unauthorized" });
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
     if (!allow(`question|${ip}`, LIMIT)) return json(429, { error: "rate_limited" }, { "retry-after": "60" });
-    if (Number(req.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) return json(413, { error: "too_large" });
+    if (Number(req.headers.get("content-length") ?? 0) > BODY_LIMIT) return json(413, { error: "too_large" });
     const text = await req.text();
-    if (text.length > MAX_BODY_BYTES) return json(413, { error: "too_large" });
+    if (text.length > BODY_LIMIT) return json(413, { error: "too_large" });
     const body = parseQuestionBody(text);
     if (body === "bad") return json(400, { error: "expected {question:string,clauses:[{page,clause,text}]}" });
     if (body === "toolarge") return json(413, { error: "too_large", maxQuestionChars: MAX_QUESTION_CHARS, maxClauses: MAX_CLAUSES });
@@ -141,5 +145,5 @@ export function handlePolicyQuestion(req: Request, env: Env = process.env as Env
     const mode = raw ? "llm" : "extractive";
     if (!raw) raw = extractiveAnswer(body.question, body.clauses);
     return json(200, { ...verifyAnswer(raw, body.clauses), mode, disclaimer: DISCLAIMER });
-  });
+  }
 }

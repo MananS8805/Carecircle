@@ -4,7 +4,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /** A followed person's event as the family view needs it. */
-data class FamilyEvent(val type: SyncType, val at: Long, val medicine: String)
+data class FamilyEvent(val type: SyncType, val at: Long, val medicine: String, val scheduledAt: Long = 0)
 
 data class FamilyDay(val date: LocalDate, val taken: Int, val missed: Int, val skipped: Int) {
     val total get() = taken + missed + skipped
@@ -24,9 +24,25 @@ object FamilyView {
 
     fun fraction(taken: Int, total: Int): Float = if (total <= 0) 0f else (taken.toFloat() / total).coerceIn(0f, 1f)
 
+    const val STALE_MS = 2 * 3600_000L
+
+    /** The phone has not reported for over two hours. [updatedAt] 0 means never, which is not "stale" but "no data". */
+    fun isStale(updatedAt: Long, now: Long, limitMs: Long = STALE_MS): Boolean = updatedAt > 0 && now - updatedAt > limitMs
+
+    /**
+     * One outcome per dose. A dose that was reported missed and then taken is Taken, and a stale "missed" that arrives after a
+     * "taken" never overrides it. Skipped beats missed (a deliberate choice). Summaries are dropped.
+     */
+    fun merge(events: List<FamilyEvent>): List<FamilyEvent> =
+        events.filter { it.type != SyncType.SUMMARY }
+            .groupBy { if (it.scheduledAt > 0) "${it.scheduledAt}|${it.medicine}" else "at|${it.at}|${it.medicine}|${it.type.key}" }
+            .map { (_, g) ->
+                g.firstOrNull { it.type == SyncType.TAKEN } ?: g.firstOrNull { it.type == SyncType.SKIPPED } ?: g.maxByOrNull { it.at }!!
+            }
+
     /** [count] days ending at [today], oldest first. Summaries are ignored: only taken, missed and skipped events count. */
     fun days(events: List<FamilyEvent>, today: LocalDate, count: Int, zone: ZoneId): List<FamilyDay> {
-        val byDay = events.filter { it.type != SyncType.SUMMARY }
+        val byDay = merge(events)
             .groupBy { java.time.Instant.ofEpochMilli(it.at).atZone(zone).toLocalDate() }
         return (count - 1 downTo 0).map { back ->
             val d = today.minusDays(back.toLong())

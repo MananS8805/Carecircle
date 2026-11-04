@@ -652,7 +652,7 @@
     <string name="privacy_leave_cards">दवा कार्ड: कार्ड खोलने पर सिर्फ़ जेनेरिक सामग्री का नाम। सर्वर सार्वजनिक स्रोत पढ़ता है और लेबल का पाठ दोबारा लिखने के लिए AI प्रदाता का उपयोग कर सकता है।</string>
     <string name="privacy_leave_policy">बीमा पॉलिसी: पन्नों से पढ़ा गया पाठ, सिर्फ़ हर बार दिखने वाली सहमति स्क्रीन के बाद। सहेजा नहीं जाता।</string>
     <string name="privacy_leave_question">पॉलिसी का सवाल: आपका सवाल और सहेजे गए क्लॉज़ उद्धरण, सिर्फ़ हर बार दिखने वाली सहमति स्क्रीन के बाद। सहेजा नहीं जाता।</string>
-    <string name="privacy_leave_sync">फ़ैमिली सिंक: सिर्फ़ तब जब आप किसी को साझा करें या फ़ॉलो करें। पहला नाम, दवा का नाम और खुराक, ली/छूटी/छोड़ी, समय और रोज़ की गिनती Google Firebase को जाती है। रोकने पर मिट जाती है।</string>
+    <string name="privacy_leave_sync">फ़ैमिली सिंक: सिर्फ़ तब जब आप किसी को साझा करें या फ़ॉलो करें। सामान्यतः यह सिर्फ़ बताता है कि हर खुराक ली गई, छूटी या छोड़ी गई, खुराक के समय और रोज़ की गिनती, Google Firebase को। पहला नाम और दवाओं के नाम तभी जाते हैं जब आप \"नाम भी साझा करें\" चालू करें। रोकने पर मिट जाता है।</string>
     <string name="privacy_leave_voice">आवाज़ से जोड़ना: आपके फ़ोन की अपनी स्पीच सेवा सुनती है और ऑडियो ऑनलाइन प्रोसेस कर सकती है। CareCircle को सिर्फ़ पाठ मिलता है।</string>
     <string name="privacy_leave_messages">WhatsApp और शेयर: ऐसा संदेश जिसे आप पहले पढ़कर बदल सकते हैं। CareCircle इसे अपने आप कभी नहीं भेजता।</string>
     <string name="privacy_never_title">कभी नहीं भेजा जाता</string>
@@ -676,4 +676,16 @@
     <string name="backup_wrong_password">गलत पासवर्ड, या फ़ाइल बदली गई है।</string>
     <string name="backup_unlock">खोलें</string>
     <string name="delete_summary">%1$d लोग, %2$d दवाएँ, %3$d खुराक रिकॉर्ड और %4$d अन्य रिकॉर्ड हटाए गए। अलार्म, नोटिफ़िकेशन और कैश साफ़ किए गए। सेटअप गाइड फिर शुरू होगी।</string>
+    <string name="family_consent_what_minimal">क्या साझा होता है: हर खुराक ली गई, छूटी या छोड़ी गई, हर खुराक का समय और रोज़ की गिनती। कोई नाम नहीं, दवा के नाम नहीं, नोट, बीमा विवरण या फ़ोन नंबर नहीं।</string>
+    <string name="family_share_names">नाम भी साझा करें</string>
+    <string name="family_share_names_off">बंद: सिर्फ़ समय और गिनती साझा होती है।</string>
+    <string name="family_share_names_on">चालू: पहला नाम और दवाओं के नाम भी साझा होते हैं।</string>
+    <string name="family_err_locked">बहुत ज़्यादा गलत कोड। %1$d मिनट बाद फिर कोशिश करें।</string>
+    <string name="fam_next_time">अगली खुराक %1$s पर</string>
+    <string name="fam_stale">2 घंटे से ज़्यादा से कोई अपडेट नहीं। फ़ोन बंद या ऑफ़लाइन हो सकता है।</string>
+    <string name="fam_rename">इस व्यक्ति को नाम दें</string>
+    <string name="sync_plain_taken">%1$s की खुराक %2$s पर ली गई</string>
+    <string name="sync_plain_missed">%1$s की खुराक छूट गई</string>
+    <string name="sync_plain_skipped">%1$s की खुराक छोड़ी गई</string>
+    <string name="sync_plain_summary">आज %2$d में से %1$d खुराकें ली गईं</string>
 </resources>

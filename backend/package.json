@@ -7,7 +7,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "dev": "vercel dev",
-    "build:privacy": "node scripts/build-privacy.mjs"
+    "build:privacy": "node scripts/build-privacy.mjs",
+    "loadtest": "node scripts/loadtest.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

@@ -29,7 +29,8 @@ class FollowerWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
         for (f in dao.following()) {
             val events = CareSync.fetchSince(ctx, f.linkId, f.lastSeenAt) ?: continue
             for (e in events.filter { it.type == SyncType.MISSED || it.type == SyncType.SUMMARY }) {
-                val title = if (e.type == SyncType.MISSED) lc.getString(R.string.notif_sync_missed_title, e.personName) else lc.getString(R.string.notif_sync_summary_title, e.personName)
+                val who = f.personName.ifBlank { e.personName }.ifBlank { lc.getString(R.string.family_member_fallback) }
+                val title = if (e.type == SyncType.MISSED) lc.getString(R.string.notif_sync_missed_title, who) else lc.getString(R.string.notif_sync_summary_title, who)
                 Notifier.plainAlert(ctx, 5_000_000 + (e.id.hashCode() and 0xFFFFF), title, describeEvent(lc, e))
             }
             events.maxOfOrNull { it.at }?.let { dao.markSeen(f.linkId, it) }

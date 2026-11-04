@@ -5,10 +5,11 @@ import { TtlCache } from "./cache.js";
 import { approxTokens, overBudget, recordSpend, type BudgetEnv } from "./budget.js";
 import { pickProvider } from "./summarize.js";
 import { withLog } from "./log.js";
+import { authorized, secure, MAX_BODY_BYTES as BODY_LIMIT, byteLength, type HttpEnv } from "./http.js";
 import { allow } from "./ratelimit.js";
 import type { MedicineCard } from "./types.js";
 
-type Env = LlmEnv & BudgetEnv & { APP_KEY?: string };
+type Env = LlmEnv & BudgetEnv & HttpEnv;
 const cache = new TtlCache<{ cards: MedicineCard[]; unresolved: string[] }>(6 * 60 * 60 * 1000);
 export function clearCache() { (cache as any).m.clear(); }
 
@@ -16,11 +17,11 @@ const json = (status: number, body: unknown, extra: Record<string, string> = {})
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...extra } });
 
 export function handleMedicineInfo(req: Request, env: Env = process.env as Env, f: typeof fetch = fetch): Promise<Response> {
-  return withLog("medicine-info", (usage) => run(req, env, f, usage));
+  return withLog("medicine-info", async (usage) => secure(await run(req, env, f, usage), req, env));
 }
 
 async function run(req: Request, env: Env, f: typeof fetch, usage: { inTokens: number; outTokens: number; cacheHit: boolean }): Promise<Response> {
-  if (env.APP_KEY && req.headers.get("x-app-key") !== env.APP_KEY) return json(401, { error: "unauthorized" });
+  if (!authorized(req, env)) return json(401, { error: "unauthorized" });
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
   if (!allow(ip)) return json(429, { error: "rate_limited" }, { "retry-after": "30" });

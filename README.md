@@ -26,6 +26,7 @@ Every version is a git tag (`v0.1` ... `v0.6`); see [CHANGELOG.md](CHANGELOG.md)
 | v1.4 | Reminder reliability (re-arm on reboot / time change, safety net), cited policy Q&A, backend spend cap and `/health` |
 | v1.5 | Widget states, refill history and monthly order, text size / high contrast / Simple mode |
 | v1.6 | First-run guide, Privacy page and Play Store pack, registry-driven backup / delete-all with optional password |
+| v1.7 | No names in family sync by default, release pipeline (R8, signing, CI), backend hardening, tested Firestore rules |
 
 ## Run the Android app
 

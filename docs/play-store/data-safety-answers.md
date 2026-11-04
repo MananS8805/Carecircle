@@ -8,8 +8,8 @@ Draft to be checked against the Play Console form and by a person who knows the 
 | Does the app collect or share data? | Collects: yes (limited, optional). Shares with third parties: no | Firebase and the CareCircle server act as service providers |
 | Is all data encrypted in transit? | Yes | HTTPS to the backend and Firebase |
 | Can users request deletion? | Yes | In app: Settings > Delete all my data; Family sync removal deletes shared data |
-| Personal info: Name | Collected, optional, not required | First name of a shared person, only after the user creates a family code. Purpose: App functionality |
-| Health and fitness: Health info | Collected, optional | Medicine name, dose label and taken / missed status of a shared person; generic ingredient names for medicine cards; policy clause text and questions processed without storage. Purpose: App functionality |
+| Personal info: Name | Optional, off by default | First name of a shared person, only if the user turns on "Also share names" before creating a family code. Purpose: App functionality |
+| Health and fitness: Health info | Collected, optional | Taken / missed / skipped status and dose times of a shared person (medicine names only with "Also share names"); generic ingredient names for medicine cards; policy clause text and questions processed without storage. Purpose: App functionality |
 | Photos and videos | Not collected | Strip and policy photos are read on the device |
 | Audio | Not collected by the app | Voice entry uses the system speech service; CareCircle receives text |
 | Location, contacts, financial info, messages | Not collected | Caregiver numbers stay on the phone |

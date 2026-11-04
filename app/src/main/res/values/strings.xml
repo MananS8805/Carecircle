@@ -677,7 +677,7 @@
     <string name="privacy_leave_cards">Medicine card: only the generic ingredient name, when you open a card. The server reads public sources and may use an AI provider to rewrite label text.</string>
     <string name="privacy_leave_policy">Insurance policy: the text read from the pages, only after a consent screen shown every time. Not stored.</string>
     <string name="privacy_leave_question">Policy question: your question and the saved clause quotes, only after a consent screen shown every time. Not stored.</string>
-    <string name="privacy_leave_sync">Family sync: only if you share or follow someone. Sends a first name, medicine name and dose, taken, missed or skipped, times and daily counts to Google Firebase. Stopping deletes it.</string>
+    <string name="privacy_leave_sync">Family sync: only if you share or follow someone. By default it sends only whether each dose was taken, missed or skipped, the dose times and daily counts to Google Firebase. A first name and medicine names are sent only if you turn on Also share names. Stopping deletes it.</string>
     <string name="privacy_leave_voice">Voice entry: your phone\'s own speech service listens and may process audio online. CareCircle only receives the text.</string>
     <string name="privacy_leave_messages">WhatsApp and sharing: a message you can read and edit first. CareCircle never sends it by itself.</string>
     <string name="privacy_never_title">Never sent</string>
@@ -701,4 +701,16 @@
     <string name="backup_wrong_password">Wrong password, or the file was changed.</string>
     <string name="backup_unlock">Unlock</string>
     <string name="delete_summary">Removed %1$d people, %2$d medicines, %3$d dose records and %4$d other records. Alarms, notifications and caches were cleared. The setup guide will start again.</string>
+    <string name="family_consent_what_minimal">What is shared: whether each dose was taken, missed or skipped, the time of each dose and a daily total. No names, no medicine names, no notes, insurance details or phone numbers.</string>
+    <string name="family_share_names">Also share names</string>
+    <string name="family_share_names_off">Off: only times and counts are shared.</string>
+    <string name="family_share_names_on">On: the first name and medicine names are shared too.</string>
+    <string name="family_err_locked">Too many wrong codes. Try again in %1$d minutes.</string>
+    <string name="fam_next_time">Next dose at %1$s</string>
+    <string name="fam_stale">No update for over 2 hours. The phone may be off or offline.</string>
+    <string name="fam_rename">Name this person</string>
+    <string name="sync_plain_taken">Dose due %1$s taken at %2$s</string>
+    <string name="sync_plain_missed">Dose due %1$s was missed</string>
+    <string name="sync_plain_skipped">Dose due %1$s was skipped</string>
+    <string name="sync_plain_summary">%1$d of %2$d doses taken today</string>
 </resources>

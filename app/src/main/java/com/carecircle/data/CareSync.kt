@@ -1,7 +1,9 @@
 package com.carecircle.data
 
 import android.content.Context
+import com.carecircle.domain.CodeLockout
 import com.carecircle.domain.PairingCode
+import com.carecircle.domain.SyncPrivacy
 import com.carecircle.domain.SyncEvent
 import com.carecircle.domain.SyncType
 import com.google.android.gms.tasks.Task
@@ -16,6 +18,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
@@ -57,6 +61,8 @@ sealed interface FollowResult {
     data object NotConfigured : FollowResult
     data object Offline : FollowResult
     data object Error : FollowResult
+    /** Five wrong codes in a row: code entry is locked for a while. */
+    data class Locked(val minutes: Int) : FollowResult
 }
 
 enum class LinkState { WAITING, LINKED, GONE, UNKNOWN }
@@ -159,8 +165,15 @@ object CareSync {
      * Refreshes the "today" summary the family sees: doses taken / scheduled / missed and the next dose. Called after every
      * dose event and when the app opens. Same privacy as events: counts, a time and a medicine name.
      */
+    private val statusLock = Mutex()
+
     suspend fun publishStatus(ctx: Context, personId: Long, tidy: Boolean = false): Boolean {
         if (!isConfigured(ctx)) return false
+        // One at a time: the status is computed and written together, so the last write is always the newest state.
+        return statusLock.withLock { publishStatusLocked(ctx, personId, tidy) }
+    }
+
+    private suspend fun publishStatusLocked(ctx: Context, personId: Long, tidy: Boolean): Boolean {
         try {
             val links = AppDb.get(ctx).sync().linksFor(personId)
             if (links.isEmpty()) return false
@@ -171,7 +184,7 @@ object CareSync {
             val body = mapOf(
                 "day" to java.time.LocalDate.now().toEpochDay(), "taken" to r.taken,
                 "total" to (r.taken + r.missed + r.skipped + r.pending), "missed" to r.missed, "skipped" to r.skipped,
-                "nextAt" to (next?.scheduledAt ?: 0L), "nextMedicine" to (next?.name.orEmpty().take(80)), "updatedAt" to now,
+                "nextAt" to (next?.scheduledAt ?: 0L), "nextMedicine" to SyncPrivacy.nextMedicineField(next?.name.orEmpty(), Prefs(ctx).shareNames), "updatedAt" to now,
             )
             var ok = true
             for (l in links) {
@@ -220,6 +233,22 @@ object CareSync {
 
     suspend fun follow(ctx: Context, input: String): FollowResult {
         if (!isConfigured(ctx)) return FollowResult.NotConfigured
+        val prefs = Prefs(ctx)
+        val now = System.currentTimeMillis()
+        val lock = CodeLockout.State(prefs.codeFails, prefs.codeLockedUntil)
+        if (CodeLockout.isLocked(lock, now)) return FollowResult.Locked(CodeLockout.minutesLeft(lock, now))
+        val result = followUnchecked(ctx, input)
+        // A code that does not exist, is the wrong shape or belongs to someone else counts as a wrong guess.
+        val after = when (result) {
+            is FollowResult.Ok -> CodeLockout.afterSuccess()
+            FollowResult.Invalid, FollowResult.NotFound, FollowResult.Taken, FollowResult.Expired -> CodeLockout.afterFailure(lock, now)
+            else -> lock
+        }
+        prefs.codeFails = after.fails; prefs.codeLockedUntil = after.lockedUntil
+        return if (result !is FollowResult.Ok && CodeLockout.isLocked(after, now)) FollowResult.Locked(CodeLockout.minutesLeft(after, now)) else result
+    }
+
+    private suspend fun followUnchecked(ctx: Context, input: String): FollowResult {
         val code = PairingCode.normalize(input)
         if (!PairingCode.isValid(code)) return FollowResult.Invalid
         val me = uid() ?: return FollowResult.Offline

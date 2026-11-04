@@ -439,6 +439,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setHighContrast(on: Boolean) { prefs.highContrast = on; _display.value = _display.value.copy(highContrast = on) }
     fun setSimpleMode(on: Boolean) { prefs.simpleMode = on; _display.value = _display.value.copy(simpleMode = on) }
 
+    // ---- Family sync: names ----
+    private val _shareNames = MutableStateFlow(prefs.shareNames)
+    val shareNames: StateFlow<Boolean> = _shareNames
+    fun setShareNames(on: Boolean) { prefs.shareNames = on; _shareNames.value = on; refreshStatuses() }
+
+    /** A label only this phone knows, for someone who shares no name. */
+    fun renameFollowing(linkId: String, name: String) = viewModelScope.launch {
+        val f = repo.sync.following().firstOrNull { it.linkId == linkId } ?: return@launch
+        repo.sync.putFollowing(f.copy(personName = name.trim().take(40)))
+    }
+
     // ---- Ask about your policy ----
     private val _ask = MutableStateFlow<AskState>(AskState.Idle)
     val ask: StateFlow<AskState> = _ask
@@ -501,7 +512,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun createPairing(personId: Long) = viewModelScope.launch {
         val p = personOf(personId) ?: return@launch
         _pairing.value = PairingUi.Creating
-        _pairing.value = when (val r = CareSync.createPairing(getApplication(), personId, p.name)) {
+        _pairing.value = when (val r = CareSync.createPairing(getApplication(), personId, com.carecircle.domain.SyncPrivacy.personField(p.name, prefs.shareNames))) {
             is PairResult.Ok -> PairingUi.Code(r.code, p.name)
             PairResult.Offline -> PairingUi.Failed(offline = true)
             else -> PairingUi.Failed(offline = false)

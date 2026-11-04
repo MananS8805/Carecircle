@@ -3,8 +3,9 @@ import { US_NAMES, fetchLabel } from "./sources.js";
 import { TtlCache } from "./cache.js";
 import { allow } from "./ratelimit.js";
 import { withLog } from "./log.js";
+import { authorized, secure, MAX_BODY_BYTES as BODY_LIMIT, byteLength, type HttpEnv } from "./http.js";
 
-type Env = { APP_KEY?: string };
+type Env = HttpEnv;
 type F = typeof fetch;
 
 export const MAX_NAMES = 8;
@@ -78,11 +79,11 @@ export function parseNames(salts: string): { names: string[]; group: Map<string,
 }
 
 export function handleInteractions(req: Request, env: Env = process.env as Env, f: F = fetch): Promise<Response> {
-  return withLog("interactions", () => run(req, env, f));
+  return withLog("interactions", async () => secure(await run(req, env, f), req, env));
 }
 
 async function run(req: Request, env: Env, f: F): Promise<Response> {
-  if (env.APP_KEY && req.headers.get("x-app-key") !== env.APP_KEY) return json(401, { error: "unauthorized" });
+  if (!authorized(req, env)) return json(401, { error: "unauthorized" });
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
   if (!allow(ip)) return json(429, { error: "rate_limited" }, { "retry-after": "30" });

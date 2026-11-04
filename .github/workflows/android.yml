@@ -1,0 +1,87 @@
+name: Android
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: No secrets in the repository
+        run: |
+          set -e
+          bad=$(git ls-files | grep -E '\.(jks|keystore)$|(^|/)google-services\.json$|(^|/)\.env($|\.)' | grep -v '\.example$' || true)
+          if [ -n "$bad" ]; then echo "Tracked secret-looking files:"; echo "$bad"; exit 1; fi
+
+      - uses: actions/setup-node@v4.1.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Backend tests, typecheck and privacy page
+        working-directory: backend
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build:privacy
+
+      - uses: actions/setup-java@v4.5.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4.2.1
+      - name: Make the wrapper executable
+        run: chmod +x gradlew
+      - name: Unit tests, lint, debug build and unsigned release build
+        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --no-daemon --console=plain
+
+  release:
+    # Only for version tags. Needs the repository secrets described in docs/play-store/signing.md.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-java@v4.5.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4.2.1
+      - name: Make the scripts executable
+        run: chmod +x gradlew scripts/check-release.sh
+      - name: Decode the keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.CARECIRCLE_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "CARECIRCLE_KEYSTORE_B64 is not set"; exit 1; }
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/carecircle.jks"
+          echo "CARECIRCLE_KEYSTORE=$RUNNER_TEMP/carecircle.jks" >> "$GITHUB_ENV"
+      - name: Optional Firebase config
+        env:
+          GOOGLE_SERVICES_B64: ${{ secrets.GOOGLE_SERVICES_B64 }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_B64" ]; then echo "$GOOGLE_SERVICES_B64" | base64 -d > app/google-services.json; fi
+      - name: Build the signed bundle and check it
+        env:
+          CARECIRCLE_KEYSTORE_PASSWORD: ${{ secrets.CARECIRCLE_KEYSTORE_PASSWORD }}
+          CARECIRCLE_KEY_ALIAS: ${{ secrets.CARECIRCLE_KEY_ALIAS }}
+          CARECIRCLE_KEY_PASSWORD: ${{ secrets.CARECIRCLE_KEY_PASSWORD }}
+        run: scripts/check-release.sh
+      - name: Remove secrets from the runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/carecircle.jks" app/google-services.json
+      - uses: actions/upload-artifact@v4.4.3
+        with:
+          name: carecircle-release
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/mapping/release/mapping.txt

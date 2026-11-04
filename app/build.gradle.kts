@@ -16,8 +16,9 @@ android {
         applicationId = "com.carecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "1.6.0"
+        // The version lives in gradle.properties so a release only edits one file.
+        versionCode = (project.findProperty("carecircle.versionCode") as String).toInt()
+        versionName = project.findProperty("carecircle.versionName") as String
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Deployed Vercel URL of /backend. Override in local.properties: careCircleApi=https://your-app.vercel.app/
         val api = (project.findProperty("careCircleApi") as String?) ?: "https://carecircle-api.example.vercel.app/"
@@ -40,8 +41,9 @@ android {
     testOptions { unitTests.isReturnDefaultValues = true }
     sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
 
-    // Release signing: reads the keystore from gradle properties or environment variables. Without them the release
-    // build is simply unsigned, so debug builds and CI never need secrets.
+    // Release signing: reads the keystore from gradle properties or environment variables (careCircleKeystore /
+    // CARECIRCLE_KEYSTORE, ..._KEYSTORE_PASSWORD, ..._KEY_ALIAS, ..._KEY_PASSWORD). Without them the release build is
+    // unsigned and says so, so debug builds, pull requests and CI never need secrets.
     val keystorePath = secret("careCircleKeystore", "CARECIRCLE_KEYSTORE")
     val canSign = keystorePath != null && file(keystorePath).exists()
     signingConfigs {
@@ -54,9 +56,12 @@ android {
             }
         }
     }
+    if (!canSign) logger.warn("CareCircle: no release keystore configured, the release build will be UNSIGNED (see docs/play-store/signing.md).")
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (canSign) signingConfig = signingConfigs.getByName("release")
         }
     }

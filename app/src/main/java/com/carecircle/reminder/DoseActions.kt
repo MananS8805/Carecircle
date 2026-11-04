@@ -6,6 +6,8 @@ import com.carecircle.data.AppDb
 import com.carecircle.data.CareSync
 import com.carecircle.domain.SyncEvent
 import com.carecircle.domain.SyncType
+import com.carecircle.domain.SyncPrivacy
+import com.carecircle.data.Prefs
 import com.carecircle.AppLocale
 import com.carecircle.domain.Messages
 import com.carecircle.domain.Refill
@@ -22,7 +24,13 @@ object DoseActions {
             launch {
                 CareSync.publish(
                     ctx, med.personId,
-                    SyncEvent(type, person.name, Messages.medicineLabel(med.name, med.doseText), dose.scheduledAt, System.currentTimeMillis()),
+                    Prefs(ctx).shareNames.let { names ->
+                        SyncEvent(
+                            type, SyncPrivacy.personField(person.name, names),
+                            SyncPrivacy.medicineField(Messages.medicineLabel(med.name, med.doseText), com.carecircle.ui.Fmt.time(dose.scheduledAt), names),
+                            dose.scheduledAt, System.currentTimeMillis(),
+                        )
+                    },
                     dose.id,
                 )
             }

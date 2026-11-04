@@ -72,6 +72,20 @@ class Prefs(ctx: Context) {
     /** Removes one registered key; used by delete-all so settings that are not health data can stay. */
     fun remove(key: String) = sp.edit().remove(key).apply()
 
+    /** Off by default: with it off no person or medicine name is sent in family sync, only times and counts. */
+    var shareNames: Boolean
+        get() = sp.getBoolean("shareNames", false)
+        set(v) = sp.edit().putBoolean("shareNames", v).apply()
+
+    /** Wrong family codes entered in a row, and when entry unlocks again. */
+    var codeFails: Int
+        get() = sp.getInt("codeFails", 0)
+        set(v) = sp.edit().putInt("codeFails", v).apply()
+
+    var codeLockedUntil: Long
+        get() = sp.getLong("codeLockedUntil", 0L)
+        set(v) = sp.edit().putLong("codeLockedUntil", v).apply()
+
     fun clearAll() = sp.edit().clear().apply()
 
     companion object {

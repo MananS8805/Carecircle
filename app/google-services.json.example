@@ -1,0 +1,11 @@
+{
+  "_comment": "Shape of the Firebase config. Download the real file from the Firebase console (Project settings, Your apps, Android) and save it as app/google-services.json. That file is git-ignored and must never be committed.",
+  "project_info": { "project_number": "000000000000", "project_id": "your-project-id", "storage_bucket": "your-project-id.appspot.com" },
+  "client": [
+    {
+      "client_info": { "mobilesdk_app_id": "1:000000000000:android:0000000000000000", "android_client_info": { "package_name": "com.carecircle" } },
+      "api_key": [ { "current_key": "REPLACE_WITH_YOUR_KEY" } ]
+    }
+  ],
+  "configuration_version": "1"
+}
