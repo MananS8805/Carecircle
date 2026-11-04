@@ -15,6 +15,7 @@ android {
     defaultConfig {
         applicationId = "com.carecircle"
         minSdk = 26
+        manifestPlaceholders["appLabel"] = "@string/app_name"
         targetSdk = 35
         // The version lives in gradle.properties so a release only edits one file.
         versionCode = (project.findProperty("carecircle.versionCode") as String).toInt()
@@ -61,6 +62,14 @@ android {
     }
     if (!canSign) logger.warn("CareCircle: no release keystore configured, the release build will be UNSIGNED (see docs/play-store/signing.md).")
     buildTypes {
+        debug {
+            // A second copy of the debug app on one phone, to test family sync with two roles:
+            // ./gradlew :app:installDebug -Pcarecircle.clone=true  (needs the .clone package in google-services.json)
+            if (project.findProperty("carecircle.clone") == "true") {
+                applicationIdSuffix = ".clone"
+                manifestPlaceholders["appLabel"] = "CareCircle Clone"
+            }
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
